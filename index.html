@@ -9,7 +9,8 @@
 </head>
 <body>
   <div>CExplrAdrs</div>
-  <div>'Includes PfnclonGetExcelApplicationWindowHandle
+  <div>
+'Includes PfnclonGetExcelApplicationWindowHandle
 'Includes apiPfixGetForegroundWindow
 'Includes apiPfixFindWindow
 'Includes PincSetForegroundWindowWithIconicCheck1
@@ -31,8 +32,12 @@ Option Base 1
 'Rev.005
 
 'API宣言_操作中のウインドウのハンドルを取得する
+  <div>
   Private Declare PtrSafe Function GetForegroundWindow Lib "USER32" () As Long
+  </div>
 
+  <div>
+    
 'API宣言_指定ウインドウクラス名とウインドウ名を持つウインドウのハンドルを取得する
   Private Declare PtrSafe Function FindWindow Lib "user32.dll" Alias "FindWindowA" ( _
         ByVal lpClassName As String, ByVal lpWindowName As String) As Long
