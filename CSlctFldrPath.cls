@@ -1,0 +1,260 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "CSlctFldrPath"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
+'Includes PfncobjSetFileDialogForFolder
+'Includes PfncstrSetDefaultFolderPath
+'Includes PfixSetFileDialogForFolderInitial
+'Includes PfncstrSelectFolderByFileDialog
+'Includes PfncbisCheckFolderExist
+
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_フォルダを選択してそのパスを取得する
+'Rev.001
+
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CSlctFldrPath"
+  
+'//PropertyGet_出力データ
+  Private myXstrFldrPath As String
+  
+'//PropertySetLet_入力データ
+  Private myXstrDfltFldrPath As String, myXlonIniView As Long
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXobjFileDialog As Object, myXstrDfltPath As String
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    Set myXobjFileDialog = Nothing: myXstrDfltPath = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getDirPath() As String
+    getDirPath = myXstrFldrPath
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXstrFldrPath = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letDfltFldrPath(ByVal RHS As String)
+    myXstrDfltFldrPath = RHS
+'myXstrDfltFldrPath = ""  : デフォルトパス指定無し
+'myXstrDfltFldrPath = "C" : Cドライブをデフォルトパスに指定
+'myXstrDfltFldrPath = "1" : このブックの親フォルダをデフォルトパスに指定
+'myXstrDfltFldrPath = "2" : アクティブブックの親フォルダをデフォルトパスに指定
+'myXstrDfltFldrPath = "*" : デフォルトパスを指定
+End Property
+
+Public Property Let letIniView(ByVal RHS As Long)
+    myXlonIniView = RHS
+'myXlonIniView = msoFileDialogViewDetails    : ファイルを詳細情報と共に一覧表示
+'myXlonIniView = msoFileDialogViewLargeIcons : ファイルを大きいアイコンで表示
+'myXlonIniView = msoFileDialogViewList       : ファイルを詳細情報なしで一覧表示
+'myXlonIniView = msoFileDialogViewPreview    : ファイルの一覧を表示し、選択したファイルをプレビュー ウィンドウ枠に表示
+'myXlonIniView = msoFileDialogViewProperties : ファイルの一覧を表示し、選択したファイルのプロパティをウィンドウ枠に表示
+'myXlonIniView = msoFileDialogViewSmallIcons : ファイルを小さいアイコンで表示
+'myXlonIniView = msoFileDialogViewThumbnail  : ファイルを縮小表示
+'myXlonIniView = msoFileDialogViewTiles      : ファイルをアイコンで並べて表示
+'myXlonIniView = msoFileDialogViewWebView    : ファイルを Web 表示
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXlonIniView < 1 Or myXlonIniView > 9 Then myXlonIniView = msoFileDialogViewList
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicF_
+Public Function fncstrDirectoryPath() As String
+    fncstrDirectoryPath = Empty
+    Call ctrProc
+    fncstrDirectoryPath = myXstrFldrPath
+End Function
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"  'PassFlag
+
+'//フォルダ選択用のFileDialogオブジェクトを設定
+    Set myXobjFileDialog = PfncobjSetFileDialogForFolder()
+    If myXobjFileDialog Is Nothing Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"  'PassFlag
+    
+'//デフォルトフォルダパスを設定
+    myXstrDfltPath = PfncstrSetDefaultFolderPath(myXstrDfltFldrPath)
+    
+'//フォルダ選択用のFileDialogオブジェクトの初期状態を設定
+    Call PfixSetFileDialogForFolderInitial(myXobjFileDialog, myXlonIniView, myXstrDfltPath)
+    If myXobjFileDialog Is Nothing Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"  'PassFlag
+
+'//フォルダ選択用のFileDialogオブジェクトを使用してフォルダを選択
+    myXstrFldrPath = PfncstrSelectFolderByFileDialog(myXobjFileDialog)
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"  'PassFlag
+    
+'//指定フォルダの存在を確認
+    If PfncbisCheckFolderExist(myXstrFldrPath) = False Then
+        myXstrFldrPath = ""
+        myXbisExitFlag = True
+        GoTo ExitPath
+    End If
+'    Debug.Print "PassFlag: " & meMstrMdlName & "5"  'PassFlag
+
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
+
+ '定型Ｆ_フォルダ選択用のFileDialogオブジェクトを設定する
+Private Function PfncobjSetFileDialogForFolder() As Object
+    Set PfncobjSetFileDialogForFolder = Nothing
+  Dim myXobjFileDialog As Object
+    On Error GoTo ExitPath
+    Set myXobjFileDialog = Application.FileDialog(msoFileDialogFolderPicker)
+    myXobjFileDialog.Title = "フォルダの選択"
+    myXobjFileDialog.ButtonName = "選択"
+    On Error GoTo 0
+    Set PfncobjSetFileDialogForFolder = myXobjFileDialog
+    Set myXobjFileDialog = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_デフォルトフォルダパスを設定する
+Private Function PfncstrSetDefaultFolderPath( _
+            Optional ByVal coXstrDflt As String = "") As String
+'coXstrDflt = ""  : デフォルトパス指定無し
+'coXstrDflt = "C" : Cドライブをデフォルトパスに指定
+'coXstrDflt = "1" : このブックの親フォルダをデフォルトパスに指定
+'coXstrDflt = "2" : アクティブブックの親フォルダをデフォルトパスに指定
+'coXstrDflt = "*" : デフォルトパスを指定
+    PfncstrSetDefaultFolderPath = Empty
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXstrDfltPath As String, myXbisDfltExist As Boolean
+    With myXobjFSO
+        Select Case coXstrDflt
+            Case "C": myXstrDfltPath = "C:\"
+            Case "1": myXstrDfltPath = .GetParentFolderName(ThisWorkbook.Path)
+            Case "2": myXstrDfltPath = .GetParentFolderName(ActiveWorkbook.Path)
+            Case Else: myXstrDfltPath = coXstrDflt
+        End Select
+        myXbisDfltExist = .FolderExists(myXstrDfltPath)
+    End With
+    If myXbisDfltExist = True Then PfncstrSetDefaultFolderPath = myXstrDfltPath
+    Set myXobjFSO = Nothing
+End Function
+
+ '定型Ｐ_フォルダ選択用のFileDialogオブジェクトの初期状態を設定する
+Private Sub PfixSetFileDialogForFolderInitial( _
+            myXobjFileDialog As Object, _
+            Optional ByVal coXlonIniView As Long = msoFileDialogViewList, _
+            Optional ByVal coXstrDfltPath As String = "")
+'coXlonIniView = msoFileDialogViewDetails    : ファイルを詳細情報と共に一覧表示
+'coXlonIniView = msoFileDialogViewLargeIcons : ファイルを大きいアイコンで表示
+'coXlonIniView = msoFileDialogViewList       : ファイルを詳細情報なしで一覧表示
+'coXlonIniView = msoFileDialogViewPreview    : ファイルの一覧を表示し、選択したファイルをプレビュー ウィンドウ枠に表示
+'coXlonIniView = msoFileDialogViewProperties : ファイルの一覧を表示し、選択したファイルのプロパティをウィンドウ枠に表示
+'coXlonIniView = msoFileDialogViewSmallIcons : ファイルを小さいアイコンで表示
+'coXlonIniView = msoFileDialogViewThumbnail  : ファイルを縮小表示
+'coXlonIniView = msoFileDialogViewTiles      : ファイルをアイコンで並べて表示
+'coXlonIniView = msoFileDialogViewWebView    : ファイルを Web 表示
+'coXstrDfltPath : ファイルパス指定→ダイアログボックスにファイル名を表示
+'coXstrDfltPath : フォルダパス指定→デフォルトフォルダを表示
+    If myXobjFileDialog Is Nothing Then Exit Sub
+    On Error Resume Next
+    With myXobjFileDialog
+        .InitialView = coXlonIniView
+        .InitialFileName = coXstrDfltPath
+    End With
+    On Error GoTo 0
+End Sub
+
+ '定型Ｆ_フォルダ選択用のFileDialogオブジェクトを使用してフォルダを選択する
+Private Function PfncstrSelectFolderByFileDialog(ByVal myXobjFileDialog As Object) As String
+    PfncstrSelectFolderByFileDialog = Empty
+    If myXobjFileDialog Is Nothing Then Exit Function
+  Dim myXstrFldrPath As String, myXvarTmpPath As Variant
+    If myXobjFileDialog.Show = False Then Exit Function
+    For Each myXvarTmpPath In myXobjFileDialog.SelectedItems
+        myXstrFldrPath = CStr(myXvarTmpPath)
+    Next
+    PfncstrSelectFolderByFileDialog = myXstrFldrPath
+End Function
+
+ '定型Ｆ_指定フォルダの存在を確認する
+Private Function PfncbisCheckFolderExist(ByVal myXstrDirPath As String) As Boolean
+    PfncbisCheckFolderExist = False
+    If myXstrDirPath = "" Then Exit Function
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    PfncbisCheckFolderExist = myXobjFSO.FolderExists(myXstrDirPath)
+    Set myXobjFSO = Nothing
+End Function
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_フォルダを選択してそのパスを取得する
+'Private Sub instCSlctFldrPath()
+'  Dim myXstrFldrPath As String
+''//クラス内変数への入力
+'  Dim myXstrDfltFldrPath As String
+'    myXstrDfltFldrPath = "1"
+'    'myXstrDfltFldrPath = ""  : デフォルトパス指定無し
+'    'myXstrDfltFldrPath = "C" : Cドライブをデフォルトパスに指定
+'    'myXstrDfltFldrPath = "1" : このブックの親フォルダをデフォルトパスに指定
+'    'myXstrDfltFldrPath = "2" : アクティブブックの親フォルダをデフォルトパスに指定
+'    'myXstrDfltFldrPath = "*" : デフォルトパスを指定
+'  Dim myXlonIniView As Long
+'    myXlonIniView = msoFileDialogViewList
+'    'myXlonIniView = msoFileDialogViewDetails    : ファイルを詳細情報と共に一覧表示
+'    'myXlonIniView = msoFileDialogViewLargeIcons : ファイルを大きいアイコンで表示
+'    'myXlonIniView = msoFileDialogViewList       : ファイルを詳細情報なしで一覧表示
+'    'myXlonIniView = msoFileDialogViewPreview    : ファイルの一覧を表示し、選択したファイルをプレビュー ウィンドウ枠に表示
+'    'myXlonIniView = msoFileDialogViewProperties : ファイルの一覧を表示し、選択したファイルのプロパティをウィンドウ枠に表示
+'    'myXlonIniView = msoFileDialogViewSmallIcons : ファイルを小さいアイコンで表示
+'    'myXlonIniView = msoFileDialogViewThumbnail  : ファイルを縮小表示
+'    'myXlonIniView = msoFileDialogViewTiles      : ファイルをアイコンで並べて表示
+'    'myXlonIniView = msoFileDialogViewWebView    : ファイルを Web 表示
+''//CSlctFldrPathクラスモジュールのインスタンス生成
+'  Dim myXinsFldrPath As CSlctFldrPath: Set myXinsFldrPath = New CSlctFldrPath
+'    With myXinsFldrPath
+'    '//クラス内変数への入力
+'        .letDfltFldrPath = myXstrDfltFldrPath
+'        .letIniView = myXlonIniView
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        myXstrFldrPath = .fncstrDirectoryPath
+'    End With
+'    Set myXinsFldrPath = Nothing
+'    Debug.Print "取得データ: " & myXstrFldrPath
+'End Sub
