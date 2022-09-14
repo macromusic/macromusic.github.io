@@ -1,0 +1,501 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "CShtToTxt"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
+'Includes PincFileAutoNamingAndParentCheck
+'Includes PfixGetFileNameInformation
+'Includes PfncbisCheckFolderExist
+'Includes PfncstrFileAutoNaming
+'Includes PfixGetSheetRangeData
+'Includes PfixArrangeTextArrayString
+'Includes PfixWriteTextLineWithoutFileOpening
+
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_エクセルシートの内容をテキストファイル形式で保存する
+'Rev.003
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CShtToTxt"
+  
+'//モジュール内定数
+  Private Const coXstrTXT As Variant = "txt"
+  Private Const coXstrCSV As Variant = "csv"
+  
+'//PropertyGet_出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//PropertyGet_出力データ
+  Private Lc As Long
+  Private myXlonTxtRowCnt As Long, myXlonTxtColCnt As Long, _
+            myZstrTxtSaveData() As String
+  Private myXstrSaveTxtPath As String
+  
+'//PropertySetLet_入力制御信号
+  Private myXbisMsgBoxON As Boolean
+  
+'//PropertySetLet_入力データ
+  Private myXobjDataSht As Object, myXobjFrstCell As Object, myXobjLastCell As Object
+  Private myXstrSpltChar As String, myXstrSaveFilePath As String
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonRowCnt As Long, myXlonColCnt As Long, myZstrShtData() As String
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonRowCnt = Empty: myXlonColCnt = Empty
+    Erase myZstrShtData
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getOptnBase() As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    getOptnBase = L
+End Property
+
+Public Property Get getCmpltFlag() As Boolean
+    getCmpltFlag = myXbisCmpltFlag
+End Property
+
+Public Property Get getTxtRowCnt() As Long
+    getTxtRowCnt = myXlonTxtRowCnt
+End Property
+
+Public Property Get getTxtColCnt() As Long
+    getTxtColCnt = myXlonTxtColCnt
+End Property
+
+Public Property Get getTxtSaveDataAry(ByVal i As Long, ByVal j As Long) As String
+    getTxtSaveDataAry = myZstrTxtSaveData(i, j)
+'myZstrTxtSaveData(i, j) : 取得データ
+End Property
+
+Public Property Get getSaveTxtPath() As String
+    getSaveTxtPath = myXstrSaveTxtPath
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+    myXlonTxtRowCnt = Empty: myXlonTxtColCnt = Empty
+    Erase myZstrTxtSaveData
+    myXstrSaveTxtPath = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Set setDataSht(ByVal RHS As Object)
+    Set myXobjDataSht = RHS
+End Property
+
+Public Property Set setFrstCell(ByVal RHS As Object)
+    Set myXobjFrstCell = RHS
+End Property
+
+Public Property Set setLastCell(ByVal RHS As Object)
+    Set myXobjLastCell = RHS
+End Property
+
+Public Property Let letSpltChar(ByVal RHS As String)
+    myXstrSpltChar = RHS
+End Property
+
+Public Property Let letSaveFilePath(ByVal RHS As String)
+    myXstrSaveFilePath = RHS
+End Property
+
+Public Property Let letMsgBoxON(ByVal RHS As Boolean)
+    myXbisMsgBoxON = RHS
+'myXbisMsgBxON = False : シート内容のテキスト書き出し完了のMsgBoxを表示しない
+'myXbisMsgBxON = True  : シート内容のテキスト書き出し完了のMsgBoxを表示する
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+'//ファイル名自動生成＆親フォルダチェック
+  Dim myXbisFldrExistFlag As Boolean
+    Call PincFileAutoNamingAndParentCheck( _
+            myXbisFldrExistFlag, myXstrSaveTxtPath, _
+            myXstrSaveFilePath, False)
+    
+'//テキストファイルに書き込む時の結合文字の設定
+    If myXstrSpltChar <> "" Then Exit Sub
+    
+'//指定ファイルのファイル名情報を取得
+  Dim myXstrSaveDirPath As String, myXstrSaveFileName As String, _
+        myXstrSaveBaseName As String, myXstrSaveExtsn As String
+    Call PfixGetFileNameInformation( _
+            myXstrSaveDirPath, myXstrSaveFileName, myXstrSaveBaseName, myXstrSaveExtsn, _
+            myXstrSaveFilePath)
+    
+'//結合処理する文字列を設定
+'Chr(9)  : タブ文字(vbTab)
+'Chr(44) : カンマ(,)
+    Select Case LCase(myXstrSaveExtsn)
+        Case LCase(coXstrTXT): myXstrSpltChar = vbTab
+        Case LCase(coXstrCSV): myXstrSpltChar = Chr(44)
+        Case Else: GoTo ExitPath
+    End Select
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    Call ctrProc
+End Sub
+
+'PublicF_
+Public Function fncstrSaveTxtPath() As String
+    fncstrSaveTxtPath = Empty
+    Call ctrProc
+    fncstrSaveTxtPath = myXstrSaveTxtPath
+End Function
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//シート上の指定範囲またはデータ全範囲のデータを配列に取込む
+    Call PfixGetSheetRangeData(myXlonRowCnt, myXlonColCnt, myZstrShtData, _
+                                myXobjDataSht, myXobjFrstCell, myXobjLastCell)
+    If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+
+'//2次元の文字列配列をテキストファイル形式の配列に入れ替える
+    Call PfixArrangeTextArrayString( _
+            myXlonTxtRowCnt, myXlonTxtColCnt, myZstrTxtSaveData, _
+            myZstrShtData, myXstrSpltChar)
+    If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+
+'//ファイルを開かずにテキストファイルに1行づつテキストデータを書き込む
+    Call PfixWriteTextLineWithoutFileOpening( _
+            myXbisExitFlag, _
+            myZstrTxtSaveData, myXstrSaveTxtPath, False)
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+    
+    If myXbisMsgBoxON = True Then
+        MsgBox "シート内容のテキスト書き出し完了。" _
+                & vbCrLf & vbCrLf & myXstrSaveTxtPath _
+                & vbCrLf & vbCrLf & "上記ファイルを確認下さい。"
+    End If
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_ファイル名自動生成＆親フォルダチェック
+Private Sub PincFileAutoNamingAndParentCheck( _
+            myXbisFldrExistFlag As Boolean, myXstrFilePathOUT As String, _
+            ByVal myXstrFilePathIN As String, _
+            Optional ByVal coXbisAutoNaming As Boolean = False)
+'Includes PfixGetFileNameInformation
+'Includes PfncbisCheckFolderExist
+'Includes PfncstrFileAutoNaming
+'coXbisAutoNaming = False  : 同一名ファイルがあれば終了
+'coXbisAutoNaming = True   : 同一名ファイルがあればファイル名を自動生成
+    myXbisFldrExistFlag = False: myXstrFilePathOUT = Empty
+'//指定ファイルのファイル名情報を取得
+  Dim myXstrPrntPath As String, myXstrFileName As String, _
+        myXstrBaseName As String, myXstrExtsn As String
+    Call PfixGetFileNameInformation( _
+            myXstrPrntPath, myXstrFileName, myXstrBaseName, myXstrExtsn, _
+            myXstrFilePathIN)
+    If myXstrBaseName = "" Or myXstrExtsn = "" Then GoTo ExitPath
+'//指定フォルダの存在を確認
+    myXbisFldrExistFlag = PfncbisCheckFolderExist(myXstrPrntPath)
+    If myXbisFldrExistFlag = False Then myXstrPrntPath = ThisWorkbook.Path
+'//ファイル名を自動生成
+    myXstrFilePathOUT = PfncstrFileAutoNaming( _
+                            myXstrPrntPath, myXstrBaseName, myXstrExtsn)
+    Exit Sub
+ExitPath:
+    myXstrFilePathOUT = ""
+End Sub
+
+ '定型Ｐ_指定ファイルのファイル名情報を取得する
+Private Sub PfixGetFileNameInformation( _
+            myXstrPrntPath As String, myXstrFileName As String, _
+            myXstrBaseName As String, myXstrExtsn As String, _
+            ByVal myXstrFilePath As String)
+    myXstrPrntPath = Empty: myXstrFileName = Empty
+    myXstrBaseName = Empty: myXstrExtsn = Empty
+    If myXstrFilePath = "" Then Exit Sub
+  Dim i As Long, myXlonInStrRev As Long: myXlonInStrRev = 0
+    For i = Len(myXstrFilePath) To 1 Step -1
+        If Mid(myXstrFilePath, i, 1) = "\" Then
+            myXlonInStrRev = i: Exit For
+        End If
+    Next i
+    If myXlonInStrRev = 0 Then
+        myXstrFileName = myXstrFilePath
+    ElseIf myXlonInStrRev = 1 Then
+        myXstrFileName = Mid(myXstrFilePath, myXlonInStrRev + 1)
+    ElseIf myXlonInStrRev = Len(myXstrFilePath) Then
+        myXstrPrntPath = Left(myXstrFilePath, myXlonInStrRev - 1)
+    Else
+        myXstrPrntPath = Left(myXstrFilePath, myXlonInStrRev - 1)
+        myXstrFileName = Mid(myXstrFilePath, myXlonInStrRev + 1)
+    End If
+    myXlonInStrRev = 0
+    For i = Len(myXstrFileName) To 1 Step -1
+        If Mid(myXstrFileName, i, 1) = "." Then
+            myXlonInStrRev = i: Exit For
+        End If
+    Next i
+    If myXlonInStrRev = 0 Then
+        myXstrBaseName = myXstrFileName
+    ElseIf myXlonInStrRev = 1 Then
+        myXstrExtsn = Mid(myXstrFileName, myXlonInStrRev + 1)
+    ElseIf myXlonInStrRev = Len(myXstrFileName) Then
+        myXstrBaseName = Left(myXstrFileName, myXlonInStrRev - 1)
+    Else
+        myXstrBaseName = Left(myXstrFileName, myXlonInStrRev - 1)
+        myXstrExtsn = Mid(myXstrFileName, myXlonInStrRev + 1)
+    End If
+End Sub
+
+ '定型Ｆ_指定フォルダの存在を確認する
+Private Function PfncbisCheckFolderExist(ByVal myXstrDirPath As String) As Boolean
+    PfncbisCheckFolderExist = False
+    If myXstrDirPath = "" Then Exit Function
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    PfncbisCheckFolderExist = myXobjFSO.FolderExists(myXstrDirPath)
+    Set myXobjFSO = Nothing
+End Function
+
+ '定型Ｆ_ファイル名を自動生成する
+Private Function PfncstrFileAutoNaming( _
+            ByVal myXstrPrntPath As String, ByVal myXstrBaseName As String, _
+            ByVal myXstrExtsn As String) As String
+    PfncstrFileAutoNaming = Empty
+    If myXstrPrntPath = "" Or myXstrExtsn = "" Then Exit Function
+  Dim myXstrTmpBase As String
+    myXstrTmpBase = myXstrBaseName
+    If myXstrBaseName = "" Then _
+        myXstrTmpBase = myXstrBaseName & "_" & Format(Now, "YYYYMMDDHHmmSS")
+  Dim myXstrFilePath As String
+    myXstrFilePath = myXstrPrntPath & "\" & myXstrTmpBase & "." & myXstrExtsn
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXbisFileExistFlag As Boolean
+    myXbisFileExistFlag = myXobjFSO.FileExists(myXstrFilePath)
+    Do While myXbisFileExistFlag = True
+        myXstrTmpBase = myXstrBaseName & "_" & Format(Now, "YYYYMMDDHHmmSS")
+        myXstrFilePath = myXstrPrntPath & "\" & myXstrTmpBase & "." & myXstrExtsn
+        myXbisFileExistFlag = myXobjFSO.FileExists(myXstrFilePath)
+    Loop
+    PfncstrFileAutoNaming = myXstrFilePath
+    Set myXobjFSO = Nothing
+End Function
+
+ '定型Ｐ_シート上の指定範囲またはデータ全範囲のデータを配列に取込む
+Private Sub PfixGetSheetRangeData( _
+            myXlonRowCnt As Long, myXlonColCnt As Long, myZstrShtData() As String, _
+            ByVal myXobjSheet As Object, _
+            ByVal myXobjFrstCell As Object, ByVal myXobjLastCell As Object)
+'myZstrShtData(i, j) : データ
+    myXlonRowCnt = Empty: myXlonColCnt = Empty: Erase myZstrShtData
+    If myXobjSheet Is Nothing Then Exit Sub
+'//シート上の指定範囲をオブジェクト配列に取込む
+  Dim myXobjShtRng As Object
+    If myXobjFrstCell Is Nothing Then Set myXobjFrstCell = myXobjSheet.Cells(1, 1)
+    If myXobjLastCell Is Nothing Then _
+        Set myXobjLastCell = myXobjSheet.Cells.SpecialCells(xlCellTypeLastCell)
+    Set myXobjShtRng = myXobjSheet.Range(myXobjFrstCell, myXobjLastCell)
+    myXlonRowCnt = myXobjShtRng.Rows.Count
+    myXlonColCnt = myXobjShtRng.Columns.Count
+    If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then Exit Sub
+'//オブジェクト配列からデータを取得
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZvarRngData As Variant, i As Long, j As Long
+    i = myXlonRowCnt + L - 1: j = myXlonColCnt + L - 1
+    ReDim myZstrShtData(i, j) As String
+    myZvarRngData = myXobjShtRng.Value
+    On Error Resume Next
+    If myXlonRowCnt * myXlonColCnt = 1 Then
+        myZstrShtData(L, L) = myZvarRngData
+    Else
+        For j = LBound(myZvarRngData, 2) To UBound(myZvarRngData, 2)
+            For i = LBound(myZvarRngData, 1) To UBound(myZvarRngData, 1)
+                myZstrShtData(i, j) = myZvarRngData(i, j)
+            Next i
+        Next j
+    End If
+    On Error GoTo 0
+    Set myXobjShtRng = Nothing: myZvarRngData = Empty
+End Sub
+
+ '定型Ｐ_2次元の文字列配列をテキストファイル形式の配列に入れ替える
+Private Sub PfixArrangeTextArrayString( _
+            myXlonTxtRowCnt As Long, myXlonTxtColCnt As Long, _
+            myZstrTxtSaveData() As String, _
+            ByRef myZstrOrgData() As String, _
+            Optional ByVal coXstrSpltChar As String = vbTab)
+'myZstrTxtSaveData(i, 1) : 入れ替え後データ配列
+'myZstrOrgData(i, j) : 元データ配列
+    myXlonTxtRowCnt = Empty: myXlonTxtColCnt = Empty: Erase myZstrTxtSaveData
+    If coXstrSpltChar = "" Then Exit Sub
+  Dim myXstrTmp As String, Li As Long, Ui1 As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    Ui1 = UBound(myZstrOrgData, 1)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    myXlonTxtRowCnt = Ui1 - Li + 1: myXlonTxtColCnt = 1
+    i = myXlonTxtRowCnt + Lo - 1: j = myXlonTxtColCnt + Lo - 1
+    ReDim myZstrTxtSaveData(i, j) As String
+    For i = Li To Ui1
+        myXstrTmp = Empty
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            If j = LBound(myZstrOrgData, 2) Then
+                myXstrTmp = myZstrOrgData(i, j)
+            Else
+                myXstrTmp = myXstrTmp & coXstrSpltChar & myZstrOrgData(i, j)
+            End If
+            myZstrTxtSaveData(i + Lo - Li, Lo) = myXstrTmp
+        Next j
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_ファイルを開かずにテキストファイルに1行づつテキストデータを書き込む
+Private Sub PfixWriteTextLineWithoutFileOpening( _
+            myXbisExitFlag As Boolean, _
+            ByRef myZvarTxtData As Variant, ByVal myXstrTxtFilePath As String, _
+            Optional ByVal coXbisAppend As Boolean = False)
+'myZvarTxtData(i, 1) : 元データ配列
+'coXbisAppend = False : 上書きモードでテキストファイルに書き込む
+'coXbisAppend = True  : 追加モードでテキストファイルに書き込む
+    myXbisExitFlag = False
+    If myXstrTxtFilePath = "" Then GoTo ExitPath
+'//入力変数の次元数を確認
+  Dim myXlonTmp As Long, n As Long: n = 0
+    On Error Resume Next
+    Do
+        n = n + 1: myXlonTmp = UBound(myZvarTxtData, n)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    If n - 1 <> 2 Then GoTo ExitPath
+'//入力変数をテキストファイルに書き込み
+  Dim myXlonFNo As Long: myXlonFNo = FreeFile
+    If coXbisAppend = False Then
+        Open myXstrTxtFilePath For Output As #myXlonFNo
+    Else
+        Open myXstrTxtFilePath For Append As #myXlonFNo
+    End If
+  Dim i As Long
+    For i = LBound(myZvarTxtData, 1) To UBound(myZvarTxtData, 1)
+        Print #myXlonFNo, myZvarTxtData(i, 1)
+    Next i
+    Close #myXlonFNo
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_エクセルシートの内容をテキストファイル形式で保存する
+'Private Sub PforNewInstanceOfCShtToTxt()
+'  Dim Lc As Long
+'  Dim myXbisCmpltFlag As Boolean
+'  Dim myXlonTxtRowCnt As Long, myXlonTxtColCnt As Long, _
+'        myZstrTxtSaveData() As String
+'  Dim myXstrSaveTxtPath As String
+''//クラス内変数への入力
+'  Dim myXobjDataSht As Object
+'    Set myXobjDataSht = ActiveSheet
+'  Dim myXobjFrstCell As Object
+'  Dim myXobjLastCell As Object
+'  Dim myXstrSpltChar As String
+'    myXstrSpltChar = ""
+'  Dim myXstrSaveFilePath As String
+'    myXstrSaveFilePath = ThisWorkbook.Path & "\" & "test.csv"
+''  Dim myXobjDataSht As Object
+''    Set myXobjDataSht = ActiveSheet
+''  Dim myXobjFrstCell As Object
+''    Set myXobjFrstCell = Selection
+''  Dim myXobjLastCell As Object
+''    Set myXobjLastCell = Selection
+''  Dim myXstrSpltChar As String
+''    myXstrSpltChar = ""
+''  Dim myXstrSaveFilePath As String
+''    myXstrSaveFilePath = ""
+'  Dim myXbisMsgBoxON As Boolean
+'    'myXbisMsgBxON = False : シート内容のテキスト書き出し完了のMsgBoxを表示しない
+'    'myXbisMsgBxON = True  : シート内容のテキスト書き出し完了のMsgBoxを表示する
+''//CShtToTxtクラスモジュールのインスタンス生成
+'  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+'  Dim i As Long, j As Long
+'  Dim myXinsShtToTxt As CShtToTxt: Set myXinsShtToTxt = New CShtToTxt
+'    With myXinsShtToTxt
+'    '//クラス内変数への入力
+'        Set .setDataSht = myXobjDataSht
+'        Set .setFrstCell = myXobjFrstCell
+'        Set .setLastCell = myXobjLastCell
+'        .letSpltChar = myXstrSpltChar
+'        .letSaveFilePath = myXstrSaveFilePath
+'        .letMsgBoxON = True
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        .exeProc
+'        myXbisCmpltFlag = .getCmpltFlag
+'        myXstrSaveTxtPath = .getSaveTxtPath
+''        myXstrSaveTxtPath = .fncstrSaveTxtPath
+'        myXlonTxtRowCnt = .getTxtRowCnt
+'        myXlonTxtColCnt = .getTxtColCnt
+'        If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then GoTo JumpPath
+'        i = myXlonTxtRowCnt + L - 1: j = myXlonTxtColCnt + L - 1
+'        ReDim myZstrTxtSaveData(i, j) As String
+'        Lc = .getOptnBase
+'        For j = 1 To myXlonTxtColCnt
+'            For i = 1 To myXlonTxtRowCnt
+'                myZstrTxtSaveData(i + L - 1, j + L - 1) _
+'                    = .getTxtSaveDataAry(i + Lc - 1, j + Lc - 1)
+'            Next i
+'        Next j
+'    End With
+'JumpPath:
+'    Set myXinsShtToTxt = Nothing
+''    Call PforDisplayVariablesOfCShtToTxt(myXlonTxtRowCnt, myZstrTxtSaveData) 'Debug.Print
+'End Sub
+'Private Sub PforDisplayVariablesOfCShtToTxt( _
+'            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+''//CShtToTxtクラス内から出力した変数の内容確認
+'    Debug.Print "データ数: " & myXlonDataCnt
+'    If myXlonDataCnt <= 0 Then Exit Sub
+'  Dim k As Long
+'    For k = LBound(myZvarField, 1) To UBound(myZvarField, 1)
+'        Debug.Print "データ" & k & ": " & myZvarField(k, 1)
+'    Next k
+'End Sub

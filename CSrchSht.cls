@@ -1,0 +1,449 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "CSrchSht"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
+'Includes PfnclonArrayDimension
+'Includes PfixGetSheetRangeData
+'Includes PincHVLookupMatchMultiString
+'Includes PincHVLookupMatchString
+'Includes PfixHVMatchString
+
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_シート上のデータから文字列を検索してデータと位置情報を取得する
+'Rev.014
+
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CSrchSht"
+  
+'//PropertyGet_出力データ
+  Private Lc As Long
+  Private myXlonValCnt As Long, myZstrVal() As String, myZlonPstn() As Long, _
+            myZobjPstnRng() As Object
+  
+'//PropertySetLet_入力データ
+  Private myXobjSrchSheet As Object, myZvarSrchCndtn As Variant
+  Private myXbisInStrOptn As Boolean
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private Lo As Long
+  Private myZvarSubSrchCndtn() As Variant, myZvarValPstn() As Variant
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    Lo = Empty
+    Erase myZvarSubSrchCndtn: Erase myZvarValPstn
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getOptnBase() As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    getOptnBase = L
+End Property
+
+Public Property Get getValCnt() As Long
+    getValCnt = myXlonValCnt
+End Property
+
+Public Property Get getValAry(ByVal i As Long) As String
+    getValAry = myZstrVal(i)
+'myZstrVal(i) : 取得文字列
+End Property
+
+Public Property Get getPstnAry(ByVal i As Long, ByVal j As Long) As Long
+    getPstnAry = myZlonPstn(i, j)
+'myZlonPstn(i, j) : 行列位置
+End Property
+
+Public Property Get getPstnRngAry(ByVal i As Long) As Object
+    Set getPstnRngAry = myZobjPstnRng(i)
+'myZobjPstnRng(i) : 行列位置のセル
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXlonValCnt = Empty: Erase myZstrVal: Erase myZlonPstn: Erase myZobjPstnRng
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Set setSrchSheet(ByVal RHS As Object)
+    Set myXobjSrchSheet = RHS
+End Property
+
+Public Property Let letSrchCndtn(ByVal RHS As Variant)
+    myZvarSrchCndtn = RHS
+'myZvarSrchCndtn(i, 1) : 検索文字列
+'myZvarSrchCndtn(i, 2) : オフセット行数
+'myZvarSrchCndtn(i, 3) : オフセット列数
+End Property
+
+Public Property Let letInStrOptn(ByVal RHS As Boolean)
+    myXbisInStrOptn = RHS
+'myXbisInStrOptn = False : 指定文字列と一致する条件で検索する
+'myXbisInStrOptn = True  : 指定文字列を含む条件で検索する
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXobjSrchSheet Is Nothing Then GoTo ExitPath
+    
+'//検索条件の配列を設定
+  Dim myZlonTmp(1) As Long: Lo = LBound(myZlonTmp)
+
+'//配列変数の次元数を取得
+  Dim myXlonAryIndx As Long
+    myXlonAryIndx = PfnclonArrayDimension(myZvarSrchCndtn)
+    
+'//配列変数の次元数に応じて処理を実施
+  Dim Li As Long, Ui1 As Long, Ui2 As Long, n As Long, i As Long, j As Long
+    If myXlonAryIndx = 1 Then
+        Li = LBound(myZvarSrchCndtn): Ui1 = UBound(myZvarSrchCndtn)
+        n = Ui1 - Li + 1
+        If n <> 3 Then GoTo ExitPath
+        ReDim myZvarSubSrchCndtn(Lo, Lo + 2) As Variant
+        myZvarSubSrchCndtn(Lo, Lo + 0) = myZvarSrchCndtn(Li + 0)
+        myZvarSubSrchCndtn(Lo, Lo + 1) = myZvarSrchCndtn(Li + 1)
+        myZvarSubSrchCndtn(Lo, Lo + 2) = myZvarSrchCndtn(Li + 2)
+        
+    ElseIf myXlonAryIndx = 2 Then
+        Li = LBound(myZvarSrchCndtn, 1): Ui1 = UBound(myZvarSrchCndtn, 1)
+        Ui2 = UBound(myZvarSrchCndtn, 2)
+        n = Ui2 - Li + 1
+        If n <> 3 Then GoTo ExitPath
+        i = Ui1 + Lo - Li: j = Ui2 + Lo - Li
+        ReDim myZvarSubSrchCndtn(i, j) As Variant
+        For i = Li To Ui1
+            myZvarSubSrchCndtn(i + Lo - Li, Lo + 0) = myZvarSrchCndtn(i, Li + 0)
+            myZvarSubSrchCndtn(i + Lo - Li, Lo + 1) = myZvarSrchCndtn(i, Li + 1)
+            myZvarSubSrchCndtn(i + Lo - Li, Lo + 2) = myZvarSrchCndtn(i, Li + 2)
+        Next i
+        
+    Else
+        GoTo ExitPath
+    End If
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    Call ctrProc
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+        
+'//S:シート上の文字列検索と位置の取得
+    
+'//シート上の指定範囲またはデータ全範囲のデータを配列に取込む
+  Dim myXobjFrstCell As Object, myXobjLastCell As Object
+  Dim myXlonRowCnt As Long, myXlonColCnt As Long, myZstrShtData() As String
+    Call PfixGetSheetRangeData(myXlonRowCnt, myXlonColCnt, myZstrShtData, _
+                                myXobjSrchSheet, myXobjFrstCell, myXobjLastCell)
+    If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//2次元配列で複数の文字列を検索してそれぞれの最初のデータと位置の一覧を取得
+    Call PincHVLookupMatchMultiString(myXlonValCnt, myZvarValPstn, _
+            myZvarSubSrchCndtn, myZstrShtData, myXbisInStrOptn)
+    If myXlonValCnt <= 0 Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+'//出力配列変数に格納
+  Dim i As Long, j As Long, k As Long
+    i = myXlonValCnt + Lo - 1: j = Lo + 1
+    ReDim myZstrVal(i) As String
+    ReDim myZlonPstn(i, j) As Long
+    ReDim myZobjPstnRng(i) As Object
+    For i = LBound(myZvarValPstn) To UBound(myZvarValPstn)
+        myZstrVal(i) = myZvarValPstn(i, Lo + 0)
+        myZlonPstn(i, Lo + 0) = myZvarValPstn(i, Lo + 1)
+        myZlonPstn(i, Lo + 1) = myZvarValPstn(i, Lo + 2)
+    Next i
+  
+    On Error Resume Next
+    For k = LBound(myZlonPstn, 1) To UBound(myZlonPstn, 1)
+        i = Empty: j = Empty
+        i = myZlonPstn(k, Lo + 0)
+        j = myZlonPstn(k, Lo + 1)
+        Set myZobjPstnRng(k) = myXobjSrchSheet.Cells(i, j)
+    Next k
+    On Error GoTo 0
+    
+    Set myXobjFrstCell = Nothing: Set myXobjLastCell = Nothing
+    Erase myZstrShtData
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
+
+ '定型Ｆ_配列変数の次元数を取得する
+Private Function PfnclonArrayDimension(ByRef myZvarDataAry As Variant) As Long
+    PfnclonArrayDimension = Empty
+    If IsArray(myZvarDataAry) = False Then Exit Function
+  Dim myXvarTmp As Variant, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXvarTmp = UBound(myZvarDataAry, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    PfnclonArrayDimension = k - 1
+End Function
+
+ '定型Ｐ_シート上の指定範囲またはデータ全範囲のデータを配列に取込む
+Private Sub PfixGetSheetRangeData( _
+            myXlonRowCnt As Long, myXlonColCnt As Long, myZstrShtData() As String, _
+            ByVal myXobjSheet As Object, _
+            ByVal myXobjFrstCell As Object, ByVal myXobjLastCell As Object)
+'myZstrShtData(i, j) : データ
+    myXlonRowCnt = Empty: myXlonColCnt = Empty: Erase myZstrShtData
+    If myXobjSheet Is Nothing Then Exit Sub
+'//シート上の指定範囲をオブジェクト配列に取込む
+  Dim myXobjShtRng As Object
+    If myXobjFrstCell Is Nothing Then Set myXobjFrstCell = myXobjSheet.Cells(1, 1)
+    If myXobjLastCell Is Nothing Then _
+        Set myXobjLastCell = myXobjSheet.Cells.SpecialCells(xlCellTypeLastCell)
+    Set myXobjShtRng = myXobjSheet.Range(myXobjFrstCell, myXobjLastCell)
+    myXlonRowCnt = myXobjShtRng.Rows.Count
+    myXlonColCnt = myXobjShtRng.Columns.Count
+    If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then Exit Sub
+'//オブジェクト配列からデータを取得
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZvarRngData As Variant, i As Long, j As Long
+    i = myXlonRowCnt + L - 1: j = myXlonColCnt + L - 1
+    ReDim myZstrShtData(i, j) As String
+    myZvarRngData = myXobjShtRng.Value
+    On Error Resume Next
+    If myXlonRowCnt * myXlonColCnt = 1 Then
+        myZstrShtData(L, L) = myZvarRngData
+    Else
+        For j = LBound(myZvarRngData, 2) To UBound(myZvarRngData, 2)
+            For i = LBound(myZvarRngData, 1) To UBound(myZvarRngData, 1)
+                myZstrShtData(i, j) = myZvarRngData(i, j)
+            Next i
+        Next j
+    End If
+    On Error GoTo 0
+    Set myXobjShtRng = Nothing: myZvarRngData = Empty
+End Sub
+
+ '定型Ｐ_2次元配列で複数の文字列を検索してそれぞれの最初のデータと位置の一覧を取得する
+Private Sub PincHVLookupMatchMultiString( _
+            myXlonValCnt As Long, myZvarValPstn() As Variant, _
+            ByRef myZvarSrchCndtn() As Variant, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PincHVLookupMatchString
+'myZvarValPstn(i, 1) : 取得データ
+'myZvarValPstn(i, 2) : 行位置
+'myZvarValPstn(i, 3) : 列位置
+'myZvarSrchCndtn(i, 1) : 検索文字列
+'myZvarSrchCndtn(i, 2) : オフセット行数
+'myZvarSrchCndtn(i, 3) : オフセット列数
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValCnt = Empty: Erase myZvarValPstn
+  Dim myXstrTmp As String, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarSrchCndtn, 1): myXstrTmp = myZvarSrchCndtn(Li, Li)
+    Ui = UBound(myZvarSrchCndtn, 1)
+    On Error GoTo 0
+    myXlonValCnt = Ui - Li + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long: i = myXlonValCnt + Lo - 1: ReDim myZvarValPstn(i, Lo + 2) As Variant
+  Dim myZvarTmpCndtn() As Variant: ReDim myZvarTmpCndtn(Lo + 2) As Variant
+  Dim myXlonTmpCnt As Long, myZvarTmp() As Variant, Lc As Long
+    For i = Li To Ui
+        myZvarTmpCndtn(Lo + 0) = myZvarSrchCndtn(i, Li + 0)
+        myZvarTmpCndtn(Lo + 1) = myZvarSrchCndtn(i, Li + 1)
+        myZvarTmpCndtn(Lo + 2) = myZvarSrchCndtn(i, Li + 2)
+        Call PincHVLookupMatchString(myXlonTmpCnt, myZvarTmp, _
+                myZvarTmpCndtn, myZstrOrgData, coXbisInStrOptn)
+        If myXlonTmpCnt > 0 Then
+            Lc = LBound(myZvarTmp)
+            myZvarValPstn(i + Lo - Li, Lo + 0) = myZvarTmp(Lc + 0)
+            myZvarValPstn(i + Lo - Li, Lo + 1) = myZvarTmp(Lc + 1)
+            myZvarValPstn(i + Lo - Li, Lo + 2) = myZvarTmp(Lc + 2)
+        Else
+            myZvarValPstn(i + Lo - Li, Lo + 0) = ""
+            myZvarValPstn(i + Lo - Li, Lo + 1) = 0
+            myZvarValPstn(i + Lo - Li, Lo + 2) = 0
+        End If
+    Next i
+    Erase myZvarTmpCndtn: Erase myZvarTmp
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列で文字列を検索して最初のデータと位置を取得する
+Private Sub PincHVLookupMatchString( _
+            myXlonValCnt As Long, myZvarValPstn() As Variant, _
+            ByRef myZvarSrchCndtn() As Variant, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfixHVMatchString
+'myZvarValPstn(1) : 取得データ
+'myZvarValPstn(2) : 行位置
+'myZvarValPstn(3) : 列位置
+'myZvarSrchCndtn(1) : 検索文字列
+'myZvarSrchCndtn(2) : オフセット行数
+'myZvarSrchCndtn(3) : オフセット列数
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValCnt = Empty: Erase myZvarValPstn
+  Dim myXstrIfCndtn As String, myXlonROfst As Long, myXlonCOfst As Long
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarSrchCndtn)
+    myXstrIfCndtn = CStr(myZvarSrchCndtn(Li + 0))
+    myXlonROfst = CLng(myZvarSrchCndtn(Li + 1))
+    myXlonCOfst = CLng(myZvarSrchCndtn(Li + 2))
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+  Dim r As Long, c As Long
+    Call PfixHVMatchString(r, c, myXstrIfCndtn, myZstrOrgData, coXbisInStrOptn)
+    If r < Li Or c < Li Then Exit Sub
+  Dim myXstrValue As String
+    If r + myXlonROfst > UBound(myZstrOrgData, 1) _
+        Or c + myXlonCOfst > UBound(myZstrOrgData, 2) Then
+        myXstrValue = ""
+    Else
+        myXstrValue = myZstrOrgData(r + myXlonROfst, c + myXlonCOfst)
+    End If
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+    ReDim myZvarValPstn(Lo + 2) As Variant
+    myXlonValCnt = 1
+    myZvarValPstn(Lo + 0) = myXstrValue
+    myZvarValPstn(Lo + 1) = r + myXlonROfst
+    myZvarValPstn(Lo + 2) = c + myXlonCOfst
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列で文字列を検索して最初のデータ位置を取得する
+Private Sub PfixHVMatchString(myXlonRow As Long, myXlonCol As Long, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列とを含む条件
+    myXlonRow = Empty: myXlonCol = Empty
+    If myXstrIfCndtn = "" Then Exit Sub
+  Dim myXstrTmp As String, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(L, L)
+    On Error GoTo 0
+  Dim i As Long, j As Long, r As Long, c As Long: r = L - 1: c = L - 1
+    If coXbisInStrOptn = True Then
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+                myXstrTmp = myZstrOrgData(i, j)
+                If InStr(myXstrTmp, myXstrIfCndtn) > 0 Then
+                    r = i: c = j: GoTo JumpPath
+                End If
+            Next i
+        Next j
+    Else
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+                myXstrTmp = myZstrOrgData(i, j)
+                If myXstrTmp = myXstrIfCndtn Then
+                    r = i: c = j: GoTo JumpPath
+                End If
+            Next i
+        Next j
+    End If
+JumpPath:
+    myXlonRow = r: myXlonCol = c
+ExitPath:
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_シート上のデータから文字列を検索してデータと位置情報を取得する
+'Private Sub instCSrchSht()
+'  Dim Lc As Long
+'  Dim myXlonValCnt As Long, myZstrVal() As String, myZlonPstn() As Long, _
+'        myZobjPstnRng() As Object
+'    'myZstrVal(i) : 取得文字列
+'    'myZlonPstn(i, j) : 行列位置
+'    'myZobjPstnRng(i) : 行列位置のセル
+''//クラス内変数への入力
+'  Dim myZlonBuf(1) As Long, Li As Long: Li = LBound(myZlonBuf)
+'  Dim myXobjSrchSheet As Object: Set myXobjSrchSheet = ActiveSheet
+'  Dim myZvarSrchCndtn As Variant: ReDim myZvarSrchCndtn(Li, Li + 2) As Variant
+'    'myZvarSrchCndtn(i, 1) : 検索文字列
+'    'myZvarSrchCndtn(i, 2) : オフセット行数
+'    'myZvarSrchCndtn(i, 3) : オフセット列数
+'    myZvarSrchCndtn(Li, Li + 0) = "エクセルシート上のデータを検索"
+'    myZvarSrchCndtn(Li, Li + 1) = 0
+'    myZvarSrchCndtn(Li, Li + 2) = 0
+'  Dim myXbisInStrOptn As Boolean: myXbisInStrOptn = False
+'    'myXbisInStrOptn = False : 指定文字列と一致する条件で検索する
+'    'myXbisInStrOptn = True  : 指定文字列を含む条件で検索する
+''//CSrchShtクラスモジュールのインスタンス生成
+'  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+'  Dim i As Long, j As Long
+'  Dim myXinsSrchSht As CSrchSht: Set myXinsSrchSht = New CSrchSht
+'    With myXinsSrchSht
+'    '//文字列検索シートと検索条件を設定
+'        Set .setSrchSheet = myXobjSrchSheet
+'        .letSrchCndtn = myZvarSrchCndtn
+'        .letInStrOptn = myXbisInStrOptn
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        .exeProc
+'        myXlonValCnt = .getValCnt
+'        If myXlonValCnt <= 0 Then GoTo JumpPath
+'        i = myXlonValCnt + Lo - 1: j = Lo + 1
+'        ReDim myZstrVal(i) As String
+'        ReDim myZlonPstn(i, j) As Long
+'        ReDim myZobjPstnRng(i) As Object
+'        Lc = .getOptnBase
+'        For i = 1 To myXlonValCnt
+'            myZstrVal(i + Lo - 1) = .getValAry(i + Lc - 1)
+'            myZlonPstn(i + Lo - 1, Lo + 0) = .getPstnAry(i + Lc - 1, Lc + 0)
+'            myZlonPstn(i + Lo - 1, Lo + 1) = .getPstnAry(i + Lc - 1, Lc + 1)
+'            Set myZobjPstnRng(i + Lo - 1) = .getPstnRngAry(i + Lc - 1)
+'        Next i
+'    End With
+'JumpPath:
+'    Set myXinsSrchSht = Nothing
+'    Set myXobjSrchSheet = Nothing: myZvarSrchCndtn = Empty
+'    Call variablesOfCSrchSht(myXlonValCnt, myZstrVal)    'Debug.Print
+'End Sub
+'Private Sub variablesOfCSrchSht( _
+'            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+''//CSrchShtクラス内から出力した変数の内容確認
+'    Debug.Print "データ数: " & myXlonDataCnt
+'    If myXlonDataCnt <= 0 Then Exit Sub
+'  Dim k As Long
+'    For k = LBound(myZvarField) To UBound(myZvarField)
+'        Debug.Print "データ" & k & ": " & myZvarField(k)
+'    Next k
+'End Sub

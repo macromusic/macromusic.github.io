@@ -1,4 +1,4 @@
-Attribute VB_Name = "m1MexeFileLstup"
+Attribute VB_Name = "m1MexeFileLstupSub"
 'Includes m1Msub1ShtFileLst
 'Includes m1Msub2SlctFldrPathExtd
 'Includes m1Msub3SubFileLstExtd
@@ -12,7 +12,7 @@ Option Base 1
 'Rev.001
   
 '//モジュールメモリ
-  Private Const meMstrMdlName As String = "m1MexeFileLstup"
+  Private Const meMstrMdlName As String = "m1MexeFileLstupSub"
   Private Const meMlonExeNum As Long = 0
   
 '//出力制御信号
@@ -58,14 +58,15 @@ Public Sub exeProc()
 
 '//プログラム構成
     '入力: -
-    '処理:  '◆ModuleProc名_エクセルシート上に記載されたファイルパス一覧を取得する
-            '◆ModuleProc名_フォルダを選択してそのパスを取得してシートに書き出す
-            '◆ModuleProc名_指定ディレクトリ内のサブファイル一覧を取得してシートに書き出す
+    '処理: -
+        '◆ModuleProc名_エクセルシート上に記載されたファイルパス一覧を取得する
+        '◆ModuleProc名_フォルダを選択してそのパスを取得してシートに書き出す
+        '◆ModuleProc名_指定ディレクトリ内のサブファイル一覧を取得してシートに書き出す
     '出力: -
 
     
 '//処理実行
-    Call callm1MexeFileLstup
+    Call callm1MexeFileLstupSub
     
 '//処理結果表示
     Select Case myXbisCmpltFlag
@@ -386,7 +387,7 @@ End Sub
 '===============================================================================================
 
 '◆ModuleProc名_処理フォルダをリストアップする
-Private Sub callm1MexeFileLstup()
+Private Sub callm1MexeFileLstupSub()
 '  Dim myXbisCmpltFlag As Boolean
 '  Dim myXlonFileCnt As Long, myZobjFile() As Object, _
 '        myZstrFileName() As String, myZstrFilePath() As String, _
@@ -395,16 +396,16 @@ Private Sub callm1MexeFileLstup()
 '    'myZobjFile(k) : ファイルオブジェクト
 '    'myZstrFileName(k) : ファイル名
 '    'myZstrFilePath(k) : ファイルパス
-    Call m1MexeFileLstup.callProc( _
+    Call m1MexeFileLstupSub.callProc( _
             myXbisCmpltFlag, _
             myXlonFileCnt, myZobjFile, myZstrFileName, myZstrFilePath, _
             myXobjFilePstdCell, _
             myXstrDirPath, myXobjDirPstdCell, myXstrExtsn)
-    Call variablesOfm1MexeFileLstup(myXlonFileCnt, myZstrFilePath)    'Debug.Print
+    Call variablesOfm1MexeFileLstupSub(myXlonFileCnt, myZstrFilePath)    'Debug.Print
 End Sub
-Private Sub variablesOfm1MexeFileLstup( _
+Private Sub variablesOfm1MexeFileLstupSub( _
             ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
-'//m1MexeFileLstup内から出力した変数の内容確認
+'//m1MexeFileLstupSub内から出力した変数の内容確認
     Debug.Print "データ数: " & myXlonDataCnt
     If myXlonDataCnt <= 0 Then Exit Sub
   Dim k As Long
@@ -416,7 +417,7 @@ End Sub
 '  Public Const coXbisTestMode As Boolean = True
 '  Public Const coXbisTestMode As Boolean = False
 '
-Private Sub resetConstantInm1MexeFileLstup()
-'//m1MexeFileLstupモジュールのモジュールメモリのリセット処理
-    Call m1MexeFileLstup.resetConstant
+Private Sub resetConstantInm1MexeFileLstupSub()
+'//m1MexeFileLstupSubモジュールのモジュールメモリのリセット処理
+    Call m1MexeFileLstupSub.resetConstant
 End Sub

@@ -1,0 +1,339 @@
+Attribute VB_Name = "xRefForEachSheetInBook"
+'Includes PfixChangeModuleConstValue
+'Includes x
+
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_エクセルブック内の全シート＆全セル範囲＆全図形に対して処理を実行する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "xRefForEachSheetInBook"
+  Private Const meMlonExeNum As Long = 0
+  Private Const meMvarField As Variant = Empty
+  
+'//モジュール内定数
+  Private Const coXvarField As Variant = ""
+
+'//モジュール内定数_列挙体
+Private Enum EnumX
+'列挙体使用時の表記 : EnumX.rowX
+'■myEnumの表記ルール
+    '①シートNo. : "sht" & "Enum名" & " = " & "値" & "'シート名"
+    '②行No.     : "row" & "Enum名" & " = " & "値" & "'検索するシート上の文字列"
+    '③列No.     : "col" & "Enum名" & " = " & "値" & "'検索するシート上の文字列"
+    '④行No.     : "row" & "Enum名" & " = " & "値" & "'comment" & "'検索するコメントの文字列"
+    '⑤列No.     : "col" & "Enum名" & " = " & "値" & "'comment" & "'検索するコメントの文字列"
+    shtX = 1        'Sheet1
+'    rowX = 1        '行No
+'    colX = 1        '列No
+'    rowY = 1        'comment'行No
+'    colY = 1        'comment'列No
+End Enum
+  
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXobjBook As Object
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    Set myXobjBook = Nothing
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_モジュールメモリのリセット
+Public Sub resetConstant()
+  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
+  Dim myZvarM(1, 2) As Variant
+    myZvarM(1, 1) = "meMlonExeNum": myZvarM(1, 2) = 0
+'    myZvarM(2, 1) = "meMvarField": myZvarM(2, 2) = Chr(34) & Chr(34)
+    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+End Sub
+
+'PublicP_
+Public Sub exeProc()
+
+'//プログラム構成
+    '入力: -
+    '処理: -
+    '出力: -
+    
+'//処理実行
+    Call callxRefForEachSheetInBook
+    
+'//処理結果表示
+    Select Case myXbisCmpltFlag
+        Case True: MsgBox "実行完了"
+        Case Else: MsgBox "異常あり", vbExclamation
+    End Select
+    
+End Sub
+
+'PublicP_
+Public Sub callProc(myXbisCmpltFlagOUT As Boolean)
+    
+'//出力変数を初期化
+    myXbisCmpltFlagOUT = False
+    
+'//処理実行
+    Call ctrProc
+    If myXbisCmpltFlag = False Then Exit Sub
+    
+'//出力変数に格納
+    myXbisCmpltFlagOUT = myXbisCmpltFlag
+    
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeModuleVariables
+    Call remProc: If myXbisExitFlag = True Then GoTo ExitPath
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables
+
+'//エクセルブック内の任意の同一全オブジェクトに対して処理を実行
+    Call PabsForEachSheetInBook(myXbisExitFlag, myXobjBook)
+    If myXbisExitFlag = True Then Exit Sub
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    If coXbisTestMode = False Then Call recProc
+    Call initializeModuleVariables
+End Sub
+
+'RemP_モジュールメモリに保存した変数を取り出す
+Private Sub remProc()
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    
+'    If myXvarFieldIN = Empty Then myXvarFieldIN = meMvarField
+    
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+
+    Set myXobjBook = ActiveWorkbook
+
+End Sub
+
+ '抽象Ｐ_エクセルブック内の全シート＆全セル範囲＆全図形に対して処理を実行する
+Private Sub PabsForEachSheetInBook( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjBook As Object)
+    myXbisExitFlag = False
+  Dim myXlonShtCnt As Long: myXlonShtCnt = 0
+  Dim myXobjSheet As Object
+    For Each myXobjSheet In myXobjBook.Worksheets
+    '//ブック内の全シートに対する処理
+        Call PsubPreSheetOperation(myXbisExitFlag, myXobjSheet)
+        If myXbisExitFlag = True Then GoTo NextPath
+    '//シート内のデータ範囲に対する処理
+        Call PsubForEachRangeInSheet(myXbisExitFlag, myXobjSheet)
+        If myXbisExitFlag = True Then GoTo NextPath
+    '//シート内の全図形に対する処理
+        Call PsubForEachShapeInSheet(myXbisExitFlag, myXobjSheet)
+        If myXbisExitFlag = True Then GoTo NextPath
+    '//シート内の全グラフに対する処理
+        Call PsubForEachChartInSheet(myXbisExitFlag, myXobjSheet)
+        If myXbisExitFlag = True Then GoTo NextPath
+    '//ブック内の全シートに対する処理
+        myXlonShtCnt = myXlonShtCnt + 1
+        Call PsubPostSheetOperation(myXobjSheet)
+NextPath:
+    Next
+    Set myXobjSheet = Nothing
+    myXbisExitFlag = False
+    If myXlonShtCnt = 0 Then myXbisExitFlag = True
+End Sub
+Private Sub PsubPreSheetOperation(myXbisExitFlag As Boolean, myXobjSheet As Object)
+    myXbisExitFlag = False
+'//ブック内の全シートに対する処理
+'    XarbProgCode
+End Sub
+Private Sub PsubForEachRangeInSheet(myXbisExitFlag As Boolean, myXobjSheet As Object)
+    myXbisExitFlag = False
+'//シート内のデータ範囲に対する処理
+'//シート上のデータ範囲を取得
+  Dim myXobjAllRng As Object
+    With myXobjSheet
+      Dim myXobjFrstRng As Object, myXobjLastRng As Object
+        Set myXobjFrstRng = .Cells(1, 1)
+        Set myXobjLastRng = .Cells.SpecialCells(xlCellTypeLastCell)
+        Set myXobjAllRng = .Range(myXobjFrstRng, myXobjLastRng)
+    End With
+    Set myXobjFrstRng = Nothing: Set myXobjLastRng = Nothing
+'//データ範囲を検索
+  Dim myXlonRngCnt As Long: myXlonRngCnt = 0
+  Dim myXobjRange As Object
+    For Each myXobjRange In myXobjAllRng
+        Call PsubRangeOperation(myXbisExitFlag, myXobjRange)
+        If myXbisExitFlag = True Then GoTo NextPath
+        myXlonRngCnt = myXlonRngCnt + 1
+NextPath:
+    Next
+    Set myXobjAllRng = Nothing: Set myXobjRange = Nothing
+    myXbisExitFlag = False
+    If myXlonRngCnt = 0 Then myXbisExitFlag = True
+End Sub
+Private Sub PsubForEachShapeInSheet(myXbisExitFlag As Boolean, myXobjSheet As Object)
+    myXbisExitFlag = False
+'//シート内の全図形に対する処理
+  Dim myXlonShpCnt As Long: myXlonShpCnt = 0
+  Dim myXobjShape As Object
+    For Each myXobjShape In myXobjSheet.Shapes
+        Call PsubShapeOperation(myXbisExitFlag, myXobjShape)
+        If myXbisExitFlag = True Then GoTo NextPath
+        myXlonShpCnt = myXlonShpCnt + 1
+NextPath:
+    Next
+    Set myXobjShape = Nothing
+    myXbisExitFlag = False
+    If myXlonShpCnt = 0 Then myXbisExitFlag = True
+End Sub
+Private Sub PsubForEachChartInSheet(myXbisExitFlag As Boolean, myXobjSheet As Object)
+    myXbisExitFlag = False
+'//シート内の全グラフに対する処理
+  Dim myXlonChrtCnt As Long: myXlonChrtCnt = 0
+  Dim myXobjChrtObjct As Object
+    For Each myXobjChrtObjct In myXobjSheet.Charts
+        Call PsubChartOperation(myXbisExitFlag, myXobjChrtObjct)
+        If myXbisExitFlag = True Then GoTo NextPath
+        myXlonChrtCnt = myXlonChrtCnt + 1
+NextPath:
+    Next
+    Set myXobjChrtObjct = Nothing
+    myXbisExitFlag = False
+    If myXlonChrtCnt = 0 Then myXbisExitFlag = True
+End Sub
+Private Sub PsubRangeOperation(myXbisExitFlag As Boolean, myXobjRange As Object)
+    myXbisExitFlag = False
+'//シート内のデータ範囲に対する処理
+'    XarbProgCode
+End Sub
+Private Sub PsubShapeOperation(myXbisExitFlag As Boolean, myXobjShape As Object)
+    myXbisExitFlag = False
+'//シート内の全図形に対する処理
+'    XarbProgCode
+End Sub
+Private Sub PsubChartOperation(myXbisExitFlag As Boolean, myXobjChrtObjct As Object)
+    myXbisExitFlag = False
+'//シート内の全グラフに対する処理
+'    XarbProgCode
+End Sub
+Private Sub PsubPostSheetOperation(myXobjSheet As Object)
+'//ブック内の全シートに対する処理
+'    XarbProgCode
+End Sub
+
+'RecP_使用した変数をモジュールメモリに保存する
+Private Sub recProc()
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    
+  Dim myZvarM(1, 2) As Variant
+    myZvarM(1, 1) = "meMlonExeNum"
+    myZvarM(1, 2) = meMlonExeNum + 1
+'    myZvarM(1, 1) = "meMvarField"
+'    myZvarM(1, 2) = myXvarField
+
+  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
+    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+    
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'モジュール内Ｐ_
+Private Sub MsubProc()
+End Sub
+
+'モジュール内Ｆ_
+Private Function MfncFunc() As Variant
+End Function
+
+'===============================================================================================
+
+ '定型Ｐ_
+Private Sub PfixProc()
+End Sub
+
+ '定型Ｆ_
+Private Function PfncFunc() As Variant
+End Function
+
+ '定型Ｐ_モジュール内定数の値を変更する
+Private Sub PfixChangeModuleConstValue(myXbisExitFlag As Boolean, _
+            ByVal myXstrMdlName As String, ByRef myZvarM() As Variant)
+    myXbisExitFlag = False
+    If myXstrMdlName = "" Then GoTo ExitPath
+  Dim L As Long, myXvarTmp As Variant
+    On Error GoTo ExitPath
+    L = LBound(myZvarM, 1): myXvarTmp = myZvarM(L, L)
+    On Error GoTo 0
+  Dim myXlonDclrLines As Long, myXobjCdMdl As Object
+    Set myXobjCdMdl = ThisWorkbook.VBProject.VBComponents(myXstrMdlName).CodeModule
+    myXlonDclrLines = myXobjCdMdl.CountOfDeclarationLines
+    If myXlonDclrLines <= 0 Then GoTo ExitPath
+  Dim i As Long, n As Long
+  Dim myXstrTmp As String, myXstrSrch As String, myXstrOrg As String, myXstrRplc As String
+Application.DisplayAlerts = False
+    For i = 1 To myXlonDclrLines
+        myXstrTmp = myXobjCdMdl.Lines(i, 1)
+        For n = LBound(myZvarM, 1) To UBound(myZvarM, 1)
+            myXstrSrch = "Const" & Space(1) & myZvarM(n, L) & Space(1) & "As" & Space(1)
+            If InStr(myXstrTmp, myXstrSrch) > 0 Then
+                myXstrOrg = Left(myXstrTmp, InStr(myXstrTmp, "=" & Space(1)) + 1)
+                myXstrRplc = myXstrOrg & myZvarM(n, L + 1)
+                Call myXobjCdMdl.ReplaceLine(i, myXstrRplc)
+            End If
+        Next n
+    Next i
+Application.DisplayAlerts = True
+    Set myXobjCdMdl = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+'===============================================================================================
+
+'◆ModuleProc名_エクセルブック内の全シート＆全セル範囲＆全図形に対して処理を実行する
+Private Sub callxRefForEachSheetInBook()
+  Dim myXbisCompFlag As Boolean
+    Call xRefForEachSheetInBook.callProc(myXbisCompFlag)
+    Debug.Print "完了: " & myXbisCompFlag
+End Sub
+'
+'  Public Const coXbisTestMode As Boolean = True
+'  Public Const coXbisTestMode As Boolean = False
+'
+Private Sub resetConstantInxRefForEachSheetInBook()
+'//xRefForEachSheetInBookモジュールのモジュールメモリのリセット処理
+    Call xRefForEachSheetInBook.resetConstant
+End Sub

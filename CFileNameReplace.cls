@@ -1,0 +1,297 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "CFileNameReplace"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
+'Includes PfncbisCheckFileExist
+'Includes PfixGetFileNameInformationByFSO
+'Includes PfixGetFileNameInformation
+'Includes PfncstrFilePathReplacePathNameExtension
+'Includes PfncstrFileAutoNaming
+
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_ファイルパスの情報を取得してディレクトリパスorファイル名or拡張子を置換する
+'Rev.002
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CFileNameReplace"
+  
+'//PropertyGet_出力データ
+  Private myXstrNewFilePath As String
+  
+'//PropertySetLet_入力データ
+  Private myXstrOrgFilePath As String
+  Private myXstrNewDirPath As String, myXstrNewBaseName As String, _
+            myXstrNewExtsn As String
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXstrPrntPath As String, myXstrFileName As String, _
+            myXstrBaseName As String, myXstrExtsn As String
+  Private myXstrTmpFilePath As String
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+
+    myXstrPrntPath = Empty: myXstrFileName = Empty
+    myXstrBaseName = Empty: myXstrExtsn = Empty
+    myXstrTmpFilePath = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXstrNewFilePath = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letOrgFilePath(ByVal RHS As String)
+    myXstrOrgFilePath = RHS
+End Property
+
+Public Property Let letNewDirPath(ByVal RHS As String)
+    myXstrNewDirPath = RHS
+End Property
+
+Public Property Let letNewBaseName(ByVal RHS As String)
+    myXstrNewBaseName = RHS
+End Property
+
+Public Property Let letNewExtsn(ByVal RHS As String)
+    myXstrNewExtsn = RHS
+End Property
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicF_
+Public Function fncstrNewFilePath() As String
+    fncstrNewFilePath = Empty
+    Call ctrProc
+    fncstrNewFilePath = myXstrNewFilePath
+End Function
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//指定ファイルの存在を確認してファイル名情報を取得
+    Call CsubProc(myXstrOrgFilePath)
+    If myXbisExitFlag = True Then GoTo ExitPath
+    
+    myXstrTmpFilePath = myXstrOrgFilePath
+    
+'//ディレクトリパスを置換
+    If myXstrNewDirPath <> "" Then
+        myXstrTmpFilePath = PfncstrFilePathReplacePathNameExtension( _
+                                myXstrTmpFilePath, myXstrPrntPath, myXstrNewDirPath)
+    End If
+'//ファイル名を置換
+    If myXstrNewBaseName <> "" Then
+        myXstrTmpFilePath = PfncstrFilePathReplacePathNameExtension( _
+                                myXstrTmpFilePath, myXstrBaseName, myXstrNewBaseName)
+    End If
+'//拡張子名を置換
+    If myXstrNewExtsn <> "" Then
+        myXstrTmpFilePath = PfncstrFilePathReplacePathNameExtension( _
+                                myXstrTmpFilePath, myXstrExtsn, myXstrNewExtsn)
+    End If
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//指定ファイルの存在を確認してファイル名情報を取得
+    Call CsubProc(myXstrTmpFilePath)
+    If myXbisExitFlag = True Then GoTo ExitPath
+    
+'//ファイル名を自動生成
+    myXstrNewFilePath = PfncstrFileAutoNaming(myXstrPrntPath, myXstrBaseName, myXstrExtsn)
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
+
+'クラス内Ｐ_指定ファイルの存在を確認してファイル名情報を取得
+Private Sub CsubProc(ByVal myXstrFilePath As String)
+    myXbisExitFlag = False
+    
+    myXstrPrntPath = Empty: myXstrFileName = Empty
+    myXstrBaseName = Empty: myXstrExtsn = Empty
+    
+'//指定ファイルの存在を確認
+  Dim myXbisByFSO As Boolean
+    myXbisByFSO = PfncbisCheckFileExist(myXstrFilePath)
+    
+'//指定ファイルのファイル名情報を取得
+    If myXbisByFSO = True Then
+    '//FileSystemObject使用
+        Call PfixGetFileNameInformationByFSO( _
+                myXstrPrntPath, myXstrFileName, myXstrBaseName, myXstrExtsn, _
+                myXstrFilePath)
+    Else
+    '//FileSystemObject使用無し
+        Call PfixGetFileNameInformation( _
+                myXstrPrntPath, myXstrFileName, myXstrBaseName, myXstrExtsn, _
+                myXstrFilePath)
+    End If
+    
+    If myXstrPrntPath = "" And myXstrBaseName = "" And myXstrExtsn = "" Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+ 
+ '定型Ｆ_指定ファイルの存在を確認する
+Private Function PfncbisCheckFileExist(ByVal myXstrFilePath As String) As Boolean
+    PfncbisCheckFileExist = False
+    If myXstrFilePath = "" Then Exit Function
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    PfncbisCheckFileExist = myXobjFSO.FileExists(myXstrFilePath)
+    Set myXobjFSO = Nothing
+End Function
+
+ '定型Ｐ_指定ファイルのファイル名情報を取得する(FileSystemObject使用)
+Private Sub PfixGetFileNameInformationByFSO( _
+            myXstrPrntPath As String, myXstrFileName As String, _
+            myXstrBaseName As String, myXstrExtsn As String, _
+            ByVal myXstrFilePath As String)
+    myXstrPrntPath = Empty: myXstrFileName = Empty
+    myXstrBaseName = Empty: myXstrExtsn = Empty
+    If myXstrFilePath = "" Then Exit Sub
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    With myXobjFSO
+        myXstrPrntPath = .GetParentFolderName(myXstrFilePath)   '親フォルダパス
+        myXstrFileName = .GetFileName(myXstrFilePath)           'ファイル名
+        myXstrBaseName = .GetBaseName(myXstrFilePath)           'ファイルベース名
+        myXstrExtsn = .GetExtensionName(myXstrFilePath)         'ファイル拡張子
+    End With
+    Set myXobjFSO = Nothing
+End Sub
+
+ '定型Ｐ_指定ファイルのファイル名情報を取得する
+Private Sub PfixGetFileNameInformation( _
+            myXstrPrntPath As String, myXstrFileName As String, _
+            myXstrBaseName As String, myXstrExtsn As String, _
+            ByVal myXstrFilePath As String)
+    myXstrPrntPath = Empty: myXstrFileName = Empty
+    myXstrBaseName = Empty: myXstrExtsn = Empty
+    If myXstrFilePath = "" Then Exit Sub
+  Dim i As Long, myXlonInStrRev As Long: myXlonInStrRev = 0
+    For i = Len(myXstrFilePath) To 1 Step -1
+        If Mid(myXstrFilePath, i, 1) = "\" Then
+            myXlonInStrRev = i: Exit For
+        End If
+    Next i
+    If myXlonInStrRev = 0 Then
+        myXstrFileName = myXstrFilePath
+    ElseIf myXlonInStrRev = 1 Then
+        myXstrFileName = Mid(myXstrFilePath, myXlonInStrRev + 1)
+    ElseIf myXlonInStrRev = Len(myXstrFilePath) Then
+        myXstrPrntPath = Left(myXstrFilePath, myXlonInStrRev - 1)
+    Else
+        myXstrPrntPath = Left(myXstrFilePath, myXlonInStrRev - 1)
+        myXstrFileName = Mid(myXstrFilePath, myXlonInStrRev + 1)
+    End If
+    myXlonInStrRev = 0
+    For i = Len(myXstrFileName) To 1 Step -1
+        If Mid(myXstrFileName, i, 1) = "." Then
+            myXlonInStrRev = i: Exit For
+        End If
+    Next i
+    If myXlonInStrRev = 0 Then
+        myXstrBaseName = myXstrFileName
+    ElseIf myXlonInStrRev = 1 Then
+        myXstrExtsn = Mid(myXstrFileName, myXlonInStrRev + 1)
+    ElseIf myXlonInStrRev = Len(myXstrFileName) Then
+        myXstrBaseName = Left(myXstrFileName, myXlonInStrRev - 1)
+    Else
+        myXstrBaseName = Left(myXstrFileName, myXlonInStrRev - 1)
+        myXstrExtsn = Mid(myXstrFileName, myXlonInStrRev + 1)
+    End If
+End Sub
+
+ '定型Ｆ_ファイルパス内のディレクトリパスorファイル名or拡張子を置換する
+Private Function PfncstrFilePathReplacePathNameExtension( _
+            ByVal myXstrOrgFilePath As String, ByVal myXstrOrgPathNameExt As String, _
+            ByVal myXstrNewPathNameExt As String) As String
+    PfncstrFilePathReplacePathNameExtension = Empty
+    If myXstrOrgPathNameExt = "" Then Exit Function
+    If InStr(myXstrOrgFilePath, myXstrOrgPathNameExt) <= 0 Then Exit Function
+    If myXstrNewPathNameExt = "" Then Exit Function
+  Dim myXstrNewFilePath As String
+    myXstrNewFilePath = Replace(myXstrOrgFilePath, myXstrOrgPathNameExt, myXstrNewPathNameExt)
+    PfncstrFilePathReplacePathNameExtension = myXstrNewFilePath
+End Function
+
+ '定型Ｆ_ファイル名を自動生成する
+Private Function PfncstrFileAutoNaming( _
+            ByVal myXstrPrntPath As String, ByVal myXstrBaseName As String, _
+            ByVal myXstrExtsn As String) As String
+    PfncstrFileAutoNaming = Empty
+    If myXstrPrntPath = "" Or myXstrExtsn = "" Then Exit Function
+  Dim myXstrTmpBase As String
+    myXstrTmpBase = myXstrBaseName
+    If myXstrBaseName = "" Then _
+        myXstrTmpBase = myXstrBaseName & "_" & Format(Now, "YYYYMMDDHHmmSS")
+  Dim myXstrFilePath As String
+    myXstrFilePath = myXstrPrntPath & "\" & myXstrTmpBase & "." & myXstrExtsn
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXbisFileExistFlag As Boolean
+    myXbisFileExistFlag = myXobjFSO.FileExists(myXstrFilePath)
+    Do While myXbisFileExistFlag = True
+        myXstrTmpBase = myXstrBaseName & "_" & Format(Now, "YYYYMMDDHHmmSS")
+        myXstrFilePath = myXstrPrntPath & "\" & myXstrTmpBase & "." & myXstrExtsn
+        myXbisFileExistFlag = myXobjFSO.FileExists(myXstrFilePath)
+    Loop
+    PfncstrFileAutoNaming = myXstrFilePath
+    Set myXobjFSO = Nothing
+End Function
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_ファイルパスの情報を取得してディレクトリパスorファイル名or拡張子を置換する
+'Private Sub instCFileNameReplace()
+'  Dim myXstrNewFilePath As String
+''//クラス内変数への入力
+'  Dim myXstrOrgFilePath As String
+'    myXstrOrgFilePath = ActiveWorkbook.FullName
+'  Dim myXstrNewDirPath As String, myXstrNewBaseName As String, _
+'        myXstrNewExtsn As String
+'    myXstrNewDirPath = ""
+'    myXstrNewBaseName = ""
+'    myXstrNewExtsn = ""
+''//CFileNameReplaceクラスモジュールのインスタンス生成
+'  Dim myXinsFileNameReplace As CFileNameReplace
+'    Set myXinsFileNameReplace = New CFileNameReplace
+'    With myXinsFileNameReplace
+'    '//クラス内変数への入力
+'        .letOrgFilePath = myXstrOrgFilePath
+'        .letNewDirPath = myXstrNewDirPath
+'        .letNewBaseName = myXstrNewBaseName
+'        .letNewExtsn = myXstrNewExtsn
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        myXstrNewFilePath = .fncstrNewFilePath
+'    End With
+'    Set myXinsFileNameReplace = Nothing
+''    Debug.Print "データ: " & myXstrNewFilePath
+'End Sub

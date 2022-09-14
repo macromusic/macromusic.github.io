@@ -7,6 +7,7 @@ Attribute VB_Name = "m1Msub1ShtFileLst"
 'Includes PfixGetFileFor1DArray
 'Includes PfixGetFolderFileStringInformationFor1DArray
 'Includes PfixChangeModuleConstValue
+'Includes x
 
 Option Explicit
 Option Base 1
@@ -184,52 +185,52 @@ Private Sub remProc()
 ExitPath:
     myXbisExitFlag = True
 End Sub
-
-'SetP_制御用変数を設定する
-Private Sub setControlVariables1()
-    
-'    myXlonSrchShtNo = 4
-'    Set myXobjSrchSheet = ThisWorkbook.Worksheets(myXlonSrchShtNo)
-    Set myXobjSrchSheet = ActiveSheet
-
-  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
-    myXlonShtSrchCnt = 3
-    ReDim myZvarSrchCndtn(myXlonShtSrchCnt + L - 1, L + 3) As Variant
-    'myZvarSrchCndtn(i, 1) : 検索文字列
-    'myZvarSrchCndtn(i, 2) : オフセット行数
-    'myZvarSrchCndtn(i, 3) : オフセット列数
-    'myZvarSrchCndtn(i, 4) : シート上文字列検索[=0]orコメント内文字列検索[=1]
-  Dim k As Long: k = L - 1
-    k = k + 1   'k = 1
-    myZvarSrchCndtn(k, L + 0) = "親フォルダパス："
-    myZvarSrchCndtn(k, L + 1) = 0
-    myZvarSrchCndtn(k, L + 2) = 1
-    myZvarSrchCndtn(k, L + 3) = 0
-    k = k + 1   'k = 2
-    myZvarSrchCndtn(k, L + 0) = "検索するファイル拡張子："
-    myZvarSrchCndtn(k, L + 1) = 0
-    myZvarSrchCndtn(k, L + 2) = 1
-    myZvarSrchCndtn(k, L + 3) = 0
-    k = k + 1   'k = 3
-    myZvarSrchCndtn(k, L + 0) = "ファイル一覧"
-    myZvarSrchCndtn(k, L + 1) = 1
-    myZvarSrchCndtn(k, L + 2) = 0
-    myZvarSrchCndtn(k, L + 3) = 0
-    
-    myXbisInStrOptn = False
-    'myXbisInStrOptn = False : 指定文字列と一致する条件で検索する
-    'myXbisInStrOptn = True  : 指定文字列を含む条件で検索する
-    
-End Sub
-
-'SetP_制御用変数を設定する
-Private Sub setControlVariables2()
-    
-    myXbisRowDrctn = True
-    'myXbisRowDrctn = True  : 行方向のみを検索
-    'myXbisRowDrctn = False : 列方向のみを検索
-    
-End Sub
+'
+''SetP_制御用変数を設定する
+'Private Sub setControlVariables1()
+'
+''    myXlonSrchShtNo = 4
+''    Set myXobjSrchSheet = ThisWorkbook.Worksheets(myXlonSrchShtNo)
+'    Set myXobjSrchSheet = ActiveSheet
+'
+'  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+'    myXlonShtSrchCnt = 3
+'    ReDim myZvarSrchCndtn(myXlonShtSrchCnt + L - 1, L + 3) As Variant
+'    'myZvarSrchCndtn(i, 1) : 検索文字列
+'    'myZvarSrchCndtn(i, 2) : オフセット行数
+'    'myZvarSrchCndtn(i, 3) : オフセット列数
+'    'myZvarSrchCndtn(i, 4) : シート上文字列検索[=0]orコメント内文字列検索[=1]
+'  Dim k As Long: k = L - 1
+'    k = k + 1   'k = 1
+'    myZvarSrchCndtn(k, L + 0) = "親フォルダパス："
+'    myZvarSrchCndtn(k, L + 1) = 0
+'    myZvarSrchCndtn(k, L + 2) = 1
+'    myZvarSrchCndtn(k, L + 3) = 0
+'    k = k + 1   'k = 2
+'    myZvarSrchCndtn(k, L + 0) = "検索するファイル拡張子："
+'    myZvarSrchCndtn(k, L + 1) = 0
+'    myZvarSrchCndtn(k, L + 2) = 1
+'    myZvarSrchCndtn(k, L + 3) = 0
+'    k = k + 1   'k = 3
+'    myZvarSrchCndtn(k, L + 0) = "ファイル一覧"
+'    myZvarSrchCndtn(k, L + 1) = 1
+'    myZvarSrchCndtn(k, L + 2) = 0
+'    myZvarSrchCndtn(k, L + 3) = 0
+'
+'    myXbisInStrOptn = False
+'    'myXbisInStrOptn = False : 指定文字列と一致する条件で検索する
+'    'myXbisInStrOptn = True  : 指定文字列を含む条件で検索する
+'
+'End Sub
+'
+''SetP_制御用変数を設定する
+'Private Sub setControlVariables2()
+'
+'    myXbisRowDrctn = True
+'    'myXbisRowDrctn = True  : 行方向のみを検索
+'    'myXbisRowDrctn = False : 列方向のみを検索
+'
+'End Sub
 
 'SnsP_シート上の記載データを取得
 Private Sub snsProc()

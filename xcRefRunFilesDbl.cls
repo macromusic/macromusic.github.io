@@ -1,0 +1,731 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "xcRefRunFilesDbl"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
+'Includes PfncstrFileNameByFSO
+'Includes PfncbisCheckArrayDimension
+'Includes PfncbisCheckArrayDimensionLength
+'Includes x
+
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_2種類の複数ファイルに対して連続処理を実施する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "xcRefRunFilesDbl"
+  
+'//モジュール内定数
+  
+'//PropertyGet_出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//PropertyGet_出力データ
+  Private Lc As Long
+  Private myXlonExeOrgFileCnt As Long, _
+            myZstrExeOrgFileName() As String, myZstrExeOrgFilePath() As String
+    'myZstrExeOrgFileName(i) : 実行ファイル名1
+    'myZstrOrgExeFilePath(i) : 実行ファイルパス1
+  Private myXlonExeSubFileCnt As Long, _
+            myZstrExeSubFileName() As String, myZstrExeSubFilePath() As String
+    'myZstrExeSubFileName(i) : 実行ファイル名2
+    'myZstrSubExeFilePath(i) : 実行ファイルパス2
+  
+'//PropertySetLet_入力制御信号
+  
+'//PropertySetLet_入力データ
+  Private myXlonOrgFileCnt As Long, myZstrOrgFilePath() As String
+  Private myXlonSubFileCnt As Long, myZstrSubFilePath() As String
+    'myZstrOrgFilePath(i) : 元ファイルパス1
+    'myZstrSubFilePath(i) : 元ファイルパス2
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+'  Private myZstrOrgFilePathINT() As String, myZstrSubFilePathINT() As String
+  Private myXlonOrgFileNo As Long, myXstrOrgFileName As String, myXstrOrgFilePath As String
+  Private myXlonSubFileNo As Long, myXstrSubFileName As String, myXstrSubFilePath As String
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+'    Erase myZstrOrgFilePathINT: Erase myZstrSubFilePathINT
+'    myXlonOrgFileNo = Empty: myXstrOrgFileName = Empty: myXstrOrgFilePath = Empty
+'    myXlonSubFileNo = Empty: myXstrSubFileName = Empty: myXstrSubFilePath = Empty
+'    Set myXobjObjectINT = Nothing
+'    Erase myXvarFieldINT
+'    On Error Resume Next
+'    Erase myXvarFieldINT: If Err.Number = 13 Then myXvarFieldINT = Empty
+'    On Error GoTo 0
+End Sub
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariablesSub()
+'    myXstrSubFilePath = Empty: myXlonSubFileNo = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getOptnBase() As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    getOptnBase = L
+End Property
+
+Public Property Get getCmpltFlag() As Boolean
+    getCmpltFlag = myXbisCmpltFlag
+End Property
+  
+Public Property Get getExeOrgFileCnt() As Long
+    getExeOrgFileCnt = myXlonExeOrgFileCnt
+End Property
+
+Public Property Get getExeOrgFileNameAry(ByVal i As Long) As String
+    getExeOrgFileNameAry = myZstrExeOrgFileName(i)
+'myZstrExeOrgFileName(i) : 実行ファイル名1
+End Property
+  
+Public Property Get getExeOrgFilePathAry(ByVal i As Long) As String
+    getExeOrgFilePathAry = myZstrExeOrgFilePath(i)
+'myZstrExeOrgFilePath(i) : 実行ファイルパス1
+End Property
+
+Public Property Get getExeSubFileCnt() As Long
+    getExeSubFileCnt = myXlonExeSubFileCnt
+End Property
+
+Public Property Get getExeSubFileNameAry(ByVal i As Long) As String
+    getExeSubFileNameAry = myZstrExeSubFileName(i)
+'myZstrExeSubFileName(i) : 実行ファイル名2
+End Property
+
+Public Property Get getExeSubFilePathAry(ByVal i As Long) As String
+    getExeSubFilePathAry = myZstrExeSubFilePath(i)
+'myZstrExeSubFilePath(i) : 実行ファイルパス2
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+'    myXbisCmpltFlag = False
+'    myXlonExeOrgFileCnt = Empty
+'    Erase myZstrExeOrgFileName: Erase myZstrExeOrgFilePath
+'    myXlonExeSubFileCnt = Empty
+'    Erase myZstrExeSubFileName: Erase myZstrExeSubFilePath
+'    On Error Resume Next
+'    Erase myXvarFieldINT: If Err.Number = 13 Then myXvarFieldINT = Empty
+'    On Error GoTo 0
+End Sub
+
+'checkP_出力変数内容を確認する
+Private Sub checkOutputVariables()
+    myXbisExitFlag = False
+    
+'    If myXlonExeOrgFileCnt <= 0 Then GoTo ExitPath
+'    If PfncbisCheckArrayDimension(myZstrExeOrgFileName, 1) = False Then GoTo ExitPath
+'    If PfncbisCheckArrayDimension(myZstrExeOrgFilePath, 1) = False Then GoTo ExitPath
+'    If myXlonExeSubFileCnt <= 0 Then GoTo ExitPath
+'    If PfncbisCheckArrayDimension(myZstrExeSubFileName, 1) = False Then GoTo ExitPath
+'    If PfncbisCheckArrayDimension(myZstrExeSubFilePath, 1) = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letOrgFileCnt(ByVal RHS As Long)
+    myXlonOrgFileCnt = RHS
+End Property
+
+Public Property Let letOrgFilePathArySub(ByVal i As Long, ByVal RHS As String)
+'myZstrOrgFilePath(i) : 元ファイルパス1
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim m As Long
+    If i = 1 Then
+        If myXlonOrgFileCnt <= 0 Then GoTo ExitPath
+        m = myXlonOrgFileCnt + L - 1: ReDim myZstrOrgFilePath(m) As String
+    ElseIf i > myXlonOrgFileCnt Then
+        GoTo ExitPath
+    End If
+    myZstrOrgFilePath(i + L - 1) = RHS
+ExitPath:
+End Property
+
+Public Property Let letOrgFilePathAry(ByRef RHS() As String)
+'myZstrOrgFilePath(i) : 元ファイルパス1
+    myZstrOrgFilePath() = RHS()
+End Property
+
+Public Property Let letSubFileCnt(ByVal RHS As Long)
+    myXlonSubFileCnt = RHS
+End Property
+
+Public Property Let letSubFilePathArySub(ByVal i As Long, ByVal RHS As String)
+'myZstrSubFilePath(i) : 元ファイルパス2
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim m As Long
+    If i = 1 Then
+        If myXlonSubFileCnt <= 0 Then GoTo ExitPath
+        m = myXlonOrgFileCnt + L - 1: ReDim myZstrSubFilePath(m) As String
+    ElseIf i > myXlonSubFileCnt Then
+        GoTo ExitPath
+    End If
+    myZstrSubFilePath(i + L - 1) = RHS
+ExitPath:
+End Property
+
+Public Property Let letSubFilePathAry(ByRef RHS() As String)
+'myZstrSubFilePath(i) : 元ファイルパス2
+    myZstrSubFilePath() = RHS()
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+'  Dim Li As Long, myXstrTmp As String
+'    On Error GoTo ExitPath
+'    Li = LBound(myZstrOrgFilePath): myXstrTmp = myZstrOrgFilePath(Li)
+'    Li = LBound(myZstrSubFilePath): myXstrTmp = myZstrSubFilePath(Li)
+'    On Error GoTo 0
+    
+'//入力配列変数を内部配列変数に入れ替える
+'  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+'  Dim Lia As Long, Uia As Long, Lib As Long, Uib As Long, i As Long
+'    On Error GoTo ExitPath
+'    Lia = LBound(myZstrOrgFilePath): Uia = UBound(myZstrOrgFilePath)
+'    Lib = LBound(myZstrSubFilePath): Uib = UBound(myZstrSubFilePath)
+'    If Uia <> Uib Then GoTo ExitPath
+'    i = Ui + Lo - Li
+'    ReDim myZstrOrgFilePathINT(i) As String
+'    ReDim myZstrSubFilePathINT(i) As String
+'    For i = Li To Ui
+'        myZstrOrgFilePathINT(i + Lo - Li, j + Lo - Li) = myZstrOrgFilePath(i, j)
+'        myZstrSubFilePathINT(i + Lo - Li, j + Lo - Li) = myZstrSubFilePath(i, j)
+'    Next i
+'    On Error GoTo 0
+    
+'//入力配列変数の内容を確認
+'    If PfncbisCheckArrayDimension(myZstrOrgFilePath, 1) = False Then GoTo ExitPath
+'    If PfncbisCheckArrayDimension(myZstrSubFilePath, 1) = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    Call ctrProc
+End Sub
+
+'PublicF_
+Public Function fncbisCmpltFlag() As Boolean
+    fncbisCmpltFlag = Empty
+    Call ctrProc
+    fncbisCmpltFlag = myXbisCmpltFlag
+End Function
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"  'PassFlag
+    
+'//C:
+    Call setControlVariables
+    
+'//S:Loop前の情報取得処理
+    Call snsProcBeforeLoop
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"   'PassFlag
+    
+'//P:Loop前の情報加工処理
+    Call prsProcBeforeLoop
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"  'PassFlag
+    
+'//C:ファイルリスト1を順次実行
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim n As Long: n = Lo - 1
+  Dim Li As Long: Li = LBound(myZstrOrgFilePath)
+  Dim k As Long
+    For k = LBound(myZstrOrgFilePath) To UBound(myZstrOrgFilePath)
+        myXstrFilePath = Empty: myXstrFileName = Empty
+        myXlonFileNo = k
+        myXstrFilePath = myZstrOrgFilePath(k)
+        myXstrFileName = PfncstrFileNameByFSO(myXstrFilePath)
+        If myXstrFileName = "" Then GoTo NextPath
+ 
+    '//C:ファイルリスト2を順次実行
+        Call ctrSubProc
+        If myXbisExitFlag = True Then GoTo NextPath
+'        Debug.Print "PassFlag: " & meMstrMdlName & "4-" & k   'PassFlag
+        
+        n = n + 1
+        ReDim Preserve myZstrExeOrgFileName(n) As String
+        ReDim Preserve myZstrExeOrgFilePath(n) As String
+        myZstrExeOrgFileName(n) = myXstrOrgFileName
+        myZstrExeOrgFilePath(n) = myXstrOrgFilePath
+NextPath:
+    Next k
+    myXlonExeOrgFileCnt = n - Lo + 1
+'    Debug.Print "PassFlag: " & meMstrMdlName & "5"  'PassFlag
+    
+'//P:Loop後の加工処理
+    Call prsProcAfterLoop
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "6"  'PassFlag
+
+'//Run:ファイナライズ処理
+    Call runFinalize
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "7" 'PassFlag
+    
+    Call checkOutputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'CtrlP_ファイルリスト2を順次実行
+Private Sub ctrSubProc()
+    Call initializeModuleVariablesSub
+    
+'//S:Loop前の情報取得処理
+    Call snsSubProcBeforeLoop
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "s1"    'PassFlag
+    
+'//P:Loop前の情報加工処理
+    Call prsSubProcBeforeLoop
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "s2"    'PassFlag
+    
+'//C:ファイルリストを順次実行
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim n As Long: n = Lo - 1
+  Dim Li As Long: Li = LBound(myZstrOrgFilePath)
+  Dim k As Long
+    For k = LBound(myXstrSubFilePath) To UBound(myXstrSubFilePath)
+        myXstrFilePath = Empty: myXstrFileName = Empty
+        myXlonFileNo = k
+        myXstrFilePath = myXstrSubFilePath(k)
+        myXstrFileName = PfncstrFileNameByFSO(myXstrFilePath)
+        If myXstrFileName = "" Then GoTo NextPath
+ 
+    '//S:各ファイルのデータ取得処理
+        Call snsSubProcForLoop
+        If myXbisExitFlag = True Then GoTo NextPath
+'        Debug.Print "PassFlag: " & meMstrMdlName & "s3-" & k   'PassFlag
+ 
+    '//P:各ファイルのデータ加工処理
+        Call prsSubProcForLoop
+        If myXbisExitFlag = True Then GoTo NextPath
+'        Debug.Print "PassFlag: " & meMstrMdlName & "s4-" & k   'PassFlag
+            
+    '//Run:各ファイルのデータ出力処理
+        Call runSubProcForLoop
+        If myXbisExitFlag = True Then GoTo NextPath
+'        Debug.Print "PassFlag: " & meMstrMdlName & "s5-" & k   'PassFlag
+        
+        n = n + 1
+        ReDim Preserve myZstrExeSubFileName(n) As String
+        ReDim Preserve myZstrExeSubFilePath(n) As String
+        myZstrExeSubFileName(n) = myXstrSubFileName
+        myZstrExeSubFilePath(n) = myXstrSubFilePath
+NextPath:
+    Next k
+    myXlonExeSubFileCnt = n - Lo + 1
+'    Debug.Print "PassFlag: " & meMstrMdlName & "s6"    'PassFlag
+    
+'//P:Loop後の加工処理
+    Call prsSubProcAfterLoop
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "s7"    'PassFlag
+    
+ExitPath:
+    Call initializeModuleVariablesSub
+End Sub
+
+'CtrlP_
+Private Sub ctrRunFiles()
+
+'//C:ファイルリストを順次実行
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim n As Long: n = Lo - 1
+  Dim Li As Long: Li = LBound(myZstrOrgFilePath)
+  Dim myXvarTmpPath As Variant, k As Long: k = Li - 1
+    For Each myXvarTmpPath In myZstrOrgFilePath
+        myXstrFilePath = Empty: myXstrFileName = Empty
+        k = k + 1: myXlonFileNo = k
+        myXstrFilePath = myZstrOrgFilePath(k)
+        myXstrFileName = PfncstrFileNameByFSO(myXstrFilePath)
+        If myXstrFileName = "" Then GoTo NextPath
+        'XarbProgCode
+        n = n + 1
+        ReDim Preserve myZstrExeOrgFileName(n) As String
+        ReDim Preserve myZstrExeOrgFilePath(n) As String
+        myZstrExeOrgFileName(n) = myXstrFileName
+        myZstrExeOrgFilePath(n) = myXstrFilePath
+NextPath:
+    Next myXvarTmpPath
+    myXlonExeOrgFileCnt = n - Lo + 1
+    
+'//C:ファイルリストを順次実行
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim n As Long: n = Lo - 1
+  Dim Li As Long: Li = LBound(myZstrOrgFilePath)
+  Dim k As Long
+    For k = LBound(myZstrOrgFilePath) To UBound(myZstrOrgFilePath)
+        myXstrFilePath = Empty: myXstrFileName = Empty
+        myXlonFileNo = k
+        myXstrFilePath = myZstrOrgFilePath(k)
+        myXstrFileName = PfncstrFileNameByFSO(myXstrFilePath)
+        If myXstrFileName = "" Then GoTo NextPath
+        'XarbProgCode
+        n = n + 1
+        ReDim Preserve myZstrExeFileName(n) As String
+        ReDim Preserve myZstrExeFilePath(n) As String
+        myZstrExeFileName(n) = myXstrFileName
+        myZstrExeFilePath(n) = myXstrFilePath
+NextPath:
+    Next k
+    myXlonExeFileCnt = n - Lo + 1
+    
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+End Sub
+
+'SnsP_Loop前の情報取得処理
+Private Sub snsProcBeforeLoop()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2-1"    'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_Loop前の情報加工処理
+Private Sub prsProcBeforeLoop()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3-1"    'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'SnsP_Loop前の情報取得処理
+Private Sub snsSubProcBeforeLoop()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "s1-1"     'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_Loop前の情報加工処理
+Private Sub prsSubProcBeforeLoop()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "s2-1"     'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'SnsP_各ファイルのデータ取得処理
+Private Sub snsSubProcForLoop()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "s3-1"     'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_各ファイルのデータ加工処理
+Private Sub prsSubProcForLoop()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "s4-1"     'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_各ファイルのデータ出力処理
+Private Sub runSubProcForLoop()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "s5-1"     'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_Loop後の加工処理
+Private Sub prsSubProcAfterLoop()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "s7-1"     'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_Loop後の加工処理
+Private Sub prsProcAfterLoop()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "6-1"    'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_ファイナライズ処理
+Private Sub runFinalize()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "7-1"    'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+ '定型Ｆ_指定ファイルのファイル名を取得する(FileSystemObject使用)
+Private Function PfncstrFileNameByFSO(ByVal myXstrFilePath As String) As String
+    PfncstrFileNameByFSO = Empty
+    If myXstrFilePath = "" Then Exit Function
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXbisFileExist As Boolean: myXbisFileExist = myXobjFSO.FileExists(myXstrFilePath)
+    If myXbisFileExist = False Then Exit Function
+    PfncstrFileNameByFSO = myXobjFSO.GetFileName(myXstrFilePath)
+    Set myXobjFSO = Nothing
+End Function
+
+ '定型Ｆ_配列変数の次元数が指定次元と一致するかをチェックする
+Private Function PfncbisCheckArrayDimension( _
+            ByRef myZvarOrgData As Variant, ByVal myXlonDmnsn As Long) As Boolean
+    PfncbisCheckArrayDimension = False
+    If IsArray(myZvarOrgData) = False Then Exit Function
+    If myXlonDmnsn <= 0 Then Exit Function
+  Dim myXlonTmp As Long, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXlonTmp = UBound(myZvarOrgData, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    If k - 1 <> myXlonDmnsn Then Exit Function
+    PfncbisCheckArrayDimension = True
+End Function
+
+ '定型Ｆ_配列変数の次元数と配列長が指定値を満足するかをチェックする
+Private Function PfncbisCheckArrayDimensionLength( _
+            ByRef myZvarOrgData As Variant, ByVal myXlonChckAryDmnsn As Long, _
+            ByRef myXlonChckAryLen() As Long) As Boolean
+'myXlonChckAryDmnsn  : 配列の次元数の指定値
+'myXlonChckAryLen(i) : i次元目の配列長の指定値
+'myXlonChckAryLen(i) = 0 : 配列長のチェックを実施しない
+    PfncbisCheckArrayDimensionLength = False
+    If myXlonChckAryDmnsn <= 0 Then Exit Function
+  Dim Li As Long, Ui As Long, myXlonChckAryLenCnt As Long
+    On Error Resume Next
+    Li = LBound(myXlonChckAryLen): Ui = UBound(myXlonChckAryLen)
+    If Err.Number = 9 Then Exit Function
+    On Error GoTo 0
+    myXlonChckAryLenCnt = Ui - Li + 1
+    If myXlonChckAryLenCnt <= 0 Then Exit Function
+  Dim i As Long
+    For i = LBound(myXlonChckAryLen) To UBound(myXlonChckAryLen)
+        If myXlonChckAryLen(i) <= 0 Then Exit Function
+    Next i
+'//配列であることを確認
+    If IsArray(myZvarOrgData) = False Then Exit Function
+'//配列が空でないことを確認
+  Dim myXlonTmp As Long
+    On Error Resume Next
+    myXlonTmp = UBound(myZvarOrgData) - LBound(myZvarOrgData) + 1
+    If Err.Number = 9 Then Exit Function
+    On Error GoTo 0
+    If myXlonTmp <= 0 Then Exit Function
+'//配列の次元数を取得
+  Dim myXlonAryDmnsn As Long, myXvarTmp As Variant, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXvarTmp = UBound(myZvarOrgData, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    myXlonAryDmnsn = k - 1
+    If myXlonAryDmnsn <> myXlonChckAryDmnsn Then Exit Function
+    If myXlonAryDmnsn <> myXlonChckAryLenCnt Then Exit Function
+'//配列の最小添字と最大添字を取得
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    i = myXlonAryDmnsn + L - 1
+  Dim myZlonAryLBnd() As Long: ReDim myZlonAryLBnd(i) As Long
+  Dim myZlonAryUBnd() As Long: ReDim myZlonAryUBnd(i) As Long
+    k = 0
+    For i = LBound(myZlonAryLBnd) To UBound(myZlonAryLBnd)
+        k = k + 1
+        myZlonAryLBnd(i) = LBound(myZvarOrgData, k)
+        myZlonAryUBnd(i) = UBound(myZvarOrgData, k)
+    Next i
+'//配列長を取得
+    i = myXlonAryDmnsn + L - 1
+  Dim myZlonAryLen() As Long: ReDim myZlonAryLen(i) As Long
+    For i = LBound(myZlonAryLen) To UBound(myZlonAryLen)
+        myZlonAryLen(i) = myZlonAryUBnd(i) - myZlonAryLBnd(i) + 1
+    Next i
+'//次元数と配列長をチェック
+    For i = LBound(myZlonAryLen) To UBound(myZlonAryLen)
+        If myXlonChckAryLen(i + Li - L) <> 0 Then _
+            If myZlonAryLen(i) <> myXlonChckAryLen(i + Li - L) Then Exit Function
+    Next i
+    PfncbisCheckArrayDimensionLength = True
+    Erase myZlonAryLBnd: Erase myZlonAryUBnd: Erase myZlonAryLen
+End Function
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+'◆ClassProc名_2種類の複数ファイルに対して連続処理を実施する
+Private Sub instxcRefRunFilesDbl()
+  Dim Lc As Long
+  Dim myXbisCmpltFlag As Boolean
+  Dim myXlonExeOrgFileCnt As Long, _
+        myZstrExeOrgFileName() As String, myZstrOrgExeFilePath() As String
+    'myZstrExeOrgFileName(i) : 実行ファイル名1
+    'myZstrOrgExeFilePath(i) : 実行ファイルパス1
+  Dim myXlonExeSubFileCnt As Long, _
+        myZstrExeSubFileName() As String, myZstrSubExeFilePath() As String
+    'myZstrExeSubFileName(i) : 実行ファイル名2
+    'myZstrSubExeFilePath(i) : 実行ファイルパス2
+'//元ファイルパスの配列を入力
+  Dim myXlonOrgFileCnt As Long, myZstrOrgFilePath() As String
+  Dim myXlonSubFileCnt As Long, myZstrSubFilePath() As String
+    'myZstrOrgFilePath(i) : 元ファイルパス1
+    'myZstrSubFilePath(i) : 元ファイルパス2
+    myXlonOrgFileCnt = 1
+    ReDim myZstrOrgFilePath(myXlonOrgFileCnt) As String
+    myZstrOrgFilePath(1) = ""
+    myXlonSubFileCnt = 1
+    ReDim myZstrSubFilePath(myXlonSubFileCnt) As String
+    myZstrSubFilePath(1) = ""
+'//xcRefRunFilesDblクラスモジュールのインスタンス生成
+    On Error GoTo ExitPath
+  Dim myXstrTmp As String, Lia As Long, Lib As Long
+    Lia = LBound(myZstrOrgFilePath): myXstrTmp = myZstrOrgFilePath(Lia)
+    Lib = LBound(myZstrSubFilePath): myXstrTmp = myZstrSubFilePath(Lib)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long
+  Dim myXinsRunFilesDbl As xcRefRunFilesDbl
+    Set myXinsRunFilesDbl = New xcRefRunFilesDbl
+    With myXinsRunFilesDbl
+    '//元ファイルパス情報を入力
+        If myXlonOrgFileCnt <= 0 Then GoTo JumpPath
+        .letOrgFileCnt = myXlonOrgFileCnt
+        .letOrgFilePathAry = myZstrOrgFilePath
+        If myXlonSubFileCnt <= 0 Then GoTo JumpPath
+        .letSubFileCnt = myXlonSubFileCnt
+        .letSubFilePathAry = myZstrSubFilePath
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        Call .exeProc
+        myXbisCmpltFlag = .getCmpltFlag
+        myXlonExeOrgFileCnt = .getExeOrgFileCnt
+        Lc = .getOptnBase
+        If myXlonExeOrgFileCnt <= 0 Then GoTo JumpPath
+        i = myXlonExeOrgFileCnt + Lo - 1
+        ReDim myZstrExeOrgFileName(i) As String
+        ReDim myZstrOrgExeFilePath(i) As String
+        For i = 1 To myXlonExeOrgFileCnt
+            myZstrExeOrgFileName(i + Lo - 1) = .getExeOrgFileNameAry(i + Lc - 1)
+            myZstrOrgExeFilePath(i + Lo - 1) = .getExeOrgFilePathAry(i + Lc - 1)
+        Next i
+        myXlonExeSubFileCnt = .getExeSubFileCnt
+        If myXlonExeSubFileCnt <= 0 Then GoTo JumpPath
+        i = myXlonExeSubFileCnt + Lo - 1
+        ReDim myZstrExeSubFileName(i) As String
+        ReDim myZstrSubExeFilePath(i) As String
+        For i = 1 To myXlonExeSubFileCnt
+            myZstrExeSubFileName(i + Lo - 1) = .getExeSubFileNameAry(i + Lc - 1)
+            myZstrSubExeFilePath(i + Lo - 1) = .getExeSubFilePathAry(i + Lc - 1)
+        Next i
+    End With
+JumpPath:
+    Set myXinsRunFilesDbl = Nothing
+'    Call variablesOfxcRefRunFilesDbl(myXlonExeOrgFileCnt, myZstrExeOrgFilePath) 'Debug.Print
+ExitPath:
+End Sub
+Private Sub variablesOfxcRefRunFilesDbl( _
+            ByVal myXlonExeFileCnt As Long, ByRef myZstrExeFilePath As Variant)
+'//xcRefRunFilesDblクラス内から出力した変数の内容確認
+    Debug.Print "データ数: " & myXlonExeFileCnt
+    If myXlonExeFileCnt <= 0 Then Exit Sub
+  Dim k As Long
+    For k = LBound(myZstrExeFilePath) To UBound(myZstrExeFilePath)
+        Debug.Print "データ" & k & ": " & myZstrExeFilePath(k)
+    Next k
+End Sub
