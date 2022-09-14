@@ -1,0 +1,546 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "CFileMtrxBaseMtch"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
+'Includes PfixPickUpExistFileArray
+'Includes PincPickUpBaseNameMatchFilePathMatrixSomeConditions
+'Includes PfncbisCheckFileBaseNameSomeConditions
+'Includes PfixGetFolderFileStringInformationFor2DArray
+
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_ファイル一覧からベース名が複数の指定条件と一致するファイルを指定条件リストごとに抽出する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CFileMtrxBaseMtch"
+  
+'//PropertyGet_出力データ
+  Private Lc As Long
+  Private myXlonOrdrCnt As Long, myXlonPckUpMax As Long, _
+            myZlonFileCnt() As Long, myZobjFile() As Object, _
+            myZstrFileName() As String, myZstrFilePath() As String
+  
+'//PropertySetLet_入力制御信号
+  Private myXbisNotOutFileInfo As Boolean
+  
+'//PropertySetLet_入力データ
+  Private myZobjOrgFile() As Object, myZstrOrgFilePath() As String
+  Private myZvarOdrTrgtWrdPos() As Variant
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonOrgFileCnt As Long, _
+            myZobjOrgFileInt() As Object, myZstrOrgFilePathInt() As String
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonOrgFileCnt = Empty: Erase myZobjOrgFileInt: Erase myZstrOrgFilePathInt
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getOptnBase() As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    getOptnBase = L
+End Property
+
+Public Property Get getOrdrCnt() As Long
+    getOrdrCnt = myXlonOrdrCnt
+'myXlonOrdrCnt : ベース名条件数
+End Property
+
+Public Property Get getPckUpMax() As Long
+    getPckUpMax = myXlonPckUpMax
+'myXlonPckUpMax : 抽出した最大ファイル数
+End Property
+
+Public Property Get getFileCntAry(ByVal i As Long, ByVal j As Long) As Long
+    getFileCntAry = myZlonFileCnt(i, j)
+'myZlonFileCnt(i, 1)  : 各ベース名条件での抽出ファイル数
+End Property
+
+Public Property Get getFileAry(ByVal i As Long, ByVal j As Long) As Object
+    Set getFileAry = myZobjFile(i, j)
+'myZobjFile(i, j) : 抽出ファイルオブジェクト
+End Property
+
+Public Property Get getFileNameAry(ByVal i As Long, ByVal j As Long) As String
+    getFileNameAry = myZstrFileName(i, j)
+'myZstrFileName(i, j) : 抽出ファイル名
+End Property
+
+Public Property Get getFilePathAry(ByVal i As Long, ByVal j As Long) As String
+    getFilePathAry = myZstrFilePath(i, j)
+'myZstrFilePath(i, j) : 抽出ファイルパス
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXlonOrdrCnt = Empty: myXlonPckUpMax = Empty
+    Erase myZlonFileCnt: Erase myZobjFile: Erase myZstrFileName: Erase myZstrFilePath
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letNotOutFileInfo(ByVal RHS As Boolean)
+    myXbisNotOutFileInfo = RHS
+'myXbisNotOutFileInfo = False : ファイルオブジェクとファイル情報を両方出力する
+'myXbisNotOutFileInfo = True  : ファイルオブジェクトのみ出力してファイル情報は出力しない
+End Property
+
+Public Property Let letOrgFileAry(ByRef RHS() As Object)
+'myZobjOrgFile(i) : 元ファイルオブジェクト配列
+    myZobjOrgFile = RHS
+End Property
+
+Public Property Let letOrgFilePathAry(ByRef RHS() As String)
+'myZstrOrgFilePath(i) : 元ファイルパス配列
+    myZstrOrgFilePath = RHS
+End Property
+
+Public Property Let letOdrTrgtWrdPosAry(ByRef RHS() As Variant)
+    myZvarOdrTrgtWrdPos = RHS
+'myZvarOdrTrgtWrdPos(i, p, 1) = x : i番目の抽出ファイルの指定文字列:条件p
+'myZvarOdrTrgtWrdPos(i, p, 2) = 1 : 指定文字列をベースファイル名の先頭に含む
+'myZvarOdrTrgtWrdPos(i, p, 2) = 2 : 指定文字列をベースファイル名の接尾に含む
+'myZvarOdrTrgtWrdPos(i, p, 2) = 3 : 指定文字列をベースファイル名内に含む
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables1()
+    
+  Dim myXobjTmp As Object, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZobjOrgFile): Set myXobjTmp = myZobjOrgFile(L)
+    On Error GoTo 0
+    
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZobjOrgFile) To UBound(myZobjOrgFile)
+        If myZobjOrgFile(i) Is Nothing Then GoTo NextPath
+        n = n + 1: ReDim Preserve myZobjOrgFileInt(n) As Object
+        Set myZobjOrgFileInt(n) = myZobjOrgFile(i)
+NextPath:
+    Next i
+    myXlonOrgFileCnt = n
+    
+ExitPath:
+End Sub
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables2()
+    myXbisExitFlag = False
+    
+    If myXlonOrgFileCnt > 0 Then Exit Sub
+    
+  Dim myXstrTmp As String, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZstrOrgFilePath): myXstrTmp = myZstrOrgFilePath(L)
+    On Error GoTo 0
+    
+'//ファイルパス一覧から存在するファイルを抽出
+  Dim i As Long
+    i = UBound(myZstrOrgFilePath) - LBound(myZstrOrgFilePath) + 1
+    ReDim myZstrOrgFilePathInt(i) As String
+    For i = LBound(myZstrOrgFilePath) To UBound(myZstrOrgFilePath)
+        myZstrOrgFilePathInt(i + (1 - L)) = myZstrOrgFilePath(i)
+    Next i
+    Call PfixPickUpExistFileArray(myXlonOrgFileCnt, myZobjOrgFileInt, myZstrOrgFilePathInt)
+    If myXlonOrgFileCnt <= 0 Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables3()
+    myXbisExitFlag = False
+    
+  Dim myXstrTmp As String, myXlonTmp As Long, L As Long, U1 As Long, U2 As Long, U3 As Long
+    On Error GoTo ExitPath
+    L = LBound(myZvarOdrTrgtWrdPos, 1)
+    myXstrTmp = CStr(myZvarOdrTrgtWrdPos(L, L, L + 0))
+    myXlonTmp = CLng(myZvarOdrTrgtWrdPos(L, L, L + 1))
+    U1 = UBound(myZvarOdrTrgtWrdPos, 1)
+    U2 = UBound(myZvarOdrTrgtWrdPos, 2)
+    U3 = UBound(myZvarOdrTrgtWrdPos, 3)
+    On Error GoTo 0
+    
+  Dim n1 As Long, n2 As Long, n3 As Long
+    n1 = U1 - L + 1: n2 = U2 - L + 1
+    n3 = U3 - L + 1: If n3 <> 2 Then GoTo ExitPath
+    
+'//指定条件の内容を確認
+  Dim i As Long
+    For i = LBound(myZvarOdrTrgtWrdPos, 1) To UBound(myZvarOdrTrgtWrdPos, 1)
+        If CStr(myZvarOdrTrgtWrdPos(i, L, L + 0)) = "" Then GoTo ExitPath
+        If IsNumeric(myZvarOdrTrgtWrdPos(i, L, L + 1)) = False Then GoTo ExitPath
+    Next i
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    Call ctrProc
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables1
+    Call checkInputVariables2: If myXbisExitFlag = True Then GoTo ExitPath
+    Call checkInputVariables3: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//ファイル一覧からベース名が複数の指定条件と一致するファイルを指定条件リストごとに抽出
+    Call PincPickUpBaseNameMatchFileMatrixSomeConditions( _
+            myXlonOrdrCnt, myXlonPckUpMax, myZlonFileCnt, myZobjFile, _
+            myZobjOrgFileInt, myZvarOdrTrgtWrdPos)
+    If myXlonOrdrCnt <= 0 Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//ファイル情報取得
+    Call prsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'PrcsP_ファイル情報取得
+Private Sub prsProc()
+    myXbisExitFlag = False
+    
+    If myXbisNotOutFileInfo = True Then Exit Sub
+    
+'//ファイル一覧のファイル名を取得
+  Dim myXlonInfoRowCnt As Long, myXlonInfoColCnt As Long, myXlonInfoCnt As Long
+    Call PfixGetFolderFileStringInformationFor2DArray( _
+            myXlonInfoRowCnt, myXlonInfoColCnt, myXlonInfoCnt, myZstrFileName, _
+            myZobjFile, 1)
+    If myXlonInfoCnt <= 0 Then GoTo ExitPath
+    
+'//ファイル一覧のファイルパスを取得
+    Call PfixGetFolderFileStringInformationFor2DArray( _
+            myXlonInfoRowCnt, myXlonInfoColCnt, myXlonInfoCnt, myZstrFilePath, _
+            myZobjFile, 2)
+    If myXlonInfoCnt <= 0 Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_ファイルパス一覧から存在するファイルを抽出する
+Private Sub PfixPickUpExistFileArray( _
+            myXlonExistFileCnt As Long, myZobjExistFile() As Object, _
+            ByRef myZstrOrgFilePath() As String)
+'myZobjExistFile(i) : 抽出ファイル
+'myZstrOrgFilePath(i) : 元ファイルパス
+    myXlonExistFileCnt = Empty: Erase myZobjExistFile
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgFilePath): myXstrTmp = myZstrOrgFilePath(Li)
+    On Error GoTo 0
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim myXvarPath As Variant, myXbisExistChck As Boolean, n As Long: n = Lo - 1
+    For Each myXvarPath In myZstrOrgFilePath
+        myXbisExistChck = myXobjFSO.FileExists(myXvarPath)
+        If myXbisExistChck = False Then GoTo NextPath
+        n = n + 1: ReDim Preserve myZobjExistFile(n) As Object
+        Set myZobjExistFile(n) = myXobjFSO.GetFile(myXvarPath)
+NextPath:
+    Next myXvarPath
+    myXlonExistFileCnt = n - Lo + 1
+    Set myXobjFSO = Nothing
+ExitPath:
+End Sub
+
+ '定型Ｐ_ファイル一覧からベース名が複数の指定条件と一致するファイルを指定条件リストごとに抽出する
+Private Sub PincPickUpBaseNameMatchFileMatrixSomeConditions( _
+            myXlonOrdrCnt As Long, myXlonPckUpMax As Long, _
+            myZlonBsMtchFileCnt() As Long, myZobjBsMtchFile() As Object, _
+            ByRef myZobjOrgFile() As Object, ByRef myZvarOdrTrgtWrdPos() As Variant)
+'Includes PfncbisCheckFileBaseNameSomeConditions
+'myXlonOrdrCnt : ベース名条件数
+'myXlonPckUpMax : 抽出した最大ファイル数
+'myZlonBsMtchFileCnt(i, 1)  : 各ベース名条件での抽出ファイルパス数
+'myZobjBsMtchFile(i, j) : 抽出ファイル
+'myZobjOrgFile(k) : 元ファイル
+'myZvarOdrTrgtWrdPos(i, p, 1) = x : i番目の抽出ファイルの指定文字列:条件p
+'myZvarOdrTrgtWrdPos(i, p, 2) = 1 : 指定文字列をベースファイル名の先頭に含む
+'myZvarOdrTrgtWrdPos(i, p, 2) = 2 : 指定文字列をベースファイル名の接尾に含む
+'myZvarOdrTrgtWrdPos(i, p, 2) = 3 : 指定文字列をベースファイル名内に含む
+    myXlonOrdrCnt = Empty: myXlonPckUpMax = Empty
+    Erase myZlonBsMtchFileCnt: Erase myZobjBsMtchFile
+  Dim La As Long, Ua As Long, Lb As Long, Ub1 As Long, Ub2 As Long, Ub3 As Long
+    On Error GoTo ExitPath
+    La = LBound(myZobjOrgFile): Ua = UBound(myZobjOrgFile)
+    Lb = LBound(myZvarOdrTrgtWrdPos, 1)
+    Ub1 = UBound(myZvarOdrTrgtWrdPos, 1): Ub2 = UBound(myZvarOdrTrgtWrdPos, 2)
+    Ub3 = UBound(myZvarOdrTrgtWrdPos, 3)
+    On Error GoTo 0
+    If Ub1 < Lb Or Ub3 <> Lb + 1 Then Exit Sub
+'//抽出したい順番にベース名条件の検索を実行
+  Dim myZlonTmp(1) As Long, Lc As Long: Lc = LBound(myZlonTmp)
+  Dim Uc As Long: Uc = Ub1 + (Lc - Lb)
+    ReDim myZlonBsMtchFileCnt(Uc, Lc) As Long
+    ReDim myZobjBsMtchFile(Uc, Lc) As Object
+  Dim myZvarTrgtWrdPos() As Variant
+  Dim myXobjFile As Object, myXstrFilePath As String
+  Dim myXbisBsChck As Boolean, myZobjTmpList() As Object
+  Dim m As Long, n As Long, Un As Long, myXlonNMax As Long, myXlonUnMax As Long
+  Dim i As Long, j As Long, k As Long, p As Long
+    m = 0: myXlonNMax = 0: myXlonUnMax = Lc
+    For i = Lb To Ub1
+   '//ファイル一覧からベース名が指定ファイル名と一致するファイルパスを抽出
+        ReDim myZvarTrgtWrdPos(Ub2, Ub3) As Variant
+        n = 0: Un = Lc - 1: Erase myZobjTmpList
+        For p = Lb To Ub2
+            myZvarTrgtWrdPos(p, Lb + 0) = myZvarOdrTrgtWrdPos(i, p, Lb + 0)
+            myZvarTrgtWrdPos(p, Lb + 1) = myZvarOdrTrgtWrdPos(i, p, Lb + 1)
+        Next p
+        For k = La To Ua
+            Set myXobjFile = myZobjOrgFile(k)
+            myXstrFilePath = myXobjFile.Path
+            myXbisBsChck = PfncbisCheckFileBaseNameSomeConditions(myXstrFilePath, myZvarTrgtWrdPos)
+            If myXbisBsChck = True Then
+                n = n + 1: Un = Un + 1: ReDim Preserve myZobjTmpList(Un) As Object
+                Set myZobjTmpList(Un) = myXobjFile
+            End If
+        Next k
+        If n > myXlonNMax Then myXlonNMax = n
+        If Un > myXlonUnMax Then myXlonUnMax = Un
+    '//抽出したファイルパスを出力配列変数に格納
+        myZlonBsMtchFileCnt(i, Lc) = n
+        If n <= 0 Then GoTo NextPath
+        m = m + 1
+        ReDim Preserve myZobjBsMtchFile(Uc, myXlonUnMax) As Object
+        For j = LBound(myZobjTmpList) To UBound(myZobjTmpList)
+            Set myZobjBsMtchFile(i, j) = myZobjTmpList(j)
+        Next j
+NextPath:
+    Next i
+    myXlonOrdrCnt = m: myXlonPckUpMax = myXlonNMax
+    Set myXobjFile = Nothing: Erase myZobjTmpList
+ExitPath:
+End Sub
+
+ '定型Ｆ_指定ファイルのベース名が複数の指定条件と一致することを確認する
+Private Function PfncbisCheckFileBaseNameSomeConditions( _
+            ByVal myXstrFilePath As String, _
+            ByRef myZvarTrgtWrdPos() As Variant) As Boolean
+'myZvarTrgtWrdPos(i, 1) = i : 指定文字列
+'myZvarTrgtWrdPos(i, 2) = 1 : 指定文字列をベースファイル名の先頭に含む
+'myZvarTrgtWrdPos(i, 2) = 2 : 指定文字列をベースファイル名の接尾に含む
+'myZvarTrgtWrdPos(i, 2) = 3 : 指定文字列をベースファイル名内に含む
+    PfncbisCheckFileBaseNameSomeConditions = False
+    If myXstrFilePath = "" Then Exit Function
+  Dim L As Long, U1 As Long, U2 As Long
+    On Error GoTo ExitPath
+    L = LBound(myZvarTrgtWrdPos, 1)
+    U1 = UBound(myZvarTrgtWrdPos, 1): U2 = UBound(myZvarTrgtWrdPos, 2)
+    On Error GoTo 0
+    If U1 < L Or U2 <> L + 1 Then Exit Function
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXbisFileExist As Boolean, myXstrOrgBaseName As String
+    With myXobjFSO
+        myXbisFileExist = .FileExists(myXstrFilePath)
+        If myXbisFileExist = False Then Exit Function
+        myXstrOrgBaseName = .getBaseName(myXstrFilePath)
+    End With
+    Set myXobjFSO = Nothing
+  Dim i As Long, myXstrTrgtWrd As String, myXlonPosOptn As Long
+    For i = LBound(myZvarTrgtWrdPos, 1) To UBound(myZvarTrgtWrdPos, 1)
+        Call PforExtractArrayDataOfTargetWordPosition( _
+                myXstrTrgtWrd, myXlonPosOptn, myZvarTrgtWrdPos, i, L)
+        If myXstrTrgtWrd = "" Then GoTo NextPath
+        If myXlonPosOptn = 1 Then
+            If Left(myXstrOrgBaseName, Len(myXstrTrgtWrd)) <> myXstrTrgtWrd Then Exit Function
+        ElseIf myXlonPosOptn = 2 Then
+            If Right(myXstrOrgBaseName, Len(myXstrTrgtWrd)) <> myXstrTrgtWrd Then Exit Function
+        ElseIf myXlonPosOptn = 3 Then
+            If InStr(myXstrOrgBaseName, myXstrTrgtWrd) = 0 Then Exit Function
+        Else
+            Exit Function
+        End If
+NextPath:
+    Next i
+    PfncbisCheckFileBaseNameSomeConditions = True
+ExitPath:
+End Function
+Private Sub PforExtractArrayDataOfTargetWordPosition( _
+            myXstrTrgtWrd As String, myXlonPosOptn As Long, _
+            ByRef myZvarTrgtWrdPos() As Variant, ByVal i As Long, L As Long)
+'//配列変数からデータを抽出
+    myXstrTrgtWrd = Empty: myXlonPosOptn = Empty
+    On Error GoTo ExitPath
+    myXstrTrgtWrd = CStr(myZvarTrgtWrdPos(i, L + 0))
+    myXlonPosOptn = CLng(myZvarTrgtWrdPos(i, L + 1))
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXstrTrgtWrd = Empty: myXlonPosOptn = Empty
+End Sub
+
+ '定型Ｐ_2次元配列のフォルダファイルオブジェクト一覧の文字列情報を取得する
+Private Sub PfixGetFolderFileStringInformationFor2DArray( _
+                myXlonInfoRowCnt As Long, myXlonInfoColCnt As Long, _
+                myXlonInfoCnt As Long, myZstrInfo() As String, _
+                ByRef myZobjFldrFile() As Object, _
+                Optional ByVal coXlonStrOptn As Long = 1)
+'myZstrInfo(i, j) : 抽出フォルダ情報
+'myZobjFldrFile(i, j) : 元フォルダor元ファイル
+'coXlonStrOptn = 1  : 名前 (Name)
+'coXlonStrOptn = 2  : パス (Path)
+'coXlonStrOptn = 3  : 親フォルダ (ParentFolder)
+'coXlonStrOptn = 4  : 属性 (Attributes)
+'coXlonStrOptn = 5  : 種類 (Type)
+    myXlonInfoRowCnt = Empty: myXlonInfoColCnt = Empty
+    myXlonInfoCnt = Empty: Erase myZstrInfo
+  Dim myXobjTmp As Object, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZobjFldrFile, 1): Set myXobjTmp = myZobjFldrFile(Li, Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim myXstrTmp As String, i As Long, j As Long, k As Long, m As Long, n As Long
+    m = UBound(myZobjFldrFile, 1) - LBound(myZobjFldrFile, 1) + 1
+    n = UBound(myZobjFldrFile, 2) - LBound(myZobjFldrFile, 2) + 1
+    i = m + Lo - 1: j = n + Lo - 1
+    ReDim myZstrInfo(i, j) As String
+    n = Lo - 1: k = 0
+    For j = LBound(myZobjFldrFile, 2) To UBound(myZobjFldrFile, 2)
+        m = Lo - 1: n = n + 1
+        For i = LBound(myZobjFldrFile, 1) To UBound(myZobjFldrFile, 1)
+            m = m + 1
+            myXstrTmp = Empty
+            If myZobjFldrFile(i, j) Is Nothing Then GoTo NextPath
+            Select Case coXlonStrOptn
+                Case 1: myXstrTmp = myZobjFldrFile(i, j).Name
+                Case 2: myXstrTmp = myZobjFldrFile(i, j).Path
+                Case 3: myXstrTmp = myZobjFldrFile(i, j).ParentFolder
+                Case 4: myXstrTmp = myZobjFldrFile(i, j).Attributes
+                Case 5: myXstrTmp = myZobjFldrFile(i, j).Type
+            End Select
+            k = k + 1: myZstrInfo(m, n) = myXstrTmp
+NextPath:
+        Next i
+    Next j
+    myXlonInfoRowCnt = m - Lo + 1: myXlonInfoColCnt = n - Lo + 1: myXlonInfoCnt = k
+ExitPath:
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_ファイル一覧からベース名が複数の指定条件と一致するファイルを指定条件リストごとに抽出する
+'Private Sub instCFileLstEachBaseMtch()
+'  Dim Lc As Long
+'  Dim myXlonOrdrCnt As Long, myXlonPckUpMax As Long, _
+'        myZlonFileCnt() As Long, myZobjFile() As Object, _
+'        myZstrFileName() As String, myZstrFilePath() As String
+'    'myXlonOrdrCnt : ベース名条件数
+'    'myXlonPckUpMax : 抽出した最大ファイル数
+'    'myZlonFileCnt(i, 1)  : 各ベース名条件での抽出ファイル数
+'    'myZobjFile(i, j) : 抽出ファイルオブジェクト
+'    'myZstrFileName(i, j) : 抽出ファイル名
+'    'myZstrFilePath(i, j) : 抽出ファイルパス
+''//クラス内変数への入力
+'  Dim myXbisNotOutFileInfo As Boolean
+'    'myXbisNotOutFileInfo = False : ファイルオブジェクとファイル情報を両方出力する
+'    'myXbisNotOutFileInfo = True  : ファイルオブジェクトのみ出力してファイル情報は出力しない
+'    myXbisNotOutFileInfo = False
+'  Dim myZobjOrgFile() As Object, myZstrOrgFilePath() As String
+'    'myZobjOrgFile(i) : 元ファイルオブジェクト配列
+'    'myZstrOrgFilePath(i) : 元ファイルパス配列
+'  Dim myXlonOrgFileCnt As Long
+'    myXlonOrgFileCnt = 2
+'    ReDim myZstrOrgFilePath(myXlonOrgFileCnt) As String
+'    myZstrOrgFilePath(1) = "C:\Users\Hiroki\Documents\_VBA4XPC\11 プログラムデータベース\02_VBAモジュール\mdl01_マクロ作成サポート" & "\" & _
+'                            "cls02a_VBE内の情報操作.xlsm"
+'    myZstrOrgFilePath(2) = "C:\Users\Hiroki\Documents\_VBA4XPC\11 プログラムデータベース\02_VBAモジュール\mdl01_マクロ作成サポート" & "\" & _
+'                            "cls02b_エクセルブック内の個別プロシージャを取得.xlsm"
+'  Dim myZvarOdrTrgtWrdPos() As Variant
+'    'myZvarOdrTrgtWrdPos(i, p, 1) = x : i番目の抽出ファイルの指定文字列:条件p
+'    'myZvarOdrTrgtWrdPos(i, p, 2) = 1 : 指定文字列をベースファイル名の先頭に含む
+'    'myZvarOdrTrgtWrdPos(i, p, 2) = 2 : 指定文字列をベースファイル名の接尾に含む
+'    'myZvarOdrTrgtWrdPos(i, p, 2) = 3 : 指定文字列をベースファイル名内に含む
+'  Dim myXlonTrgtFileCnt As Long, myXlonTrgtCnt As Long
+'    myXlonTrgtFileCnt = 2
+'    myXlonTrgtCnt = 2
+'    ReDim myZvarOdrTrgtWrdPos(myXlonTrgtFileCnt, myXlonTrgtCnt, 2) As Variant
+'    myZvarOdrTrgtWrdPos(1, 1, 1) = "cls"
+'    myZvarOdrTrgtWrdPos(1, 1, 2) = 1
+'    myZvarOdrTrgtWrdPos(2, 1, 1) = "エクセル"
+'    myZvarOdrTrgtWrdPos(2, 1, 2) = 3
+''//CFileLstEachBaseMtchクラスモジュールのインスタンス生成
+'  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+'  Dim i As Long, j As Long
+'  Dim myXinsFileMtrxBaseMtch As CFileMtrxBaseMtch
+'    Set myXinsFileMtrxBaseMtch = New CFileMtrxBaseMtch
+'    With myXinsFileMtrxBaseMtch
+'    '//クラス内変数への入力
+'        .letNotOutFileInfo = myXbisNotOutFileInfo
+'        .letOrgFileAry = myZobjOrgFile
+'        .letOrgFilePathAry = myZstrOrgFilePath
+'        .letOdrTrgtWrdPosAry = myZvarOdrTrgtWrdPos
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        .exeProc
+'        myXlonOrdrCnt = .getOrdrCnt
+'        myXlonPckUpMax = .getPckUpMax
+'        If myXlonOrdrCnt <= 0 Or myXlonPckUpMax <= 0 Then GoTo JumpPath
+'        i = myXlonOrdrCnt + Lo - 1: j = myXlonPckUpMax + Lo - 1
+'        ReDim myZlonFileCnt(i, Lo) As Long
+'        ReDim myZobjFile(i, j) As Object
+'        ReDim myZstrFileName(i, j) As String
+'        ReDim myZstrFilePath(i, j) As String
+'        Lc = .getOptnBase
+'        For i = 1 To myXlonOrdrCnt
+'            myZlonFileCnt(i + Lo - 1, Lo) = .getFileCntAry(i + Lc - 1, Lc)
+'            For j = 1 To myXlonPckUpMax
+'                Set myZobjFile(i + Lo - 1, j + Lo - 1) = .getFileAry(i + Lc - 1, j + Lc - 1)
+'                myZstrFileName(i + Lo - 1, j + Lo - 1) = .getFileNameAry(i + Lc - 1, j + Lc - 1)
+'                myZstrFilePath(i + Lo - 1, j + Lo - 1) = .getFilePathAry(i + Lc - 1, j + Lc - 1)
+'            Next j
+'        Next i
+'    End With
+'JumpPath:
+'    Set myXinsFileMtrxBaseMtch = Nothing
+'    Call variablesOfCFileMtrxBaseMtch(myXlonOrdrCnt, myZstrFileName) 'Debug.Print
+'End Sub
+'Private Sub variablesOfCFileMtrxBaseMtch( _
+'            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+''//CSubFileLstLastModクラス内から出力した変数の内容確認
+'    Debug.Print "データ数: " & myXlonDataCnt
+'    If myXlonDataCnt <= 0 Then Exit Sub
+'  Dim i As Long, j As Long
+'    For i = LBound(myZvarField, 1) To UBound(myZvarField, 1)
+'        For j = LBound(myZvarField, 2) To UBound(myZvarField, 2)
+'            Debug.Print "データ" & i & "," & j & ": " & myZvarField(i, j)
+'        Next j
+'    Next i
+'End Sub
