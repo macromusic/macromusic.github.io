@@ -7,21 +7,7 @@
       <title>Document</title>
     </head>
     <body>
-      <div>macro sample</div>
-      <pre>
- '定型Ｐ_エクセルブックのプロパティのハイパーリンクの基点を設定する
-Private Sub PfixSetHyperLinkBase(myXbisExitFlag As Boolean, _
-            ByVal myXobjBook As Object, ByVal myXstrHypLnkBase As String)
-  Const coXstrBkPrptyName As String = "Hyperlink base"
-    myXbisExitFlag = False
-    If myXstrHypLnkBase = "" Then Exit Sub
-    On Error GoTo ExitPath
-    myXobjBook.BuiltinDocumentProperties(coXstrBkPrptyName).Value = myXstrHypLnkBase
-    On Error GoTo 0
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
-End Sub
-      <br></pre>
+      <div>macro main</div>
+      <a href="https://macromusic.github.io/a.html" <h3>a</h3></a>
     </body>
   </html>
