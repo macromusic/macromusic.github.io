@@ -1,1 +1,733 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>macro sample</div>
+      <pre>
 
+
+ '定型Ｆ_エクセルシート上にテキストファイルを開く
+Private Function PfncobjOpenTextOnExcel( _
+            ByVal myXstrFilePath As String, _
+            Optional ByVal coXlonStartRow As Long = 1, _
+            Optional ByVal coXstrDataType As String = xlDelimited, _
+            Optional ByVal coXbisConsecutiveDelimiter As Boolean = False, _
+            Optional ByVal coXbisTab As Boolean = False, _
+            Optional ByVal coXbisSemicolon As Boolean = False, _
+            Optional ByVal coXbisComma As Boolean = False, _
+            Optional ByVal coXbisSpace As Boolean = False, _
+            Optional ByVal coXbisOther As Boolean = False, _
+            Optional ByVal coXstrOtherChar As String = "", _
+            Optional ByVal coXlonFieldInfo As Boolean = False) As Object
+'DataType:=xlDelimited  = 1 : 区切り文字で区切る
+'DataType:=xlFixedWidth = 2 : ファイルのデータが固定幅の列に配置
+'ConsecutiveDelimiter:=False : 連続した区切り文字を1文字として扱わない
+'ConsecutiveDelimiter:=True  : 連続した区切り文字を1文字として扱う
+'FieldInfo:=False : 各列のデータ形式を変更しない
+'FieldInfo:=True  : 各列のデータ形式を文字列に指定
+    Set PfncobjOpenTextOnExcel = Nothing
+  Dim myXlonColCnt As Long: myXlonColCnt = ActiveSheet.Columns.Count
+  Dim myXvarFldInfo() As Variant: ReDim myXvarFldInfo(myXlonColCnt) As Variant
+  Dim i As Long
+    If coXlonFieldInfo = False Then
+        For i = 1 To myXlonColCnt
+            myXvarFldInfo(i) = Array(i, xlGeneralFormat)    '全フィールドを一般形式に指定
+        Next i
+    Else
+        For i = 1 To myXlonColCnt
+            myXvarFldInfo(i) = Array(i, xlTextFormat)       '全フィールドをテキスト形式に指定
+        Next i
+    End If
+    On Error Resume Next
+    Workbooks.OpenText Filename:=myXstrFilePath, _
+                        StartRow:=coXlonStartRow, _
+                        DataType:=coXstrDataType, _
+                        ConsecutiveDelimiter:=coXbisConsecutiveDelimiter, _
+                        Tab:=coXbisTab, _
+                        Semicolon:=coXbisSemicolon, _
+                        Comma:=coXbisComma, _
+                        Space:=coXbisSpace, _
+                        Other:=coXbisOther, _
+                        OtherChar:=coXstrOtherChar, _
+                        FieldInfo:=myXvarFldInfo
+    On Error GoTo 0
+    Set PfncobjOpenTextOnExcel = ActiveWorkbook
+    Erase myXvarFldInfo
+End Function
+
+ '定型Ｆ_TXT(タブ区切り)形式かCSV(カンマ区切り)形式のテキストファイルを開く
+Private Function PfncobjOpenTextTxtCsvOnExcel( _
+            ByVal myXstrFilePath As String) As Object
+    Set PfncobjOpenTextTxtCsvOnExcel = Nothing
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    If myXobjFSO.FileExists(myXstrFilePath) = False Then Exit Function
+  Dim myXstrExtsn As String
+    myXstrExtsn = myXobjFSO.GetExtensionName(myXstrFilePath)
+  Dim myXbisTab As Boolean, myXbisComma As Boolean
+    Select Case LCase(myXstrExtsn)
+        Case "txt": myXbisTab = True: myXbisComma = False
+        Case "csv": myXbisTab = False: myXbisComma = True
+    End Select
+    On Error Resume Next
+    Workbooks.OpenText Filename:=myXstrFilePath, _
+                        StartRow:=1, _
+                        DataType:=xlDelimited, _
+                        ConsecutiveDelimiter:=False, _
+                        Tab:=myXbisTab, _
+                        Comma:=myXbisComma, _
+                        Semicolon:=False, _
+                        Space:=False, _
+                        Other:=False, _
+                        OtherChar:=""
+    On Error GoTo 0
+    Set PfncobjOpenTextTxtCsvOnExcel = ActiveWorkbook
+    Set myXobjFSO = Nothing
+End Function
+ 
+ '定型Ｆ_指定テキストファイルの文字コードを取得する
+Private Function PfncstrGetTextFileCharset(ByVal myXstrFilePath As String) As String
+'myXstrCharset = Shift_JIS (ANSI)
+'myXstrCharset = UTF-8
+'myXstrCharset = UTF-8 BOM
+'myXstrCharset = UTF-16 LE BOM
+'myXstrCharset = UTF-16 BE BOM
+'myXstrCharset = EUC-JP
+    PfncstrGetTextFileCharset = Empty
+  Dim myXstrCharset As String, i As Long
+  Dim myXlonHdlFile As Long, myXlonFileLen As Long
+  Dim myZbytFile() As Byte, b1 As Byte, b2 As Byte, b3 As Byte, b4 As Byte
+  Dim myXlonSJIS As Long, myXlonUTF8 As Long, myXlonEUC As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+'//ファイル読み込み
+    On Error Resume Next
+    myXlonFileLen = FileLen(myXstrFilePath)
+    ReDim myZbytFile(myXlonFileLen)
+    If Err.Number <> 0 Then Exit Function
+    myXlonHdlFile = FreeFile()
+    Open myXstrFilePath For Binary As #myXlonHdlFile
+    Get #myXlonHdlFile, , myZbytFile
+    Close #myXlonHdlFile
+    If Err.Number <> 0 Then Exit Function
+    On Error GoTo 0
+'//BOMによる判断
+    If (myZbytFile(L) = &HEF And myZbytFile(L + 1) = &HBB And myZbytFile(L + 2) = &HBF) Then
+        myXstrCharset = "UTF-8 BOM"
+        GoTo SetPath
+    ElseIf (myZbytFile(L) = &HFF And myZbytFile(L + 1) = &HFE) Then
+        myXstrCharset = "UTF-16 LE BOM"
+        GoTo SetPath
+    ElseIf (myZbytFile(L) = &HFE And myZbytFile(L + 1) = &HFF) Then
+        myXstrCharset = "UTF-16 BE BOM"
+        GoTo SetPath
+    End If
+'//BINARY
+    For i = L To myXlonFileLen + L - 1
+        b1 = myZbytFile(i)
+        If (b1 >= &H0 And b1 <= &H8) Or _
+                (b1 >= &HA And b1 <= &H9) Or _
+                (b1 >= &HB And b1 <= &HC) Or _
+                (b1 >= &HE And b1 <= &H19) Or _
+                (b1 >= &H1C And b1 <= &H1F) Or _
+                (b1 = &H7F) Then
+            myXstrCharset = "BINARY"
+            GoTo SetPath
+        End If
+    Next i
+'//Shift_JIS
+    For i = L To myXlonFileLen + L - 1
+        b1 = myZbytFile(i)
+        If b1 = &H9 Or b1 = &HA Or b1 = &HD Or _
+                (b1 >= &H20 And b1 <= &H7E) Or _
+                (b1 >= &HB0 And b1 <= &HDF) Then
+            myXlonSJIS = myXlonSJIS + 1
+        Else
+            If (i < myXlonFileLen - 2) Then
+                b2 = myZbytFile(i + 1)
+                If ((b1 >= &H81 And b1 <= &H9F) Or (b1 >= &HE0 And b1 <= &HFC)) And _
+                        ((b2 >= &H40 And b2 <= &H7E) Or (b2 >= &H80 And b2 <= &HFC)) Then
+                   myXlonSJIS = myXlonSJIS + 2
+                   i = i + 1
+                End If
+            End If
+        End If
+    Next i
+'//UTF-8
+    For i = L To myXlonFileLen + L - 1
+        b1 = myZbytFile(i)
+        If b1 = &H9 Or b1 = &HA Or b1 = &HD Or (b1 >= &H20 And b1 <= &H7E) Then
+            myXlonUTF8 = myXlonUTF8 + 1
+        Else
+            If (i < myXlonFileLen - 2) Then
+                b2 = myZbytFile(i + 1)
+                If (b1 >= &HC2 And b1 <= &HDF) And (b2 >= &H80 And b2 <= &HBF) Then
+                   myXlonUTF8 = myXlonUTF8 + 2
+                   i = i + 1
+                Else
+                    If (i < myXlonFileLen - 3) Then
+                        b3 = myZbytFile(i + 2)
+                        If (b1 >= &HE0 And b1 <= &HEF) And _
+                                (b2 >= &H80 And b2 <= &HBF) And _
+                                (b3 >= &H80 And b3 <= &HBF) Then
+                            myXlonUTF8 = myXlonUTF8 + 3
+                            i = i + 2
+                        Else
+                            If (i < myXlonFileLen - 4) Then
+                                b4 = myZbytFile(i + 3)
+                                If (b1 >= &HF0 And b1 <= &HF7) And _
+                                        (b2 >= &H80 And b2 <= &HBF) And _
+                                        (b3 >= &H80 And b3 <= &HBF) And _
+                                        (b4 >= &H80 And b4 <= &HBF) Then
+                                    myXlonUTF8 = myXlonUTF8 + 4
+                                    i = i + 3
+                                End If
+                            End If
+                        End If
+                    End If
+                End If
+            End If
+        End If
+    Next i
+'//EUC-JP
+    For i = L To myXlonFileLen + L - 1
+        b1 = myZbytFile(i)
+        If b1 = &H7 Or b1 = 10 Or b1 = 13 Or (b1 >= &H20 And b1 <= &H7E) Then
+            myXlonEUC = myXlonEUC + 1
+        Else
+            If (i < myXlonFileLen - 2) Then
+                b2 = myZbytFile(i + 1)
+                If ((b1 >= &HA1 And b1 <= &HFE) And (b2 >= &HA1 And b2 <= &HFE)) Or _
+                        (b1 = &H8E And (b2 >= &HA1 And b2 <= &HDF)) Then
+                   myXlonEUC = myXlonEUC + 2
+                   i = i + 1
+                End If
+            End If
+        End If
+    Next i
+'//文字コード出現順位による判断
+    If (myXlonSJIS <= myXlonUTF8) And (myXlonEUC <= myXlonUTF8) Then
+        myXstrCharset = "UTF-8"
+        GoTo SetPath
+    End If
+    If (myXlonUTF8 <= myXlonSJIS) And (myXlonEUC <= myXlonSJIS) Then
+        myXstrCharset = "Shift_JIS"
+        GoTo SetPath
+    End If
+    If (myXlonUTF8 <= myXlonEUC) And (myXlonSJIS <= myXlonEUC) Then
+        myXstrCharset = "EUC-JP"
+        GoTo SetPath
+    End If
+    Exit Function
+SetPath:
+    PfncstrGetTextFileCharset = myXstrCharset
+End Function
+
+ '定型Ｆ_ファイルを開かずにテキストファイルからデータ行数を読み込む
+Private Function PfnclonCountTextLineByLineInput( _
+            ByVal myXstrFilePath As String) As Long
+    PfnclonCountTextLineByLineInput = Empty
+  Dim myXlonFNo As Long: myXlonFNo = FreeFile
+    On Error GoTo ExitPath
+    Open myXstrFilePath For Input As #myXlonFNo
+    On Error GoTo 0
+  Dim myXvarTmp As Variant, n As Long: n = n + 1
+    Do Until EOF(myXlonFNo)
+        Line Input #myXlonFNo, myXvarTmp
+        n = n + 1
+    Loop
+    Close #myXlonFNo
+    PfnclonCountTextLineByLineInput = n
+ExitPath:
+End Function
+ 
+ '定型Ｐ_ファイルを開かずにテキストファイルから1行づつ全行データを読み込む
+Private Sub PfixReadFullTextLineWithoutFileOpening( _
+            myXlonTxtDataCnt As Long, myZstrTxtData() As String, _
+            ByVal myXstrFilePath As String)
+'myZstrTxtData(i, 1) : テキストファイル内容
+    myXlonTxtDataCnt = Empty: Erase myZstrTxtData
+  Dim myXlonFNo As Long: myXlonFNo = FreeFile
+    On Error GoTo ExitPath
+    Open myXstrFilePath For Input As #myXlonFNo
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZstrTmp() As String, myXvarTmp As Variant, n As Long: n = L - 1
+    On Error Resume Next
+    Do Until EOF(myXlonFNo)
+        Line Input #myXlonFNo, myXvarTmp
+        n = n + 1: ReDim Preserve myZstrTmp(n) As String
+        myZstrTmp(n) = CStr(myXvarTmp)
+    Loop
+    On Error GoTo 0
+    Close #myXlonFNo
+    myXlonTxtDataCnt = n - L + 1
+    If myXlonTxtDataCnt <= 0 Then Exit Sub
+    ReDim myZstrTxtData(n, L) As String
+  Dim i As Long
+    For i = LBound(myZstrTmp) To UBound(myZstrTmp)
+        myZstrTxtData(i, L) = myZstrTmp(i)
+    Next i
+    Erase myZstrTmp
+ExitPath:
+End Sub
+ 
+ '定型Ｐ_ファイルを開かずにテキストファイルから1行づつ指定範囲内の行データを読み込む
+Private Sub PfixReadRangeTextLineWithoutFileOpening( _
+            myXlonTxtDataCnt As Long, myZstrTxtData() As String, _
+            ByVal myXstrFilePath As String, _
+            Optional ByVal coXlonBgn As Long = 1, _
+            Optional ByVal coXlonEnd As Long = 0)
+'myZstrTxtData(i, 1) : テキストファイル内容
+    myXlonTxtDataCnt = Empty: Erase myZstrTxtData
+    If coXlonBgn <= 0 Then Exit Sub
+  Dim myXlonFNo As Long: myXlonFNo = FreeFile
+    On Error GoTo ExitPath
+    Open myXstrFilePath For Input As #myXlonFNo
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZstrTmp() As String, myXvarTmp As Variant
+  Dim m As Long, n As Long: m = 0: n = L - 1
+    On Error Resume Next
+    Do Until EOF(myXlonFNo)
+        Line Input #myXlonFNo, myXvarTmp
+        m = m + 1
+        If m < coXlonBgn Then GoTo NextPath
+        If m > coXlonEnd Then Exit Do
+        n = n + 1: ReDim Preserve myZstrTmp(n) As String
+        myZstrTmp(n) = CStr(myXvarTmp)
+NextPath:
+    Loop
+    On Error GoTo 0
+    Close #myXlonFNo
+    myXlonTxtDataCnt = n - L + 1
+    If myXlonTxtDataCnt <= 0 Then Exit Sub
+    ReDim myZstrTxtData(n, L) As String
+  Dim i As Long
+    For i = LBound(myZstrTmp) To UBound(myZstrTmp)
+        myZstrTxtData(i, L) = myZstrTmp(i)
+    Next i
+    Erase myZstrTmp
+ExitPath:
+End Sub
+
+ '定型Ｐ_ファイルを開かずにテキストファイルから1行づつデータを読み込む(拡張子判断付き)
+Private Sub PincReadAndSplitTextLineWithCommaOrTabWithoutFileOpening( _
+            myXlonTxtRowCnt As Long, myXlonTxtColCnt As Long, _
+            myZstrTxtData() As String, _
+            ByVal myXstrFilePath As String, _
+            Optional ByVal coXlonBgn As Long = 1, _
+            Optional ByVal coXlonEnd As Long = 0, _
+            Optional ByVal coXbisSpliOptn As Boolean = False, _
+            Optional ByVal coXstrSpltChr As String = "")
+'Includes PfixReadRangeTextLineWithoutFileOpening
+'Includes PfixSplitString
+'myZstrTxtData(i, j) : テキストファイル内容
+'coXbisSpliOptn = True  : 文字列を分割処理する
+'coXbisSpliOptn = False : 文字列を分割処理しない
+'//ファイルを開かずにテキストファイルから1行づつテキストデータを読み込む
+    myXlonTxtRowCnt = Empty: myXlonTxtColCnt = Empty: Erase myZstrTxtData
+  Dim myZstrOrgData() As String
+    If coXbisSpliOptn = False Then
+        Call PfixReadRangeTextLineWithoutFileOpening(myXlonTxtRowCnt, myZstrTxtData, _
+                myXstrFilePath, coXlonBgn, coXlonEnd)
+        If myXlonTxtRowCnt <= 0 Then Exit Sub
+        myXlonTxtColCnt = 1: Exit Sub
+    Else
+        Call PfixReadRangeTextLineWithoutFileOpening(myXlonTxtRowCnt, myZstrOrgData, _
+                myXstrFilePath, coXlonBgn, coXlonEnd)
+        If myXlonTxtRowCnt <= 0 Then Exit Sub
+    End If
+'//ファイルの拡張子を取得して分岐
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXstrExtsn As String: myXstrExtsn = myXobjFSO.GetExtensionName(myXstrFilePath)
+    Set myXobjFSO = Nothing
+  Dim myXstrSpltChr As String
+    If coXstrSpltChr = "" Then
+        Select Case LCase(myXstrExtsn)
+            Case "txt": myXstrSpltChr = vbTab
+            Case "csv": myXstrSpltChr = ","
+            Case Else: myXstrSpltChr = coXstrSpltChr
+        End Select
+    Else
+        myXstrSpltChr = coXstrSpltChr
+    End If
+'//文字列を分割
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    ReDim myZstrTxtData(myXlonTxtRowCnt, L) As String
+  Dim myXlonSpltCnt As Long, myZstrSpltData() As String, myXstrTmp As String
+  Dim i As Long, j As Long, m As Long, n As Long: m = 0: n = L
+    For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+        myXstrTmp = myZstrOrgData(i, 1)
+        Call PfixSplitString(myXlonSpltCnt, myZstrSpltData, myXstrTmp, myXstrSpltChr)
+        If myXlonSpltCnt <= 0 Then GoTo NextPath
+        If m < myXlonSpltCnt Then
+            m = myXlonSpltCnt: n = m + L - 1
+            ReDim Preserve myZstrTxtData(myXlonTxtRowCnt, n) As String
+        End If
+        For j = LBound(myZstrSpltData) To UBound(myZstrSpltData)
+            myZstrTxtData(i, j) = myZstrSpltData(j)
+        Next j
+NextPath:
+    Next i
+    myXlonTxtColCnt = m
+    Erase myZstrOrgData
+End Sub
+
+ '定型Ｆ_UTF8のテキストファイルを開かずに全行データを読み込む
+Private Function PfncstrReadFullUTF8TextWithoutFileOpening( _
+            ByVal myXstrFilePath As String) As String
+  Const coXstrCharset As String = "UTF-8"
+    PfncstrReadFullUTF8TextWithoutFileOpening = Empty
+  Dim myXobjAS As Object: Set myXobjAS = CreateObject("ADODB.Stream")
+  Dim myXstrStrm As String
+    With myXobjAS
+        On Error GoTo ExitPath
+        .Charset = coXstrCharset
+        .Open
+        .LoadFromFile myXstrFilePath
+        Do Until .EOS
+            myXstrStrm = .ReadText(-1)
+        Loop
+        On Error GoTo 0
+        .Close
+    End With
+    PfncstrReadFullUTF8TextWithoutFileOpening = myXstrStrm
+    Set myXobjAS = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_UTF8のテキストファイルを開かずにデータ行数を読み込む
+Private Function PfnclonCountUTF8TextLine(ByVal myXstrFilePath As String) As Long
+  Const coXstrCharset As String = "UTF-8"
+    PfnclonCountUTF8TextLine = Empty
+  Dim myXobjAS As Object: Set myXobjAS = CreateObject("ADODB.Stream")
+  Dim myXstrTmp As String, n As Long: n = 0
+    With myXobjAS
+        On Error GoTo ExitPath
+        .Charset = coXstrCharset
+        .Open
+        .LoadFromFile myXstrFilePath
+        On Error GoTo 0
+        On Error Resume Next
+        Do Until .EOS
+            myXstrTmp = .ReadText(-2)
+            n = n + 1
+        Loop
+        On Error GoTo 0
+        .Close
+    End With
+    PfnclonCountUTF8TextLine = n
+    Set myXobjAS = Nothing
+ExitPath:
+End Function
+
+ '定型Ｐ_UTF8のテキストファイルを開かずに1行づつ全行データを読み込む
+Private Sub PfixReadFullUTF8TextLineWithoutFileOpening( _
+            myXlonTxtDataCnt As Long, myZstrTxtData() As String, _
+            ByVal myXstrFilePath As String)
+'myZstrTxtData(i, 1) : テキストファイル内容
+  Const coXstrCharset As String = "UTF-8"
+    myXlonTxtDataCnt = Empty: Erase myZstrTxtData
+  Dim myXobjAS As Object: Set myXobjAS = CreateObject("ADODB.Stream")
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZstrTmp() As String, myXstrTmp As String, n As Long: n = L - 1
+    With myXobjAS
+        On Error GoTo ExitPath
+        .Charset = coXstrCharset
+        .Open
+        .LoadFromFile myXstrFilePath
+        On Error GoTo 0
+        On Error Resume Next
+        Do Until .EOS
+            myXstrTmp = .ReadText(-2)
+            n = n + 1: ReDim Preserve myZstrTmp(n) As String
+            myZstrTmp(n) = myXstrTmp
+        Loop
+        On Error GoTo 0
+        .Close
+    End With
+    myXlonTxtDataCnt = n - L + 1
+    If myXlonTxtDataCnt <= 0 Then Exit Sub
+    ReDim myZstrTxtData(n, L) As String
+  Dim i As Long
+    For i = LBound(myZstrTmp) To UBound(myZstrTmp)
+        myZstrTxtData(i, L) = myZstrTmp(i)
+    Next i
+    Set myXobjAS = Nothing: Erase myZstrTmp
+ExitPath:
+End Sub
+
+ '定型Ｐ_UTF8のテキストファイルを開かずに1行づつ指定範囲内の行データを読み込む
+Private Sub PfixReadRangeUTF8TextLineWithoutFileOpening( _
+            myXlonTxtDataCnt As Long, myZstrTxtData() As String, _
+            ByVal myXstrFilePath As String, _
+            Optional ByVal coXlonBgn As Long = 1, _
+            Optional ByVal coXlonEnd As Long = 0)
+'myZstrTxtData(i, 1) : テキストファイル内容
+  Const coXstrCharset As String = "UTF-8"
+    myXlonTxtDataCnt = Empty: Erase myZstrTxtData
+    If coXlonBgn <= 0 Then Exit Sub
+  Dim myXobjAS As Object: Set myXobjAS = CreateObject("ADODB.Stream")
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZstrTmp() As String, myXstrTmp As String
+  Dim m As Long, n As Long: m = 0: n = L - 1
+    With myXobjAS
+        On Error GoTo ExitPath
+        .Charset = coXstrCharset
+        .Open
+        .LoadFromFile myXstrFilePath
+        On Error GoTo 0
+        On Error Resume Next
+        Do Until .EOS
+            myXstrTmp = .ReadText(-2)
+            m = m + 1
+            If m < coXlonBgn Then GoTo NextPath
+            If m > coXlonEnd Then Exit Do
+            n = n + 1: ReDim Preserve myZstrTmp(n) As String
+            myZstrTmp(n) = myXstrTmp
+NextPath:
+       Loop
+        On Error GoTo 0
+        .Close
+    End With
+    myXlonTxtDataCnt = n - L + 1
+    If myXlonTxtDataCnt <= 0 Then Exit Sub
+    ReDim myZstrTxtData(n, L) As String
+  Dim i As Long
+    For i = LBound(myZstrTmp) To UBound(myZstrTmp)
+        myZstrTxtData(i, L) = myZstrTmp(i)
+    Next i
+    Set myXobjAS = Nothing: Erase myZstrTmp
+ExitPath:
+End Sub
+
+ '定型Ｐ_UTF8のテキストファイルを開かずに1行づつデータを読み込む(拡張子判断付き)
+Private Sub PincReadAndSplitUTF8TextLineWithCommaOrTabWithoutFileOpening( _
+            myXlonTxtRowCnt As Long, myXlonTxtColCnt As Long, _
+            myZstrTxtData() As String, _
+            ByVal myXstrFilePath As String, _
+            Optional ByVal coXlonBgn As Long = 1, _
+            Optional ByVal coXlonEnd As Long = 0, _
+            Optional ByVal coXbisSpliOptn As Boolean = False, _
+            Optional ByVal coXstrSpltChr As String = "")
+'Includes PfixReadRangeUTF8TextLineWithoutFileOpening
+'Includes PfixSplitString
+'myZstrTxtData(i, j) : テキストファイル内容
+'coXbisSpliOptn = True  : 文字列を分割処理する
+'coXbisSpliOptn = False : 文字列を分割処理しない
+'//ファイルを開かずにテキストファイルから1行づつテキストデータを読み込む
+    myXlonTxtRowCnt = Empty: myXlonTxtColCnt = Empty: Erase myZstrTxtData
+  Dim myZstrOrgData() As String
+    If coXbisSpliOptn = False Then
+        Call PfixReadRangeUTF8TextLineWithoutFileOpening(myXlonTxtRowCnt, myZstrTxtData, _
+                myXstrFilePath, coXlonBgn, coXlonEnd)
+        If myXlonTxtRowCnt <= 0 Then Exit Sub
+        myXlonTxtColCnt = 1: Exit Sub
+    Else
+        Call PfixReadRangeUTF8TextLineWithoutFileOpening(myXlonTxtRowCnt, myZstrOrgData, _
+                myXstrFilePath, coXlonBgn, coXlonEnd)
+        If myXlonTxtRowCnt <= 0 Then Exit Sub
+    End If
+'//ファイルの拡張子を取得して分岐
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXstrExtsn As String: myXstrExtsn = myXobjFSO.GetExtensionName(myXstrFilePath)
+    Set myXobjFSO = Nothing
+  Dim myXstrSpltChr As String
+    If coXstrSpltChr = "" Then
+        Select Case LCase(myXstrExtsn)
+            Case "txt": myXstrSpltChr = vbTab
+            Case "csv": myXstrSpltChr = ","
+            Case Else: myXstrSpltChr = coXstrSpltChr
+        End Select
+    Else
+        myXstrSpltChr = coXstrSpltChr
+    End If
+'//文字列を分割
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    ReDim myZstrTxtData(myXlonTxtRowCnt, L) As String
+  Dim myXlonSpltCnt As Long, myZstrSpltData() As String, myXstrTmp As String
+  Dim i As Long, j As Long, m As Long, n As Long: m = 0: n = L
+    For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+        myXstrTmp = myZstrOrgData(i, 1)
+        Call PfixSplitString(myXlonSpltCnt, myZstrSpltData, myXstrTmp, myXstrSpltChr)
+        If myXlonSpltCnt <= 0 Then GoTo NextPath
+        If m < myXlonSpltCnt Then
+            m = myXlonSpltCnt: n = m + L - 1
+            ReDim Preserve myZstrTxtData(myXlonTxtRowCnt, n) As String
+        End If
+        For j = LBound(myZstrSpltData) To UBound(myZstrSpltData)
+            myZstrTxtData(i, j) = myZstrSpltData(j)
+        Next j
+NextPath:
+    Next i
+    myXlonTxtColCnt = m
+    Erase myZstrOrgData
+End Sub
+
+ '定型Ｐ_2次元の文字列配列内のデータを指定文字で分割する
+Private Sub PincSplitString2DArray( _
+            myXlonSpltDataRowCnt As Long, myXlonSpltDataColCnt As Long, _
+            myZstrSpltData() As String, _
+            ByRef myZstrOrgData() As String, ByVal myXstrSpltChr As String)
+'Includes PfixSplitString
+'myZstrSpltData(i, j) : 分割後データ配列
+'myZstrOrgData(i, 1) : 元データ配列
+    myXlonSpltDataRowCnt = Empty: myXlonSpltDataColCnt = Empty
+    Erase myZstrSpltData
+  Dim myXstrTmp As String, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(L, L)
+    On Error GoTo 0
+    myXlonSpltDataRowCnt = UBound(myZstrOrgData, 1) - LBound(myZstrOrgData, 1) + 1
+    Dim r As Long
+    r = myXlonSpltDataRowCnt + L - 1: ReDim myZstrSpltData(r, L) As String
+  Dim myXlonSpltCnt As Long, myZstrSpltTmp() As String
+  Dim i As Long, j As Long, k As Long: k = 0
+    For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+        myXstrTmp = myZstrOrgData(i, L)
+        Call PfixSplitString(myXlonSpltCnt, myZstrSpltTmp, myXstrTmp, myXstrSpltChr)
+        If myXlonSpltCnt <= 0 Then GoTo NextPath
+        If k < myXlonSpltCnt Then
+            k = myXlonSpltCnt
+            ReDim Preserve myZstrSpltData(r, k + L - 1) As String
+        End If
+        For j = LBound(myZstrSpltTmp) To UBound(myZstrSpltTmp)
+            myZstrSpltData(i, j) = myZstrSpltTmp(j)
+        Next j
+NextPath:
+    Next i
+    myXlonSpltDataColCnt = k
+    Erase myZstrSpltTmp
+ExitPath:
+End Sub
+
+ '定型Ｐ_指定文字列を指定文字で分割して情報を抽出する
+Private Sub PfixSplitString( _
+            myXlonSpltCnt As Long, myZstrSpltData() As String, _
+            ByVal myXstrOrgData As String, ByVal myXstrSpltChr As String)
+'myZstrSpltData(i) : 分割情報
+    myXlonSpltCnt = Empty: Erase myZstrSpltData
+    If myXstrOrgData = "" Or myXstrSpltChr = "" Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZvarTmp As Variant
+    myZvarTmp = Split(myXstrOrgData, myXstrSpltChr)     '文字列を指定文字で分割
+    myXlonSpltCnt = UBound(myZvarTmp) - LBound(myZvarTmp) + 1
+    If myXlonSpltCnt <= 0 Then Exit Sub
+  Dim i As Long, n As Long: n = L - 1
+    i = myXlonSpltCnt + L - 1: ReDim myZstrSpltData(i) As String
+    For i = LBound(myZvarTmp) To UBound(myZvarTmp)
+        n = n + 1: myZstrSpltData(n) = CStr(myZvarTmp(i))
+    Next i
+    myZvarTmp = Empty
+End Sub
+
+ '定型Ｐ_2次元の文字列配列をテキストファイル形式の配列に入れ替える
+Private Sub PfixArrangeTextArrayString( _
+            myXlonTxtRowCnt As Long, myXlonTxtColCnt As Long, _
+            myZstrTxtSaveData() As String, _
+            ByRef myZstrOrgData() As String, _
+            Optional ByVal coXstrSpltChar As String = vbTab)
+'myZstrTxtSaveData(i, 1) : 入れ替え後データ配列
+'myZstrOrgData(i, j) : 元データ配列
+    myXlonTxtRowCnt = Empty: myXlonTxtColCnt = Empty: Erase myZstrTxtSaveData
+    If coXstrSpltChar = "" Then Exit Sub
+  Dim myXstrTmp As String, Li As Long, Ui1 As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    Ui1 = UBound(myZstrOrgData, 1)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    myXlonTxtRowCnt = Ui1 - Li + 1: myXlonTxtColCnt = 1
+    i = myXlonTxtRowCnt + Lo - 1: j = myXlonTxtColCnt + Lo - 1
+    ReDim myZstrTxtSaveData(i, j) As String
+    For i = Li To Ui1
+        myXstrTmp = Empty
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            If j = LBound(myZstrOrgData, 2) Then
+                myXstrTmp = myZstrOrgData(i, j)
+            Else
+                myXstrTmp = myXstrTmp & coXstrSpltChar & myZstrOrgData(i, j)
+            End If
+            myZstrTxtSaveData(i + Lo - Li, Lo) = myXstrTmp
+        Next j
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列のVariant変数をテキストファイル形式の配列に入れ替える
+Private Sub PfixArrangeTextArrayVariant( _
+            myXlonTxtRowCnt As Long, myXlonTxtColCnt As Long, _
+            myZvarTxtSaveData As Variant, _
+            ByRef myZvarOrgData As Variant, _
+            Optional ByVal coXstrSpltChar As String = vbTab)
+'myZvarTxtSaveData(i, 1) : 入れ替え後データ配列
+'myZvarOrgData(i, j) : 元データ配列
+    myXlonTxtRowCnt = Empty: myXlonTxtColCnt = Empty: myZvarTxtSaveData = Empty
+    If coXstrSpltChar = "" Then Exit Sub
+  Dim myXvarTmp As Variant, Li As Long, Ui1 As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarOrgData, 1): myXvarTmp = myZvarOrgData(Li, Li)
+    Ui1 = UBound(myZvarOrgData, 1)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    myXlonTxtRowCnt = Ui1 - Li + 1: myXlonTxtColCnt = 1
+    i = myXlonTxtRowCnt + Lo - 1: j = myXlonTxtColCnt + Lo - 1
+    ReDim myZvarTxtSaveData(i, j) As Variant
+    For i = Li To Ui1
+        myXvarTmp = Empty
+        For j = LBound(myZvarOrgData, 2) To UBound(myZvarOrgData, 2)
+            If j = LBound(myZvarOrgData, 2) Then
+                myXvarTmp = myZvarOrgData(i, j)
+            Else
+                myXvarTmp = myXvarTmp & coXstrSpltChar & myZvarOrgData(i, j)
+            End If
+            myZvarTxtSaveData(i + Lo - Li, Lo) = myXvarTmp
+        Next j
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_ファイルを開かずにテキストファイルに1行づつテキストデータを書き込む
+Private Sub PfixWriteTextLineWithoutFileOpening( _
+            myXbisExitFlag As Boolean, _
+            ByRef myZvarTxtData As Variant, ByVal myXstrTxtFilePath As String, _
+            Optional ByVal coXbisAppend As Boolean = False)
+'myZvarTxtData(i, 1) : 元データ配列
+'coXbisAppend = False : 上書きモードでテキストファイルに書き込む
+'coXbisAppend = True  : 追加モードでテキストファイルに書き込む
+    myXbisExitFlag = False
+    If myXstrTxtFilePath = "" Then GoTo ExitPath
+'//入力変数の次元数を確認
+  Dim myXlonTmp As Long, n As Long: n = 0
+    On Error Resume Next
+    Do
+        n = n + 1: myXlonTmp = UBound(myZvarTxtData, n)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    If n - 1 <> 2 Then GoTo ExitPath
+'//入力変数をテキストファイルに書き込み
+  Dim myXlonFNo As Long: myXlonFNo = FreeFile
+    If coXbisAppend = False Then
+        Open myXstrTxtFilePath For Output As #myXlonFNo
+    Else
+        Open myXstrTxtFilePath For Append As #myXlonFNo
+    End If
+  Dim i As Long
+    For i = LBound(myZvarTxtData, 1) To UBound(myZvarTxtData, 1)
+        Print #myXlonFNo, myZvarTxtData(i, 1)
+    Next i
+    Close #myXlonFNo
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
