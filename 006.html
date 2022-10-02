@@ -1,1 +1,2311 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>macro sample</div>
+      <pre>
 
+
+ '定型Ｆ_指定シートの存在を確認して無ければアクティブシートに設定する
+Private Function PfncobjCheckSheet(ByVal myXobjSheet As Object) As Object
+    Set PfncobjCheckSheet = Nothing
+    On Error GoTo ExitPath
+  Dim myXstrShtName As String: myXstrShtName = myXobjSheet.Name
+    On Error GoTo 0
+    Set PfncobjCheckSheet = myXobjSheet
+    Exit Function
+ExitPath:
+    Set PfncobjCheckSheet = ActiveSheet
+End Function
+
+ '定型Ｆ_指定グラフの存在を確認して無ければアクティブグラフに設定する
+Private Function PfncobjCheckChart(ByVal myXobjChrt As Object) As Object
+    Set PfncobjCheckChart = Nothing
+    On Error GoTo ErrPath
+  Dim myXstrChrtName As String: myXstrChrtName = myXobjChrt.Name
+    On Error GoTo 0
+    Set PfncobjCheckChart = myXobjChrt
+    Exit Function
+ErrPath:
+    On Error GoTo ExitPath
+    Set PfncobjCheckChart = ActiveChart
+    On Error GoTo 0
+ExitPath:
+End Function
+
+ '定型Ｆ_新規グラフオブジェクトを追加する
+Private Function PfncobjAddChartObject(ByVal myXobjSheet As Object) As Object
+    Set PfncobjAddChartObject = Nothing
+  Dim myXobjShape As Object, myXlonChrtObjCnt As Long, myXobjChrtObjct As Object
+    On Error GoTo ExitPath
+    With myXobjSheet
+        .Activate
+        Set myXobjShape = .Shapes.AddChart
+        myXlonChrtObjCnt = .ChartObjects.Count
+        Set myXobjChrtObjct = .ChartObjects(myXlonChrtObjCnt)
+    End With
+    On Error GoTo 0
+    Set PfncobjAddChartObject = myXobjChrtObjct
+    Set myXobjShape = Nothing: Set myXobjChrtObjct = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_新規グラフオブジェクトを追加する2
+Private Function PfncobjAddChartObject2(ByVal myXobjSheet As Object, _
+            Optional ByVal coXlonChrtType As Long = xlXYScatterLines) As Object
+'coXlonChrtType = xlXYScatterLines = 75 : 折れ線付き散布図(データ マーカーなし)
+    Set PfncobjAddChartObject2 = Nothing
+  Dim myXobjShape As Object, myXlonChrtObjCnt As Long, myXobjChrtObjct As Object
+    On Error GoTo ExitPath
+    With myXobjSheet
+        .Activate
+        Set myXobjShape = .Shapes.AddChart2(-1, coXlonChrtType)
+        myXlonChrtObjCnt = .ChartObjects.Count
+        Set myXobjChrtObjct = .ChartObjects(myXlonChrtObjCnt)
+    End With
+    On Error GoTo 0
+    Set PfncobjAddChartObject2 = myXobjChrtObjct
+    Set myXobjShape = Nothing: Set myXobjChrtObjct = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_指定グラフオブジェクトを複製する
+Private Function PfncobjDuplicateChartObject(ByVal myXobjChrtObjct As Object) As Object
+    Set PfncobjDuplicateChartObject = Nothing
+  Dim myXstrChrtObjName As String, myXobjShape As Object, _
+        myXlonChrtObjCnt As Long, myXobjDupChrtObjct As Object
+    On Error GoTo ExitPath
+    With myXobjChrtObjct
+        myXstrChrtObjName = .Name
+        Set myXobjShape = .Parent.Shapes(myXstrChrtObjName)
+        Set myXobjShape = myXobjShape.Duplicate
+        myXlonChrtObjCnt = .Parent.ChartObjects.Count
+        Set myXobjDupChrtObjct = .Parent.ChartObjects(myXlonChrtObjCnt)
+    End With
+    On Error GoTo 0
+    Set PfncobjDuplicateChartObject = myXobjDupChrtObjct
+    Set myXobjShape = Nothing: Set myXobjDupChrtObjct = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_指定グラフオブジェクトを選択する
+Private Function PfncbisSelectChartObject(ByVal myXobjChrtObjct As Object) As Boolean
+    PfncbisSelectChartObject = False
+    On Error GoTo ExitPath
+    myXobjChrtObjct.Select
+    On Error GoTo 0
+    PfncbisSelectChartObject = True
+    Exit Function
+ExitPath:
+End Function
+
+ '定型Ｆ_指定グラフのチャートエリアを選択する
+Private Function PfncbisSelectChartArea(ByVal myXobjChrt As Object) As Boolean
+    PfncbisSelectChartArea = False
+    On Error GoTo ExitPath
+    myXobjChrt.ChartArea.Select
+    On Error GoTo 0
+    PfncbisSelectChartArea = True
+    Exit Function
+ExitPath:
+End Function
+
+ '定型Ｆ_指定グラフのグラフオブジェクトを取得する
+Private Function PfncobjGetChartObjectOfChart(ByVal myXobjChrt As Object) As Object
+    Set PfncobjGetChartObjectOfChart = Nothing
+    If myXobjChrt Is Nothing Then Exit Function
+    On Error Resume Next
+    Set PfncobjGetChartObjectOfChart = myXobjChrt.Parent
+    On Error GoTo 0
+End Function
+
+ '定型Ｆ_指定グラフがあるシートを取得する
+Private Function PfncobjGetSheetOfChart(ByVal myXobjChrt As Object) As Object
+    Set PfncobjGetSheetOfChart = Nothing
+    If myXobjChrt Is Nothing Then Exit Function
+    On Error Resume Next
+    Set PfncobjGetSheetOfChart = myXobjChrt.Parent.Parent
+    On Error GoTo 0
+End Function
+
+ '定型Ｆ_指定グラフがあるブックを取得する
+Private Function PfncobjGetBookOfChart(ByVal myXobjChrt As Object) As Object
+    Set PfncobjGetBookOfChart = Nothing
+    If myXobjChrt Is Nothing Then Exit Function
+    On Error Resume Next
+    Set PfncobjGetBookOfChart = myXobjChrt.Parent.Parent.Parent
+    On Error GoTo 0
+End Function
+
+ '定型Ｆ_指定名のグラフオブジェクトの存在を確認する
+Private Function PfncbisCheckChartExist( _
+            ByVal myXobjSheet As Object, ByVal myXstrChrtObjName As String) As Boolean
+    PfncbisCheckChartExist = False
+    If myXstrChrtObjName = "" Then Exit Function
+    On Error GoTo ExitPath
+  Dim myXlonChrtCnt As Long: myXlonChrtCnt = myXobjSheet.ChartObjects.Count
+    On Error GoTo 0
+    If myXlonChrtCnt <= 0 Then Exit Function
+  Dim myXobjChrt As Object
+    For Each myXobjChrt In myXobjSheet.ChartObjects
+        If myXobjChrt.Name = myXstrChrtObjName Then
+            PfncbisCheckChartExist = True: Exit For
+        ElseIf myXobjChrt.Chart.Name = myXstrChrtObjName Then
+            PfncbisCheckChartExist = True: Exit For
+        End If
+    Next
+    Set myXobjChrt = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_指定名のグラフオブジェクトを検索してグラフオブジェクトを取得する
+Private Function PfncobjSearchChartObject( _
+            ByVal myXobjSheet As Object, ByVal myXstrChrtObjName As String) As Object
+    Set PfncobjSearchChartObject = Nothing
+    If myXstrChrtObjName = "" Then Exit Function
+    On Error GoTo ExitPath
+  Dim myXlonChrtCnt As Long: myXlonChrtCnt = myXobjSheet.ChartObjects.Count
+    On Error GoTo 0
+    If myXlonChrtCnt <= 0 Then Exit Function
+  Dim myXobjChrtObj As Object
+    For Each myXobjChrtObj In myXobjSheet.ChartObjects
+        If myXobjChrtObj.Name = myXstrChrtObjName Then
+            Set PfncobjSearchChartObject = myXobjChrtObj: Exit For
+        End If
+    Next
+    Set myXobjChrtObj = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_指定シート上のグラフ番号を指定してグラフオブジェクトを取得する
+Private Function PfncobjGetChartObject( _
+            ByVal myXobjSheet As Object, ByVal myXlonChrtObjNo As Long) As Object
+    Set PfncobjGetChartObject = Nothing
+    On Error GoTo ExitPath
+    Set PfncobjGetChartObject = myXobjSheet.ChartObjects(myXlonChrtObjNo)
+    On Error GoTo 0
+ExitPath:
+End Function
+
+ '定型Ｆ_指定シート上の最後のグラフ番号のグラフオブジェクトを取得する
+Private Function PfncobjGetLastChartObject(ByVal myXobjSheet As Object) As Object
+    Set PfncobjGetLastChartObject = Nothing
+  Dim myXlonChrtObjCnt As Long
+    On Error GoTo ExitPath
+    myXlonChrtObjCnt = myXobjSheet.ChartObjects.Count
+    Set PfncobjGetLastChartObject = myXobjSheet.ChartObjects(myXlonChrtObjCnt)
+    On Error GoTo 0
+ExitPath:
+End Function
+
+ '定型Ｆ_グラフオブジェクト名を自動生成する
+Private Function PfncstrChartObjectAutoNaming( _
+        ByVal myXobjSheet As Object, ByVal myXstrChrtObjName As String, _
+        Optional ByVal coXstrBaseName As String = "Graph") As String
+    PfncstrChartObjectAutoNaming = Empty
+    If myXobjSheet Is Nothing Then Exit Function
+  Dim myXstrTmpName As String, n As Long: n = 0
+    If myXstrChrtObjName = "" Then
+        n = n + 1: myXstrTmpName = coXstrBaseName & n
+    Else
+        myXstrTmpName = myXstrChrtObjName
+    End If
+  Dim myXbisExistFlag As Boolean: myXbisExistFlag = False
+  Dim myXstrChck As String
+    On Error Resume Next
+    With myXobjSheet
+        If .ChartObjects.Count = 0 Then Exit Function
+        myXstrChck = .ChartObjects(myXstrTmpName).Name
+        If myXstrChck = myXstrTmpName Then myXbisExistFlag = True
+        Do While myXbisExistFlag = True
+            n = n + 1: myXstrTmpName = coXstrBaseName & n
+            myXstrChck = .ChartObjects(myXstrTmpName).Name
+        If myXstrChck <> myXstrTmpName Then myXbisExistFlag = False
+        Loop
+    End With
+    On Error GoTo 0
+    PfncstrChartObjectAutoNaming = myXstrTmpName
+End Function
+
+ '定型Ｆ_グラフオブジェクトの名前を取得する
+Private Function PfncstrGetChartObjectName(ByVal myXobjChrtObjct As Object) As String
+    PfncstrGetChartObjectName = Empty
+    If myXobjChrtObjct Is Nothing Then Exit Function
+    On Error Resume Next
+    PfncstrGetChartObjectName = myXobjChrtObjct.Name
+    On Error GoTo 0
+End Function
+
+ '定型Ｆ_グラフの名前を取得する
+Private Function PfncstrGetChartName(ByVal myXobjChrtObjct As Object) As String
+    PfncstrGetChartName = Empty
+    If myXobjChrtObjct Is Nothing Then Exit Function
+    On Error Resume Next
+    PfncstrGetChartName = myXobjChrtObjct.Chart.Name
+    On Error GoTo 0
+End Function
+
+ '定型Ｐ_グラフオブジェクトに名前を設定する
+Private Sub PfixSetChartObjectName(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, ByVal myXstrChrtObjName As String)
+    myXbisExitFlag = False
+    If myXstrChrtObjName = "" Then Exit Sub
+    On Error GoTo ExitPath
+    myXobjChrtObjct.Name = myXstrChrtObjName
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフに名前を設定する
+Private Sub PfixSetChartName(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, ByVal myXstrChrtName As String)
+    myXbisExitFlag = False
+    If myXstrChrtName = "" Then Exit Sub
+    On Error GoTo ExitPath
+    myXobjChrtObjct.Chart.Name = myXstrChrtName
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフの種類を設定する
+Private Sub PfixSetChartType(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXlonChrtType As Long)
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    myXobjChrt.ChartType = myXlonChrtType
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフの指定データ系列だけグラフの種類を変更する
+Private Sub PfixSetSeriesCollectionChartType( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjSrsClctn As Object, ByVal myXlonChrtType As Long)
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    myXobjSrsClctn.ChartType = myXlonChrtType
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_シート上の全グラフオブジェクトを削除する
+Private Sub PfixDeleteChartObjects(myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object)
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+  Dim myXlonChrtObjCnt As Long: myXlonChrtObjCnt = myXobjSheet.ChartObjects.Count
+    On Error GoTo 0
+    If myXlonChrtObjCnt <= 0 Then GoTo ExitPath
+  Dim myXobjChrtObj As Object
+    For Each myXobjChrtObj In myXobjSheet.ChartObjects
+        myXobjChrtObj.Delete
+    Next myXobjChrtObj
+    Set myXobjChrtObj = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_指定名のグラフオブジェクトを削除する
+Private Sub PfixDeleteDesignateChartObject(myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object, ByVal myXstrChrtObjName As String)
+    myXbisExitFlag = False
+    If myXstrChrtObjName = "" Then GoTo ExitPath
+    On Error GoTo ExitPath
+  Dim myXlonChrtObjCnt As Long: myXlonChrtObjCnt = myXobjSheet.ChartObjects.Count
+    On Error GoTo 0
+    If myXlonChrtObjCnt <= 0 Then GoTo ExitPath
+  Dim myXobjChrtObj As Object
+    For Each myXobjChrtObj In myXobjSheet.ChartObjects
+        If myXobjChrtObj.Name = myXstrChrtObjName Then
+            myXobjChrtObj.Delete: Exit For
+        End If
+    Next myXobjChrtObj
+    Set myXobjChrtObj = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_指定名のグラフオブジェクト以外の全グラフオブジェクトを削除する
+Private Sub PfixDeleteNoDesignateChartObjects(myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object, ByVal myXstrChrtObjName As String)
+    myXbisExitFlag = False
+    If myXstrChrtObjName = "" Then GoTo ExitPath
+    On Error GoTo ExitPath
+  Dim myXlonChrtObjCnt As Long: myXlonChrtObjCnt = myXobjSheet.ChartObjects.Count
+    On Error GoTo 0
+    If myXlonChrtObjCnt <= 0 Then GoTo ExitPath
+  Dim myXobjChrtObj As Object
+    For Each myXobjChrtObj In myXobjSheet.ChartObjects
+        If myXobjChrtObj.Name <> myXstrChrtObjName Then
+            myXobjChrtObj.Delete
+        End If
+    Next myXobjChrtObj
+    Set myXobjChrtObj = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_グラフオブジェクトをコピーしてシートに図として形式を指定して貼り付ける
+Private Function PfncobjCopyPasteSpecialChartAsPicture( _
+            ByVal myXobjChrtObjct As Object, _
+            Optional ByVal coXlonPstFrmt As Long = 4) As Object
+'coXlonPstFrmt = 1 : "図 (PNG)"
+'coXlonPstFrmt = 2 : "図 (JPEG)"
+'coXlonPstFrmt = 3 : "図 (GIF)"
+'coXlonPstFrmt = 4 : "図 (拡張メタファイル)"
+'coXlonPstFrmt = 5 : "ビットマップ"
+'coXlonPstFrmt = 6 : "Microsoft Office 描画オブジェクト"
+'coXlonPstFrmt = ? : 形式変更しない
+    Set PfncobjCopyPasteSpecialChartAsPicture = Nothing
+    If myXobjChrtObjct Is Nothing Then Exit Function
+    On Error GoTo ExitPath
+  Dim myXobjSheet As Object: Set myXobjSheet = myXobjChrtObjct.Parent
+    myXobjSheet.Activate
+    On Error GoTo 0
+  Dim myXstrPstFrmt As String
+    If coXlonPstFrmt = 1 Then
+        myXstrPstFrmt = "図 (PNG)"
+    ElseIf coXlonPstFrmt = 2 Then
+        myXstrPstFrmt = "図 (JPEG)"
+    ElseIf coXlonPstFrmt = 3 Then
+        myXstrPstFrmt = "図 (GIF)"
+    ElseIf coXlonPstFrmt = 4 Then
+        myXstrPstFrmt = "図 (拡張メタファイル)"
+    ElseIf coXlonPstFrmt = 5 Then
+        myXstrPstFrmt = "ビットマップ"
+    ElseIf coXlonPstFrmt = 6 Then
+        myXstrPstFrmt = "Microsoft Office 描画オブジェクト"
+    Else
+        Exit Function
+    End If
+    myXobjChrtObjct.Chart.ChartArea.Copy
+  Dim myXobjTopLftCell As Object
+    Set myXobjTopLftCell = myXobjChrtObjct.TopLeftCell
+    myXobjTopLftCell.Select
+    Call myXobjSheet.PasteSpecial(Format:=myXstrPstFrmt)
+  Dim myXlonPicCnt As Long: myXlonPicCnt = myXobjSheet.Pictures.Count
+    Set PfncobjCopyPasteSpecialChartAsPicture = myXobjSheet.Pictures(myXlonPicCnt)
+    Set myXobjTopLftCell = Nothing
+ExitPath:
+End Function
+
+ '定型Ｐ_グラフオブジェクトの縦横比の固定を設定する
+Private Sub PfixSetChartObjectLockAspectRatio(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            Optional ByVal coXbisUnlckAspctRto As Boolean = True)
+'coXbisUnlckAspctRto = False : 縦横比を固定する
+'coXbisUnlckAspctRto = True  : 縦横比を固定しない
+    myXbisExitFlag = False
+    If myXobjChrtObjct Is Nothing Then GoTo ExitPath
+  Dim myXlonLckAspctRto As Long
+    If coXbisUnlckAspctRto = True Then
+        myXlonLckAspctRto = msoFalse
+    Else
+        myXlonLckAspctRto = msoTrue
+    End If
+    On Error GoTo ExitPath
+    myXobjChrtObjct.ShapeRange.LockAspectRatio = myXlonLckAspctRto
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトの位置サイズ変更のプロパティを設定する
+Private Sub PfixSetChartObjectPlacement(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            Optional ByVal coXlonPlcmnt As Long = xlMove)
+'coXlonPlcmnt = xlMoveAndSize = 1  : セルに合わせて移動やサイズ変更をする
+'coXlonPlcmnt = xlMove = 2         : セルに合わせて移動するがサイズ変更はしない
+'coXlonPlcmnt = xlFreeFloating = 3 : セルに合わせて移動やサイズ変更をしない
+    myXbisExitFlag = False
+    If myXobjChrtObjct Is Nothing Then GoTo ExitPath
+    On Error GoTo ExitPath
+    myXobjChrtObjct.Placement = coXlonPlcmnt
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトの位置とサイズを取得する
+Private Sub PfixGetChartObjectPlaceSize( _
+            myXdouChrtObjTop As Double, myXdouChrtObjLft As Double, _
+            myXdouChrtObjBttm As Double, myXdouChrtObjRght As Double, _
+            myXdouChrtObjHght As Double, myXdouChrtObjWdth As Double, _
+            ByVal myXobjChrtObjct As Object)
+    myXdouChrtObjTop = Empty: myXdouChrtObjLft = Empty
+    myXdouChrtObjBttm = Empty: myXdouChrtObjRght = Empty
+    myXdouChrtObjHght = Empty: myXdouChrtObjWdth = Empty
+    On Error GoTo ExitPath
+    With myXobjChrtObjct
+        myXdouChrtObjTop = .Top
+        myXdouChrtObjLft = .Left
+        myXdouChrtObjHght = .Height
+        myXdouChrtObjWdth = .Width
+    End With
+    On Error GoTo 0
+    myXdouChrtObjBttm = myXdouChrtObjTop + myXdouChrtObjHght
+    myXdouChrtObjRght = myXdouChrtObjLft + myXdouChrtObjWdth
+ExitPath:
+End Sub
+
+ '定型Ｐ_グラフオブジェクトの位置とサイズをセル範囲で取得する
+Private Sub PfixGetChartObjectPlaceSizeRange( _
+            myXlonChrtObjTopRow As Long, myXlonChrtObjLftCol As Long, _
+            myXlonChrtObjBttmRow As Long, myXlonChrtObjRghtCol As Long, _
+            myXlonChrtObjHghtRows As Long, myXlonChrtObjWdthCols As Long, _
+            ByVal myXobjChrtObjct As Object)
+    myXlonChrtObjTopRow = Empty: myXlonChrtObjLftCol = Empty
+    myXlonChrtObjBttmRow = Empty: myXlonChrtObjRghtCol = Empty
+    myXlonChrtObjHghtRows = Empty: myXlonChrtObjWdthCols = Empty
+    On Error GoTo ExitPath
+    With myXobjChrtObjct
+        myXlonChrtObjTopRow = .TopLeftCell.Row
+        myXlonChrtObjLftCol = .TopLeftCell.Column
+        myXlonChrtObjBttmRow = .BottomRightCell.Row
+        myXlonChrtObjRghtCol = .BottomRightCell.Column
+    End With
+    On Error GoTo 0
+    myXlonChrtObjHghtRows = myXlonChrtObjBttmRow - myXlonChrtObjTopRow + 1
+    myXlonChrtObjWdthCols = myXlonChrtObjRghtCol - myXlonChrtObjLftCol + 1
+ExitPath:
+End Sub
+
+ '定型Ｐ_グラフオブジェクトの位置を設定する
+Private Sub PfixSetChartObjectPlace( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouChrtObjTop As Double, ByVal myXdouChrtObjLft As Double)
+'myXdouChrtObjTop : x [point]
+'myXdouChrtObjLft : x [point]
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+  Dim myXdouTmpTop As Double: myXdouTmpTop = myXobjChrtObjct.Top
+    On Error GoTo 0
+    If myXdouChrtObjTop < 0 Or myXdouChrtObjLft < 0 Then GoTo ExitPath
+    myXobjChrtObjct.Top = myXdouChrtObjTop
+    myXobjChrtObjct.Left = myXdouChrtObjLft
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトの縦横比を固定せずにサイズを設定する
+Private Sub PfixSetChartObjectSizeWithoutLockAspectRatio( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouChrtObjHght As Double, ByVal myXdouChrtObjWdth As Double)
+'myXdouChrtObjHght : x [point]
+'myXdouChrtObjWdth : x [point]
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+  Dim myXdouTmpHght As Double: myXdouTmpHght = myXobjChrtObjct.Height
+    On Error GoTo 0
+    If myXdouChrtObjHght < 0 Or myXdouChrtObjWdth < 0 Then GoTo ExitPath
+    myXobjChrtObjct.ShapeRange.LockAspectRatio = msoFalse
+    myXobjChrtObjct.Height = myXdouChrtObjHght
+    myXobjChrtObjct.Width = myXdouChrtObjWdth
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトの縦横比を固定してサイズを設定する
+Private Sub PfixSetChartObjectSizeWithLockAspectRatio( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouChrtObjHght As Double, ByVal myXdouChrtObjWdth As Double)
+'myXdouChrtObjHght : x [point]
+'myXdouChrtObjWdth : x [point]
+    myXbisExitFlag = False
+  Dim myXdouOrgHght As Double, myXdouOrgWdth As Double
+    On Error GoTo ExitPath
+    myXdouOrgHght = myXobjChrtObjct.Height
+    myXdouOrgWdth = myXobjChrtObjct.Width
+    On Error GoTo 0
+    If myXdouChrtObjHght < 0 Or myXdouChrtObjWdth < 0 Then GoTo ExitPath
+  Dim myXdouHghtRatio As Double, myXdouWdthRatio As Double, myXdouRatio As Double
+    myXdouHghtRatio = myXdouChrtObjHght / myXdouOrgHght
+    myXdouWdthRatio = myXdouChrtObjWdth / myXdouOrgWdth
+    myXobjChrtObjct.ShapeRange.LockAspectRatio = msoTrue
+    If myXdouHghtRatio <= myXdouWdthRatio Then
+        myXdouRatio = myXdouHghtRatio
+    Else
+        myXdouRatio = myXdouWdthRatio
+    End If
+    myXobjChrtObjct.Height = myXdouOrgHght * myXdouRatio
+'    myXobjChrtObjct.Width = myXdouOrgWdth * myXdouRatio
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトの縦横比を固定せずに倍率でサイズを設定する
+Private Sub PfixSetChartObjectScaleWithoutLockAspectRatio( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouSclHght As Double, ByVal myXdouSclWdth As Double, _
+            Optional ByVal coXlonScaleFrom As Long = msoScaleFromTopLeft)
+'myXdouSclHght : x [%]
+'myXdouSclWdth : x [%]
+'coXlonScaleFrom = msoScaleFromTopLeft     : 0 : 図形の左上隅の位置が保持
+'coXlonScaleFrom = msoScaleFromMiddle      : 1 : 図形の中心の位置が保持
+'coXlonScaleFrom = msoScaleFromBottomRight : 2 : 図形の右下隅の位置が保持
+    myXbisExitFlag = False
+  Dim myXdouChrtObjType As Double
+    On Error GoTo ExitPath
+    myXdouChrtObjType = myXobjChrtObjct.ShapeRange.Type
+    On Error GoTo 0
+    If myXdouSclHght < 0 Or myXdouSclWdth < 0 Then GoTo ExitPath
+    myXdouSclHght = myXdouSclHght / 100
+    myXdouSclWdth = myXdouSclWdth / 100
+    With myXobjChrtObjct.ShapeRange
+        .LockAspectRatio = msoFalse
+        Call .ScaleHeight(myXdouSclHght, msoFalse, coXlonScaleFrom)
+        Call .ScaleWidth(myXdouSclWdth, msoFalse, coXlonScaleFrom)
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトの縦横比を固定して倍率でサイズを設定する
+Private Sub PfixSetChartObjectScaleWithLockAspectRatio( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouSclHght As Double, ByVal myXdouSclWdth As Double, _
+            Optional ByVal coXlonScaleFrom As Long = msoScaleFromTopLeft)
+'myXdouSclHght : x [%]
+'myXdouSclWdth : x [%]
+'coXlonScaleFrom = msoScaleFromTopLeft     : 0 : 図形の左上隅の位置が保持
+'coXlonScaleFrom = msoScaleFromMiddle      : 1 : 図形の中心の位置が保持
+'coXlonScaleFrom = msoScaleFromBottomRight : 2 : 図形の右下隅の位置が保持
+    myXbisExitFlag = False
+  Dim myXdouChrtObjType As Double
+    On Error GoTo ExitPath
+    myXdouChrtObjType = myXobjChrtObjct.ShapeRange.Type
+    On Error GoTo 0
+    If myXdouSclHght < 0 Or myXdouSclWdth < 0 Then GoTo ExitPath
+  Dim myXdouScale As Double
+    If myXdouSclHght <= myXdouSclWdth Then
+        myXdouScale = myXdouSclHght / 100
+    Else
+        myXdouScale = myXdouSclWdth / 100
+    End If
+    With myXobjChrtObjct.ShapeRange
+        .LockAspectRatio = msoTrue
+        Call .ScaleHeight(myXdouScale, msoFalse, coXlonScaleFrom)
+'        Call .ScaleWidth(myXdouScale, msoFalse, coXlonScaleFrom)
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトの位置をエクセルシートの行列位置で設定する
+Private Sub PincSetChartObjectPlaceInSheetRange( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, ByVal myXobjSheet As Object, _
+            ByVal myXlonTopRow As Long, ByVal myXlonLftCol As Long, _
+            ByVal myXdouTopOfst As Double, ByVal myXdouLftOfst As Double)
+'Includes PfixGetRangePlaceSize
+'Includes PfixSetChartObjectPlace
+'myXdouTopOfst : x [point]
+'myXdouLftOfst : x [point]
+'//エクセルシートの指定セル範囲の位置情報とサイズ情報を取得
+  Dim myXdouRngTop As Double, myXdouRngLft As Double, _
+        myXdouRngHght As Double, myXdouRngWdth As Double
+    Call PfixGetRangePlaceSize( _
+            myXdouRngTop, myXdouRngLft, myXdouRngHght, myXdouRngWdth, _
+            myXobjSheet, myXlonTopRow, myXlonLftCol, myXlonTopRow, myXlonLftCol)
+    If myXdouRngHght <= 0 Or myXdouRngWdth <= 0 Then GoTo ExitPath
+'//グラフオブジェクトの位置を設定
+  Dim myXdouChrtObjTop As Double, myXdouChrtObjLft As Double
+    myXdouChrtObjTop = myXdouRngTop + myXdouTopOfst
+    myXdouChrtObjLft = myXdouRngLft + myXdouLftOfst
+    Call PfixSetChartObjectPlace( _
+            myXbisExitFlag, myXobjChrtObjct, myXdouChrtObjTop, myXdouChrtObjLft)
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトのサイズをエクセルシートの行列位置で設定する
+Private Sub PincSetChartObjectSizeInSheetRange( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, ByVal myXobjSheet As Object, _
+            ByVal myXlonTopRow As Long, ByVal myXlonLftCol As Long, _
+            ByVal myXlonBttmRow As Long, ByVal myXlonRghtCol As Long, _
+            ByVal myXdouTopOfst As Double, ByVal myXdouLftOfst As Double, _
+            ByVal myXdouBttmOfst As Double, ByVal myXdouRghtOfst As Double, _
+            Optional ByVal coXbisChrtObjWthOtAspctRto As Boolean = False)
+'Includes PfixGetRangePlaceSize
+'Includes PfixSetChartObjectSizeWithLockAspectRatio
+'Includes PfixSetChartObjectSizeWithoutLockAspectRatio
+'myXdouTopOfst : x [point]
+'myXdouLftOfst : x [point]
+'myXdouBttmOfst : x [point]
+'myXdouRghtOfst : x [point]
+'coXbisChrtObjWthOtAspctRto = False : 図形の縦横比を固定してサイズを設定
+'coXbisChrtObjWthOtAspctRto = True  : 図形の縦横比を固定せずにサイズを設定
+'//エクセルシートの指定セル範囲の位置情報とサイズ情報を取得
+  Dim myXdouRngTop As Double, myXdouRngLft As Double, _
+        myXdouRngHght As Double, myXdouRngWdth As Double
+    Call PfixGetRangePlaceSize( _
+            myXdouRngTop, myXdouRngLft, myXdouRngHght, myXdouRngWdth, _
+            myXobjSheet, myXlonTopRow, myXlonLftCol, myXlonBttmRow, myXlonRghtCol)
+    If myXdouRngHght <= 0 Or myXdouRngWdth <= 0 Then GoTo ExitPath
+  Dim myXdouChrtObjHght As Double, myXdouChrtObjWdth As Double
+    myXdouChrtObjHght = myXdouRngHght - myXdouTopOfst + myXdouBttmOfst
+    myXdouChrtObjWdth = myXdouRngWdth - myXdouLftOfst + myXdouRghtOfst
+    If myXdouChrtObjHght < 0 Or myXdouChrtObjWdth < 0 Then GoTo ExitPath
+    If coXbisChrtObjWthOtAspctRto = False Then
+    '//図形の縦横比を固定してサイズを設定
+        Call PfixSetChartObjectSizeWithLockAspectRatio( _
+                myXbisExitFlag, _
+                myXobjChrtObjct, myXdouChrtObjHght, myXdouChrtObjWdth)
+    Else
+    '//図形の縦横比を固定せずにサイズを設定
+        Call PfixSetChartObjectSizeWithoutLockAspectRatio( _
+                myXbisExitFlag, _
+                myXobjChrtObjct, myXdouChrtObjHght, myXdouChrtObjWdth)
+    End If
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトのチャートエリアの位置とサイズを取得する
+Private Sub PfixGetChartAreaPlaceSize( _
+            myXdouChrtAreaTop As Double, myXdouChrtAreaLft As Double, _
+            myXdouChrtAreaBttm As Double, myXdouChrtAreaRght As Double, _
+            myXdouChrtAreaHght As Double, myXdouChrtAreaWdth As Double, _
+            ByVal myXobjChrtObjct As Object)
+    myXdouChrtAreaTop = Empty: myXdouChrtAreaLft = Empty
+    myXdouChrtAreaBttm = Empty: myXdouChrtAreaRght = Empty
+    myXdouChrtAreaHght = Empty: myXdouChrtAreaWdth = Empty
+    On Error GoTo ExitPath
+    With myXobjChrtObjct.Chart.ChartArea
+        myXdouChrtAreaTop = .Top
+        myXdouChrtAreaLft = .Left
+        myXdouChrtAreaHght = .Height
+        myXdouChrtAreaWdth = .Width
+    End With
+    On Error GoTo 0
+    myXdouChrtAreaBttm = myXdouChrtAreaTop + myXdouChrtAreaHght
+    myXdouChrtAreaRght = myXdouChrtAreaLft + myXdouChrtAreaWdth
+ExitPath:
+End Sub
+
+ '定型Ｐ_グラフオブジェクトのプロットエリアの位置とサイズを取得する
+Private Sub PfixGetPlotAreaPlaceSize( _
+            myXdouPltAreaTop As Double, myXdouPltAreaLft As Double, _
+            myXdouPltAreaBttm As Double, myXdouPltAreaRght As Double, _
+            myXdouPltAreaHght As Double, myXdouPltAreaWdth As Double, _
+            ByVal myXobjChrtObjct As Object)
+    myXdouPltAreaTop = Empty: myXdouPltAreaLft = Empty
+    myXdouPltAreaBttm = Empty: myXdouPltAreaRght = Empty
+    myXdouPltAreaHght = Empty: myXdouPltAreaWdth = Empty
+    On Error GoTo ExitPath
+    With myXobjChrtObjct.Chart.PlotArea
+        myXdouPltAreaTop = .Top
+        myXdouPltAreaLft = .Left
+        myXdouPltAreaHght = .Height
+        myXdouPltAreaWdth = .Width
+    End With
+    On Error GoTo 0
+    myXdouPltAreaBttm = myXdouPltAreaTop + myXdouPltAreaHght
+    myXdouPltAreaRght = myXdouPltAreaLft + myXdouPltAreaWdth
+ExitPath:
+End Sub
+
+ '定型Ｐ_グラフオブジェクトのチャートエリアの位置を設定する
+Private Sub PfixSetChartAreaPlace( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouChrtAreaTop As Double, ByVal myXdouChrtAreaLft As Double)
+'myXdouChrtAreaTop : x [point]
+'myXdouChrtAreaLft : x [point]
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+  Dim myXdouTmpTop As Double: myXdouTmpTop = myXobjChrtObjct.Chart.ChartArea.Top
+    On Error GoTo 0
+    If myXdouChrtAreaTop < 0 Or myXdouChrtAreaLft < 0 Then GoTo ExitPath
+    With myXobjChrtObjct.Chart.ChartArea
+        .Top = myXdouChrtAreaTop
+        .Left = myXdouChrtAreaLft
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトのチャートエリアのサイズを設定する
+Private Sub PfixSetChartAreaSize( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouChrtAreaHght As Double, ByVal myXdouChrtAreaWdth As Double)
+'myXdouChrtAreaHght : x [point]
+'myXdouChrtAreaWdth : x [point]
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+  Dim myXdouTmpHght As Double: myXdouTmpHght = myXobjChrtObjct.Chart.ChartArea.Height
+    On Error GoTo 0
+    If myXdouChrtAreaHght < 0 Or myXdouChrtAreaWdth < 0 Then GoTo ExitPath
+    With myXobjChrtObjct.Chart.ChartArea
+        .Height = myXdouChrtAreaHght
+        .Width = myXdouChrtAreaWdth
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトのチャートエリアのサイズを現サイズに対する倍率指定で設定する
+Private Sub PfixSetChartAreaScaleRelative( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouSclHght As Double, ByVal myXdouSclWdth As Double)
+'myXdouSclHght : x [%]
+'myXdouSclWdth : x [%]
+    myXbisExitFlag = False
+  Dim myXdouTmpHght As Double, myXdouTmpWdth As Double
+    On Error GoTo ExitPath
+    With myXobjChrtObjct.Chart.ChartArea
+        myXdouTmpHght = .Height
+        myXdouTmpWdth = .Width
+    End With
+    On Error GoTo 0
+    If myXdouSclHght < 0 Or myXdouSclWdth < 0 Then GoTo ExitPath
+    myXdouSclHght = myXdouSclHght / 100
+    myXdouSclWdth = myXdouSclWdth / 100
+    With myXobjChrtObjct.Chart.ChartArea
+        .Height = myXdouTmpHght * myXdouSclHght
+        .Width = myXdouTmpWdth * myXdouSclWdth
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトのプロットエリアの位置を設定する
+Private Sub PfixSetPlotAreaPlace( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouPltAreaTop As Double, ByVal myXdouPltAreaLft As Double)
+'myXdouPltAreaTop : x [point]
+'myXdouPltAreaLft : x [point]
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+  Dim myXdouTmpTop As Double: myXdouTmpTop = myXobjChrtObjct.Chart.PlotArea.Top
+    On Error GoTo 0
+    If myXdouPltAreaTop < 0 Or myXdouPltAreaLft < 0 Then GoTo ExitPath
+    With myXobjChrtObjct.Chart.PlotArea
+        .Top = myXdouPltAreaTop
+        .Left = myXdouPltAreaLft
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトのプロットエリアのサイズを設定する
+Private Sub PfixSetPlotAreaSize( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouPltAreaHght As Double, ByVal myXdouPltAreaWdth As Double)
+'myXdouPltAreaHght : x [point]
+'myXdouPltAreaWdth : x [point]
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+  Dim myXdouTmpHght As Double: myXdouTmpHght = myXobjChrtObjct.Chart.PlotArea.Height
+    On Error GoTo 0
+    If myXdouPltAreaHght < 0 Or myXdouPltAreaWdth < 0 Then GoTo ExitPath
+    With myXobjChrtObjct.Chart.PlotArea
+        .Height = myXdouPltAreaHght
+        .Width = myXdouPltAreaWdth
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトのプロットエリアのサイズを現サイズに対する倍率指定で設定する
+Private Sub PfixSetPlotAreaScaleRelative( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouSclHght As Double, ByVal myXdouSclWdth As Double)
+'myXdouSclHght : x [%]
+'myXdouSclWdth : x [%]
+    myXbisExitFlag = False
+  Dim myXdouTmpHght As Double, myXdouTmpWdth As Double
+    On Error GoTo ExitPath
+    With myXobjChrtObjct.Chart.PlotArea
+        myXdouTmpHght = .Height
+        myXdouTmpWdth = .Width
+    End With
+    On Error GoTo 0
+    If myXdouSclHght < 0 Or myXdouSclWdth < 0 Then GoTo ExitPath
+    myXdouSclHght = myXdouSclHght / 100
+    myXdouSclWdth = myXdouSclWdth / 100
+    With myXobjChrtObjct.Chart.PlotArea
+        .Height = myXdouTmpHght * myXdouSclHght
+        .Width = myXdouTmpWdth * myXdouSclWdth
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのデータ範囲を指定範囲で設定する
+Private Sub PfixSetChartSourceData(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXobjRng As Object, _
+            Optional ByVal coXlonPltBy As Long = xlColumns)
+'coXlonPltBy = xlColumns = 2 : データ系列の方向を列方向に指定
+'coXlonPltBy = xlRows    = 1 : データ系列の方向を行方向に指定
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    Call myXobjChrt.SetSourceData(Source:=myXobjRng, PlotBy:=coXlonPltBy)
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのデータ範囲として2種類の指定範囲で設定する
+Private Sub PfixSetChartSourceDataUnionRange(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, _
+            ByVal myXobjRng1 As Object, ByVal myXobjRng2 As Object, _
+            Optional ByVal coXlonPltBy As Long = xlColumns)
+'coXlonPltBy = xlColumns = 2 : データ系列の方向を列方向に指定
+'coXlonPltBy = xlRows    = 1 : データ系列の方向を行方向に指定
+'Set myXobjSrcRng = Union(項目軸ラベルのセル範囲, グラフデータのセル範囲)
+    myXbisExitFlag = False
+  Dim myXobjSrcRng As Object
+    On Error GoTo ExitPath
+    Set myXobjSrcRng = Union(myXobjRng1, myXobjRng2)
+    Call myXobjChrt.SetSourceData(Source:=myXobjSrcRng, PlotBy:=coXlonPltBy)
+    On Error GoTo 0
+    Set myXobjSrcRng = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフに新規データ系列を追加する
+Private Sub PfixAddNewSeries(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object)
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    myXobjChrt.SeriesCollection.NewSeries
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_グラフ系列用の外部参照を含めたセル範囲アドレスを設定する
+Private Function PfncstrSetRangeAddressWithExternal( _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
+            ByVal myXlonEndRow As Long, ByVal myXlonEndCol As Long, _
+            ByVal myXstrShtName As String, _
+            ByVal myXstrDirPath As String, ByVal myXstrBkName As String, _
+            Optional ByVal coXlonAdrsOptn As Long = 1, _
+            Optional ByVal coXbisR1C1 As Boolean = False) As String
+'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
+'coXlonAdrsOptn = 1 : セル範囲
+'coXlonAdrsOptn = 2 : シート!セル範囲
+'coXlonAdrsOptn = 3 : 'パス\[ブック]シート'!セル範囲
+'coXlonAdrsOptn = 4 : パス\[ブック]
+'Chr(82) : R
+'Chr(67) : C
+'Chr(92) : 円記号(\)
+'Chr(91) : 始め大括弧([)
+'Chr(93) : 終わり大括弧(])
+'Chr(39) : シングルクォーテーション(')
+'Chr(33) : エクスクラメーション(!)
+'Chr(58) : コロン(:)
+    PfncstrSetRangeAddressWithExternal = Empty
+    If coXlonAdrsOptn < 1 And coXlonAdrsOptn > 4 Then Exit Function
+'//セル範囲の表記
+  Dim myXstrRng As String
+    If myXlonBgnRow >= 1 And myXlonBgnCol >= 1 Then
+    '//セル範囲→"R1C1"
+        myXstrRng = Chr(82) & myXlonBgnRow & Chr(67) & myXlonBgnCol
+    Else
+        Exit Function
+    End If
+    If myXlonEndRow >= 1 And myXlonEndCol >= 1 Then
+    '//セル範囲→"R1C1:R2C2"
+        myXstrRng = myXstrRng & Chr(58) & Chr(82) & myXlonEndRow & Chr(67) & myXlonEndCol
+    End If
+'//セル範囲をA1形式に変換
+    If coXbisR1C1 = False Then _
+        myXstrRng = Application.ConvertFormula(Formula:=myXstrRng, _
+                        FromReferenceStyle:=xlR1C1, ToReferenceStyle:=xlA1, ToAbsolute:=True)
+'//セル範囲アドレスの表記
+  Dim myXstrPthSht As String, myXstrRngAdrs As String
+    Select Case coXlonAdrsOptn
+        Case 1
+            myXstrRngAdrs = myXstrRng
+        Case 2
+        '//シート名の表記→シート!
+            If myXstrShtName = "" Then Exit Function
+            myXstrPthSht = myXstrShtName & Chr(33)
+            myXstrRngAdrs = myXstrPthSht & myXstrRng
+        Case 3
+        '//ファイルパス+シート名の表記→'パス\[ブック]シート'!
+            If myXstrDirPath = "" Or myXstrBkName = "" Or myXstrShtName = "" Then Exit Function
+            myXstrPthSht = Chr(91) & myXstrBkName & Chr(93)
+            myXstrPthSht = myXstrDirPath & Chr(92) & myXstrPthSht & myXstrShtName
+            myXstrPthSht = Chr(39) & myXstrPthSht & Chr(39) & Chr(33)
+            myXstrRngAdrs = myXstrPthSht & myXstrRng
+        Case 4
+        '//ファイルパスの表記→パス\[ブック]
+            If myXstrDirPath = "" Or myXstrBkName = "" Then Exit Function
+            myXstrPthSht = Chr(91) & myXstrBkName & Chr(93)
+            myXstrPthSht = myXstrDirPath & Chr(92) & myXstrPthSht & myXstrShtName
+            myXstrRngAdrs = myXstrPthSht
+    End Select
+    PfncstrSetRangeAddressWithExternal = myXstrRngAdrs
+End Function
+
+ '定型Ｐ_グラフの指定データ系列の項目名/項目軸/データを設定する
+Private Sub PfixSetSeriesCollectionNameValue( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXlonSCNo As Long, _
+            ByVal myXobjNameRng As Object, _
+            ByVal myXobjXvalRng As Object, ByVal myXobjYvalRng As Object)
+    myXbisExitFlag = False
+  Dim myXstrNameAdrs As String, myXstrXvalAdrs As String, myXstrYvalAdrs As String
+    On Error GoTo ExitPath
+    myXstrNameAdrs = myXobjNameRng.Address( _
+                        ReferenceStyle:=Application.ReferenceStyle, external:=True)
+    myXstrXvalAdrs = myXobjXvalRng.Address( _
+                        ReferenceStyle:=Application.ReferenceStyle, external:=True)
+    myXstrYvalAdrs = myXstrYvalAdrs.Address( _
+                        ReferenceStyle:=Application.ReferenceStyle, external:=True)
+    With myXobjChrt.SeriesCollection(myXlonSCNo)
+        .Name = "=" & myXstrNameAdrs
+        .XValues = "=" & myXstrXvalAdrs
+        .Values = "=" & myXstrYvalAdrs
+    End With
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフの指定データ系列にデータ参照範囲を設定する
+Private Sub PfixSetSeriesCollectionFormula( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXlonSCNo As Long, _
+            ByVal myXobjNameRng As Object, _
+            ByVal myXobjXvalRng As Object, ByVal myXobjYvalRng As Object)
+'Formula =“=SERIES(項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号)”
+    myXbisExitFlag = False
+  Dim myXstrNameAdrs As String, myXstrXvalAdrs As String, myXstrYvalAdrs As String
+    If Not myXobjNameRng Is Nothing Then _
+        myXstrNameAdrs = myXobjNameRng.Address( _
+                            ReferenceStyle:=Application.ReferenceStyle, external:=True)
+    If Not myXobjXvalRng Is Nothing Then _
+        myXstrXvalAdrs = myXobjXvalRng.Address( _
+                            ReferenceStyle:=Application.ReferenceStyle, external:=True)
+    If Not myXobjYvalRng Is Nothing Then _
+        myXstrYvalAdrs = myXobjYvalRng.Address( _
+                            ReferenceStyle:=Application.ReferenceStyle, external:=True)
+    On Error GoTo ExitPath
+    If Application.ReferenceStyle = xlA1 Then
+        myXobjChrt.SeriesCollection(myXlonSCNo).Formula = _
+            "=SERIES(" & myXstrNameAdrs & "," & _
+                            myXstrXvalAdrs & "," & myXstrYvalAdrs & "," & myXlonSCNo & ")"
+    Else
+        myXobjChrt.SeriesCollection(myXlonSCNo).FormulaR1C1 = _
+            "=SERIES(" & myXstrNameAdrs & "," & _
+                            myXstrXvalAdrs & "," & myXstrYvalAdrs & "," & myXlonSCNo & ")"
+    End If
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_グラフの指定データ系列設定用のSERIES関数式を設定する
+Private Function PfncstrSetSeriesFormula( _
+            ByVal myXlonSCNo As Long, ByVal myXobjNameRng As Object, _
+            ByVal myXobjXvalRng As Object, ByVal myXobjYvalRng As Object)
+'Formula =“=SERIES(項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号)”
+    PfncstrSetSeriesFormula = Empty
+  Dim myXstrNameAdrs As String, myXstrXvalAdrs As String, myXstrYvalAdrs As String
+    On Error GoTo ExitPath
+    myXstrNameAdrs = myXobjNameRng.Address( _
+                        ReferenceStyle:=Application.ReferenceStyle, external:=True)
+    myXstrXvalAdrs = myXobjXvalRng.Address( _
+                        ReferenceStyle:=Application.ReferenceStyle, external:=True)
+    myXstrYvalAdrs = myXobjYvalRng.Address( _
+                        ReferenceStyle:=Application.ReferenceStyle, external:=True)
+    On Error GoTo 0
+  Dim myXstrSrsFrml As String
+    myXstrSrsFrml = "=SERIES(" & myXstrNameAdrs & "," & _
+                        myXstrXvalAdrs & "," & myXstrYvalAdrs & "," & myXlonSCNo & ")"
+    PfncstrSetSeriesFormula = myXstrSrsFrml
+ExitPath:
+End Function
+
+ '定型Ｐ_グラフの指定データ系列にSERIES関数でデータ参照範囲を設定する
+Public Sub PfixSetSeriesCollectionBySeriesFormula( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXlonSCNo As Long, _
+            ByVal myXstrSrsFrml As String)
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    If Application.ReferenceStyle = xlA1 Then
+        myXobjChrt.SeriesCollection(myXlonSCNo).Formula = myXstrSrsFrml
+    Else
+        myXobjChrt.SeriesCollection(myXlonSCNo).FormulaR1C1 = myXstrSrsFrml
+    End If
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_指定グラフの系列番号を指定してデータ系列を取得する
+Private Function PfncobjGetChartSeriesCollection( _
+            ByVal myXobjChrtObj As Object, ByVal myXlonSrsClctnNo As Long) As Object
+    Set PfncobjGetChartSeriesCollection = Nothing
+    On Error GoTo ExitPath
+    Set PfncobjGetChartSeriesCollection = myXobjChrtObj.Chart.SeriesCollection(myXlonSrsClctnNo)
+    On Error GoTo 0
+ExitPath:
+End Function
+
+ '定型Ｆ_指定グラフの最後の系列番号のデータ系列を取得する
+Private Function PfncobjGetChartLastSeriesCollection(ByVal myXobjChrtObj As Object) As Object
+    Set PfncobjGetChartLastSeriesCollection = Nothing
+  Dim myXlonSrsClctnCnt As Long
+    On Error GoTo ExitPath
+    myXlonSrsClctnCnt = myXobjChrtObj.Chart.SeriesCollection.Count
+    Set PfncobjGetChartLastSeriesCollection _
+            = myXobjChrtObj.Chart.SeriesCollection(myXlonSrsClctnCnt)
+    On Error GoTo 0
+ExitPath:
+End Function
+
+ '定型Ｆ_グラフの指定系列の参照範囲をA1形式で取得する
+Private Function PfncstrGetSeriesCollectionFormulaA1( _
+            ByVal myXobjSrsClctn As Object) As String
+    PfncstrGetSeriesCollectionFormulaA1 = Empty
+    On Error GoTo ExitPath
+    PfncstrGetSeriesCollectionFormulaA1 = myXobjSrsClctn.Formula
+    On Error GoTo 0
+ExitPath:
+End Function
+
+ '定型Ｆ_グラフの指定系列の参照範囲をR1C1形式で取得する
+Private Function PfncstrGetSeriesCollectionFormulaR1C1( _
+            ByVal myXobjSrsClctn As Object) As String
+    PfncstrGetSeriesCollectionFormulaR1C1 = Empty
+    On Error GoTo ExitPath
+    PfncstrGetSeriesCollectionFormulaR1C1 = myXobjSrsClctn.FormulaR1C1
+    On Error GoTo 0
+ExitPath:
+End Function
+
+ '定型Ｆ_グラフの指定系列の参照範囲を取得する
+Private Function PfncstrGetSeriesCollectionFormula( _
+            ByVal myXobjSrsClctn As Object) As String
+    PfncstrGetSeriesCollectionFormula = Empty
+  Dim myXstrOrgFrml As String
+    On Error GoTo ExitPath
+    If Application.ReferenceStyle = xlA1 Then
+        myXstrOrgFrml = myXobjSrsClctn.Formula
+    Else
+        myXstrOrgFrml = myXobjSrsClctn.FormulaR1C1
+    End If
+    On Error GoTo 0
+    PfncstrGetSeriesCollectionFormula = myXstrOrgFrml
+ExitPath:
+End Function
+
+ '定型Ｐ_グラフの指定系列の参照範囲を変更する
+Private Sub PfixChangeSeriesCollectionFormula( _
+            myXbisExitFlag As Boolean, _
+            myXstrOrgFrml As String, myXstrNewFrml As String, _
+            ByVal myXobjSrsClctn As Object, _
+            ByVal myXstrOrgAdrs As String, ByVal myXstrNewAdrs As String)
+    myXbisExitFlag = False
+    myXstrOrgFrml = Empty: myXstrNewFrml = Empty
+    If myXstrOrgAdrs = "" Or myXstrNewAdrs = "" Then GoTo ExitPath
+    On Error GoTo ExitPath
+  Dim myXstrTmp As String: myXstrTmp = myXobjSrsClctn.Formula
+    On Error GoTo 0
+    If Application.ReferenceStyle = xlA1 Then
+        myXstrOrgFrml = myXobjSrsClctn.Formula
+'        Debug.Print "系列参照式: " & myXstrOrgFrml
+        If InStr(myXstrOrgFrml, myXstrOrgAdrs) <= 0 Then GoTo ExitPath
+        myXstrNewFrml = Replace(myXstrOrgFrml, myXstrOrgAdrs, myXstrNewAdrs)
+        myXobjSrsClctn.Formula = myXstrNewFrml
+        myXstrNewFrml = myXobjSrsClctn.Formula
+    Else
+        myXstrOrgFrml = myXobjSrsClctn.FormulaR1C1
+'        Debug.Print "系列参照式: " & myXstrOrgFrml
+        If InStr(myXstrOrgFrml, myXstrOrgAdrs) <= 0 Then GoTo ExitPath
+        myXstrNewFrml = Replace(myXstrOrgFrml, myXstrOrgAdrs, myXstrNewAdrs)
+        myXobjSrsClctn.FormulaR1C1 = myXstrNewFrml
+        myXstrNewFrml = myXobjSrsClctn.FormulaR1C1
+    End If
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_指定オブジェクトに設定されている参照式を取得する
+Private Function PfncstrGetObjectFormula( _
+            ByVal myXobjOrg As Object) As String
+    PfncstrGetObjectFormula = Empty
+  Dim myXstrOrgFrml As String
+    On Error GoTo ExitPath
+    If Application.ReferenceStyle = xlA1 Then
+        myXstrOrgFrml = myXobjOrg.Formula
+    Else
+        myXstrOrgFrml = myXobjOrg.FormulaR1C1
+    End If
+    On Error GoTo 0
+    PfncstrGetObjectFormula = myXstrOrgFrml
+ExitPath:
+End Function
+
+ '定型Ｐ_指定オブジェクトに設定されている参照式を変更する
+Private Sub PfixChangeObjectFormula( _
+            myXbisExitFlag As Boolean, _
+            myXstrOrgFrml As String, myXstrNewFrml As String, _
+            ByVal myXobjOrg As Object, _
+            ByVal myXstrOrgAdrs As String, ByVal myXstrNewAdrs As String)
+    myXbisExitFlag = False
+    myXstrOrgFrml = Empty: myXstrNewFrml = Empty
+    If myXstrOrgAdrs = "" Or myXstrNewAdrs = "" Then GoTo ExitPath
+    On Error GoTo ExitPath
+  Dim myXstrTmp As String: myXstrTmp = myXobjOrg.Formula
+    On Error GoTo 0
+    If Application.ReferenceStyle = xlA1 Then
+        myXstrOrgFrml = myXobjOrg.Formula
+'        Debug.Print "系列参照式: " & myXstrOrgFrml
+        If InStr(myXstrOrgFrml, myXstrOrgAdrs) <= 0 Then GoTo ExitPath
+        myXstrNewFrml = Replace(myXstrOrgFrml, myXstrOrgAdrs, myXstrNewAdrs)
+        myXobjOrg.Formula = myXstrNewFrml
+        myXstrNewFrml = myXobjOrg.Formula
+    Else
+        myXstrOrgFrml = myXobjOrg.FormulaR1C1
+'        Debug.Print "系列参照式: " & myXstrOrgFrml
+        If InStr(myXstrOrgFrml, myXstrOrgAdrs) <= 0 Then GoTo ExitPath
+        myXstrNewFrml = Replace(myXstrOrgFrml, myXstrOrgAdrs, myXstrNewAdrs)
+        myXobjOrg.FormulaR1C1 = myXstrNewFrml
+        myXstrNewFrml = myXobjOrg.FormulaR1C1
+    End If
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_グラフの指定データ系列の系列番号取得する
+Private Function PfnclonGetChartSeriesCollectionOrder( _
+            ByVal myXobjSrsClctn As Object) As Long
+'Chr(44) : カンマ(,)
+'myXstrSrsFrml =“=SERIES(項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号)”
+  Const coXstrSERIES As String = "=SERIES("
+    PfnclonGetChartSeriesCollectionOrder = Empty
+    If myXobjSrsClctn Is Nothing Then Exit Function
+  Dim myZstrSrsFrml As String, myZvarTmp As Variant, myXlonSpltCnt As Long
+    On Error GoTo ExitPath
+    myZstrSrsFrml = myXobjSrsClctn.Formula
+    myZstrSrsFrml = Mid(myZstrSrsFrml, Len(coXstrSERIES) + 1)
+    myZstrSrsFrml = Mid(myZstrSrsFrml, 1, Len(myZstrSrsFrml) - 1)
+    myZvarTmp = Split(myZstrSrsFrml, Chr(44))
+    On Error GoTo 0
+    myXlonSpltCnt = UBound(myZvarTmp) - LBound(myZvarTmp) + 1
+    If myXlonSpltCnt <= 0 Then Exit Function
+  Dim myXvarSCNo As Variant, myXlonSCNo As Long
+    myXvarSCNo = myZvarTmp(UBound(myZvarTmp))
+    If IsNumeric(myXvarSCNo) = True Then myXlonSCNo = CLng(myXvarSCNo)
+    PfnclonGetChartSeriesCollectionOrder = myXlonSCNo
+ExitPath:
+End Function
+ 
+ '定型Ｐ_グラフの指定データ系列の系列番号/設定軸/プロット番号を取得する
+Private Sub PincGetChartSeriesCollectionOrderInformation( _
+            myXlonSCNo As Long, myXlonAxsGrp As Long, myXlonPltOrdr As Long, _
+            ByVal myXobjSrsClctn As Object)
+'Includes PfnclonGetChartSeriesCollectionOrder
+    myXlonSCNo = Empty: myXlonAxsGrp = Empty: myXlonPltOrdr = Empty
+    If myXobjSrsClctn Is Nothing Then Exit Sub
+'//系列番号を取得
+    myXlonSCNo = PfnclonGetChartSeriesCollectionOrder(myXobjSrsClctn)
+'//設定軸を取得
+    myXlonAxsGrp = myXobjSrsClctn.AxisGroup
+'//プロット番号を取得
+    myXlonPltOrdr = myXobjSrsClctn.PlotOrder
+End Sub
+
+ '定型Ｐ_散布図グラフのデータ系列の参照式からセル範囲アドレスを取得する
+Private Sub PincGetDataRangeAddressInXYScatter( _
+            myXstrNameAdrs As String, myXstrXvalAdrs As String, myXstrYvalAdrs As String, _
+            myXlonSCNo As Long, _
+            ByVal myXstrSrsFrml As String)
+'Includes PfixExtractSandwichedStringByCharacters
+'Includes PfixSplitString
+'Chr(40) : 始め小括弧(()
+'Chr(41) : 終わり小括弧())
+'Chr(44) : カンマ(,)
+'myXstrSrsFrml =“=SERIES(項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号)”
+    myXstrNameAdrs = Empty: myXstrXvalAdrs = Empty: myXstrYvalAdrs = Empty
+    If myXstrSrsFrml = "" Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+'//参照式からアドレス部分を取得
+  Dim myXlonStrCnt As Long, myZstrSndwchd() As String, myZstrSpltData() As String
+    Call PfixExtractSandwichedStringByCharacters( _
+            myXlonStrCnt, myZstrSndwchd, myXstrSrsFrml, Chr(40), Chr(41))
+  Dim myXstrSrsAdrs As String
+    If myXlonStrCnt = 1 Then
+        myXstrSrsAdrs = myZstrSndwchd(L + 0)
+    ElseIf myXlonStrCnt = 3 Then
+        myXstrSrsAdrs = myZstrSndwchd(L + 0)
+        myXstrXvalAdrs = myZstrSndwchd(L + 1)
+        myXstrYvalAdrs = myZstrSndwchd(L + 2)
+    Else
+        Exit Sub
+    End If
+'//項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号を取得
+    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrSrsAdrs, Chr(44))
+  Dim myXstrSCNo As String
+    If myXlonStrCnt = 4 Then
+        myXstrNameAdrs = myZstrSpltData(L + 0)
+        myXstrXvalAdrs = myZstrSpltData(L + 1)
+        myXstrYvalAdrs = myZstrSpltData(L + 2)
+        myXstrSCNo = myZstrSpltData(L + 3)
+    ElseIf myXlonStrCnt > 4 Then
+        myXstrNameAdrs = myZstrSpltData(L + 0)
+        myXstrSCNo = myZstrSpltData(myXlonStrCnt)
+    Else
+        Exit Sub
+    End If
+    If IsNumeric(myXstrSCNo) = True Then myXlonSCNo = CLng(myXstrSCNo)
+    Erase myZstrSndwchd: Erase myZstrSpltData
+End Sub
+
+ '定型Ｐ_セル範囲アドレスから行列情報を取得する
+Private Sub PincGetDataRangeAddress( _
+            myXlonBgnRow As Long, myXlonBgnCol As Long, _
+            myXlonEndRow As Long, myXlonEndCol As Long, _
+            ByVal myXstrOrgAdrs As String)
+'Includes PfixSplitString
+'Includes PfixExtractSandwichedStringByCharacters
+'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
+'Chr(33) : エクスクラメーション(!)
+'Chr(58) : コロン(:)
+'Chr(82) : R
+'Chr(67) : C
+    myXlonBgnRow = Empty: myXlonBgnCol = Empty: myXlonEndRow = Empty: myXlonEndCol = Empty
+    If myXstrOrgAdrs = "" Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myXlonStrCnt As Long, myZstrSndwchd() As String, myZstrSpltData() As String
+  Dim myXstrPath As String, myXstrRngAdrs As String
+  Dim myXstrBgnAdrs As String, myXstrEndAdrs As String
+  Dim myXstrBgnRow As String, myXstrBgnCol As String, _
+        myXstrEndRow As String, myXstrEndCol As String
+'//パス[ブック]シート部分とセル範囲部分を分離
+    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrOrgAdrs, Chr(33))
+    If myXlonStrCnt = 1 Then
+        myXstrRngAdrs = myZstrSpltData(L)
+    ElseIf myXlonStrCnt = 2 Then
+        myXstrPath = myZstrSpltData(L + 0)
+        myXstrRngAdrs = myZstrSpltData(L + 1)
+    Else
+        Exit Sub
+    End If
+'//セル範囲をR1C1形式に変換
+    On Error Resume Next
+    myXstrRngAdrs = Application.ConvertFormula(Formula:=myXstrRngAdrs, _
+                        FromReferenceStyle:=xlA1, ToReferenceStyle:=xlR1C1, ToAbsolute:=True)
+    On Error GoTo 0
+'//セル範囲の前半部分と後半部分を分離
+    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrRngAdrs, Chr(58))
+    If myXlonStrCnt = 1 Then
+        myXstrBgnAdrs = myZstrSpltData(L + 0)
+    ElseIf myXlonStrCnt = 2 Then
+        myXstrBgnAdrs = myZstrSpltData(L + 0)
+        myXstrEndAdrs = myZstrSpltData(L + 1)
+    Else
+        Exit Sub
+    End If
+'//最初の行を取得
+    Call PfixExtractSandwichedStringByCharacters( _
+            myXlonStrCnt, myZstrSndwchd, myXstrBgnAdrs, Chr(82), Chr(67))
+    If myXlonStrCnt = 1 Then
+        myXstrBgnRow = myZstrSndwchd(L)
+        If IsNumeric(myXstrBgnRow) = True Then myXlonBgnRow = CLng(myXstrBgnRow)
+    End If
+'//最初の列を取得
+    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrBgnAdrs, Chr(67))
+    If myXlonStrCnt = 2 Then
+        myXstrBgnCol = myZstrSpltData(L + 1)
+        If IsNumeric(myXstrBgnCol) = True Then myXlonBgnCol = CLng(myXstrBgnCol)
+    End If
+'//最後の行を取得
+    Call PfixExtractSandwichedStringByCharacters( _
+            myXlonStrCnt, myZstrSndwchd, myXstrEndAdrs, Chr(82), Chr(67))
+    If myXlonStrCnt = 1 Then
+        myXstrEndRow = myZstrSndwchd(L)
+        If IsNumeric(myXstrEndRow) = True Then myXlonEndRow = CLng(myXstrEndRow)
+    End If
+'//最後の列を取得
+    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrEndAdrs, Chr(67))
+    If myXlonStrCnt = 2 Then
+        myXstrEndCol = myZstrSpltData(L + 1)
+        If IsNumeric(myXstrEndCol) = True Then myXlonEndCol = CLng(myXstrEndCol)
+    End If
+    Erase myZstrSndwchd: Erase myZstrSpltData
+End Sub
+
+ '定型Ｐ_セル範囲アドレスからパス[ブック]シート!セル範囲情報を分離する
+Private Sub PincGetPathBookSheetFromRangeAddress( _
+            myXstrRngAdrs As String, myXstrOrgPath As String, myXstrShtName As String, _
+            myXstrBookName As String, myXstrDirPath As String, _
+            ByVal myXstrOrgAdrs As String)
+'Includes PfixSplitString
+'Includes PfixExtractSandwichedString
+'Includes PfixExtractSandwichedStringByCharacters
+'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
+'Chr(44) : カンマ(,)
+'Chr(33) : エクスクラメーション(!)
+'Chr(39) : シングルクォーテーション(')
+'Chr(91) : 始め大括弧([)
+'Chr(93) : 終わり大括弧(])
+    myXstrRngAdrs = Empty: myXstrOrgPath = Empty: myXstrShtName = Empty
+    myXstrBookName = Empty: myXstrDirPath = Empty
+    If myXstrOrgAdrs = "" Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myXlonStrCnt As Long, myZstrSndwchd() As String, myZstrSpltData() As String
+  Dim myXstrPath As String
+'//範囲が分割されている場合には最初の範囲を取得
+    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrOrgAdrs, Chr(44))
+    If myXlonStrCnt >= 1 Then
+        myXstrOrgAdrs = myZstrSpltData(L)
+    Else
+        Exit Sub
+    End If
+'//パス[ブック]シート部分とセル範囲部分を分離
+    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrOrgAdrs, Chr(33))
+    If myXlonStrCnt = 2 Then
+        myXstrOrgPath = myZstrSpltData(L + 0)
+        myXstrRngAdrs = myZstrSpltData(L + 1)
+    Else
+        Exit Sub
+    End If
+'//パス[ブック]シート部分を取得
+    Call PfixExtractSandwichedString(myXlonStrCnt, myZstrSndwchd, myXstrOrgPath, Chr(39))
+    If myXlonStrCnt = 1 Then
+        myXstrPath = myZstrSndwchd(L)
+    End If
+'//シート部分を取得
+    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrPath, Chr(93))
+    If myXlonStrCnt = 1 Then
+        myXstrShtName = myZstrSpltData(L + 0)
+    ElseIf myXlonStrCnt = 2 Then
+        myXstrShtName = myZstrSpltData(L + 1)
+    End If
+'//ブック部分を取得
+    Call PfixExtractSandwichedStringByCharacters( _
+            myXlonStrCnt, myZstrSndwchd, _
+            myXstrPath, Chr(91), Chr(93))
+    If myXlonStrCnt = 1 Then myXstrBookName = myZstrSndwchd(L)
+'//パス部分を取得
+    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrPath, Chr(91))
+    If myXlonStrCnt = 2 Then
+        myXstrDirPath = myZstrSpltData(L)
+        myXstrDirPath = Left(myXstrDirPath, Len(myXstrDirPath) - 1)
+    End If
+    Erase myZstrSndwchd: Erase myZstrSpltData
+End Sub
+
+ '定型Ｆ_セル範囲アドレスのパス[ブック]シート情報を指定シート名に置換する
+Private Function incPfncstrReplacePathBookSheetInRangeAddress( _
+            ByVal myXstrOrgAdrs As String, ByVal myXstrShtName As String) As String
+'Includes PfixSplitString
+'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
+'Chr(44) : カンマ(,)
+'Chr(33) : エクスクラメーション(!)
+    incPfncstrReplacePathBookSheetInRangeAddress = Empty
+    If myXstrOrgAdrs = "" Then Exit Function
+    If myXstrShtName = "" Then Exit Function
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myXlonStrCnt As Long, myZstrSpltData() As String
+  Dim myXstrOrgPath As String, myXstrNewAdrs As String
+'//範囲が分割されている場合には最初の範囲を取得
+    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrOrgAdrs, Chr(44))
+    If myXlonStrCnt >= 1 Then
+        myXstrOrgAdrs = myZstrSpltData(L)
+    Else
+        Exit Function
+    End If
+'//パス[ブック]シート部分とセル範囲部分を分離
+    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrOrgAdrs, Chr(33))
+    If myXlonStrCnt = 2 Then
+        myXstrOrgPath = myZstrSpltData(L + 0)
+    Else
+        Exit Function
+    End If
+'//パス[ブック]シート部分を置換
+    myXstrNewAdrs = Replace(myXstrOrgAdrs, myXstrOrgPath, myXstrShtName)
+    incPfncstrReplacePathBookSheetInRangeAddress = myXstrNewAdrs
+    Erase myZstrSpltData
+End Function
+
+ '定型Ｐ_グラフの凡例を設定する
+Private Sub PfixSetChartLegend(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, _
+            Optional ByVal coXbisLgndSet As Boolean = True, _
+            Optional ByVal coXbisLgndVsbl As Boolean = True, _
+            Optional ByVal coXlonLgndPstn As Long = xlLegendPositionRight, _
+            Optional ByVal coXbisLgndInLayout As Boolean = False, _
+            Optional ByVal coXlonLgndFillColor As Long = msoThemeColorBackground1, _
+            Optional ByVal coXlonLgndLineColor As Long = msoThemeColorText1, _
+            Optional ByVal coXdouLgndLineWeight As Double = 0.75)
+'coXbisLgndSet = False : 設定処理しない
+'coXbisLgndVsbl = True  : 凡例表示
+'coXbisLgndVsbl = False : 凡例非表示
+'coXlonLgndPstn = xlLegendPositionCorner = 2     : グラフの輪郭線の右上隅
+'coXlonLgndPstn = xlLegendPositionBottom = -4107 : グラフの下
+'coXlonLgndPstn = xlLegendPositionCustom = -4161 : 任意の位置
+'coXlonLgndPstn = xlLegendPositionLeft   = -4131 : グラフの左
+'coXlonLgndPstn = xlLegendPositionRight  = -4152 : グラフの右
+'coXlonLgndPstn = xlLegendPositionTop    = -4160 : グラフの上
+'coXbisLgndInLayout = False : 凡例をグラフに重ねて表示
+'coXbisLgndInLayout = True  : 凡例をグラフに重ねずに表示
+'coXlonLgndFillColor : 凡例の塗りつぶしの色
+'coXlonLgndLineColor : 凡例の枠線の色
+'coXdouLgndLineWeight : 凡例の枠線の幅
+    myXbisExitFlag = False
+    If coXbisLgndSet = False Then Exit Sub
+    If myXobjChrt Is Nothing Then Exit Sub
+    On Error GoTo ExitPath
+    myXobjChrt.HasLegend = coXbisLgndVsbl
+    On Error GoTo 0
+    If coXbisLgndVsbl = False Then Exit Sub
+    With myXobjChrt.Legend
+    '//凡例の位置設定
+        .Position = coXlonLgndPstn
+        .IncludeInLayout = coXbisLgndInLayout
+    '//凡例の塗りつぶし
+        .Format.Fill.Visible = msoTrue
+        .Format.Fill.Solid
+        .Format.Fill.ForeColor.ObjectThemeColor = coXlonLgndFillColor
+    '//凡例の枠線
+        .Format.Line.Visible = msoTrue
+        .Format.Line.ForeColor.ObjectThemeColor = coXlonLgndLineColor
+        .Format.Line.Weight = coXdouLgndLineWeight
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフ内で第1軸と第2軸に設定されている系列数を確認する
+Private Sub PfnclonCountSeriesCollectionSetAxisGroup( _
+            myXlonAxsGrp1Cnt As Long, myXlonAxsGrp2Cnt As Long, _
+            ByVal myXobjChrt As Object)
+    myXlonAxsGrp1Cnt = Empty: myXlonAxsGrp2Cnt = Empty
+    On Error GoTo ExitPath
+  Dim myXlonSCCnt As Long: myXlonSCCnt = myXobjChrt.SeriesCollection.Count
+    On Error GoTo 0
+    If myXlonSCCnt <= 0 Then GoTo ExitPath
+  Dim myXobjSrsClctn As Object
+    For Each myXobjSrsClctn In myXobjChrt.SeriesCollection
+        Select Case myXobjSrsClctn.AxisGroup
+            Case xlPrimary: myXlonAxsGrp1Cnt = myXlonAxsGrp1Cnt + 1
+            Case xlSecondary: myXlonAxsGrp2Cnt = myXlonAxsGrp2Cnt + 1
+        End Select
+    Next myXobjSrsClctn
+    Set myXobjSrsClctn = Nothing
+ExitPath:
+End Sub
+
+ '定型Ｐ_グラフのX軸主軸の数値軸を設定する
+Private Sub PincSetChartPrimaryCategoryAxesScale( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, _
+            ByVal myXvarMinScl As Variant, ByVal myXvarMaxScl As Variant, _
+            ByVal myXvarMjrUnt As Variant, ByVal myXvarMnrUnt As Variant)
+'Includes PfixSetChartAxesScale
+'myXvarX = ""  : 設定処理しない
+'myXvarX = "X" : 自動に設定
+'myXvarX = X   : 数値を設定
+    myXbisExitFlag = False
+  Dim myXobjChrtAxs As Object
+    On Error GoTo ExitPath
+    Set myXobjChrtAxs = myXobjChrt.Axes(xlCategory, xlPrimary)
+    On Error GoTo 0
+    Call PfixSetChartAxesScale(myXbisExitFlag, _
+            myXobjChrtAxs, myXvarMinScl, myXvarMaxScl, myXvarMjrUnt, myXvarMnrUnt)
+    Set myXobjChrtAxs = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのY軸主軸の数値軸を設定する
+Private Sub PincSetChartPrimaryValueAxesScale( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, _
+            ByVal myXvarMinScl As Variant, ByVal myXvarMaxScl As Variant, _
+            ByVal myXvarMjrUnt As Variant, ByVal myXvarMnrUnt As Variant)
+'Includes PfixSetChartAxesScale
+'myXvarX = ""  : 設定処理しない
+'myXvarX = "X" : 自動に設定
+'myXvarX = X   : 数値を設定
+    myXbisExitFlag = False
+  Dim myXobjChrtAxs As Object
+    On Error GoTo ExitPath
+    Set myXobjChrtAxs = myXobjChrt.Axes(xlValue, xlPrimary)
+    On Error GoTo 0
+    Call PfixSetChartAxesScale(myXbisExitFlag, _
+            myXobjChrtAxs, myXvarMinScl, myXvarMaxScl, myXvarMjrUnt, myXvarMnrUnt)
+    Set myXobjChrtAxs = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのY軸第2軸の数値軸を設定する
+Private Sub PincSetChartSecondaryValueAxesScale( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, _
+            ByVal myXvarMinScl As Variant, ByVal myXvarMaxScl As Variant, _
+            ByVal myXvarMjrUnt As Variant, ByVal myXvarMnrUnt As Variant)
+'Includes PfnclonCountSeriesCollectionSetAxisGroup
+'Includes PfixSetChartAxesScale
+'myXvarX = ""  : 設定処理しない
+'myXvarX = "X" : 自動に設定
+'myXvarX = X   : 数値を設定
+    myXbisExitFlag = False
+  Dim myXlonAxsGrp1Cnt As Long, myXlonAxsGrp2Cnt As Long
+    Call PfnclonCountSeriesCollectionSetAxisGroup(myXlonAxsGrp1Cnt, myXlonAxsGrp2Cnt, myXobjChrt)
+    If myXlonAxsGrp2Cnt <= 0 Then Exit Sub
+  Dim myXobjChrtAxs As Object
+    On Error GoTo ExitPath
+    Set myXobjChrtAxs = myXobjChrt.Axes(xlValue, xlSecondary)
+    On Error GoTo 0
+    Call PfixSetChartAxesScale(myXbisExitFlag, _
+            myXobjChrtAxs, myXvarMinScl, myXvarMaxScl, myXvarMjrUnt, myXvarMnrUnt)
+    Set myXobjChrtAxs = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのX/Y軸の数値軸を設定する
+Private Sub PfixSetChartAxesScale( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtAxs As Object, _
+            ByVal myXvarMinScl As Variant, ByVal myXvarMaxScl As Variant, _
+            ByVal myXvarMjrUnt As Variant, ByVal myXvarMnrUnt As Variant)
+'myXvarX = ""  : 設定処理しない
+'myXvarX = "X" : 自動に設定
+'myXvarX = X   : 数値を設定
+    myXbisExitFlag = False
+    If myXobjChrtAxs Is Nothing Then Exit Sub
+    On Error GoTo ExitPath
+    With myXobjChrtAxs
+        If CStr(myXvarMinScl) <> "" Then
+            If IsNumeric(myXvarMinScl) = True Then
+                .MinimumScale = CDbl(myXvarMinScl)
+            Else
+                .MinimumScaleIsAuto = True
+            End If
+        End If
+        If CStr(myXvarMaxScl) <> "" Then
+            If IsNumeric(myXvarMaxScl) = True Then
+                .MaximumScale = CDbl(myXvarMaxScl)
+            Else
+                .MaximumScaleIsAuto = True
+            End If
+        End If
+        If CStr(myXvarMjrUnt) <> "" Then
+            If IsNumeric(myXvarMjrUnt) = True Then
+                .MajorUnit = CDbl(myXvarMjrUnt)
+            Else
+                .MajorUnitIsAuto = True
+            End If
+        End If
+        If CStr(myXvarMnrUnt) <> "" Then
+            If IsNumeric(myXvarMnrUnt) = True Then
+                .MinorUnit = CDbl(myXvarMnrUnt)
+            Else
+                .MinorUnitIsAuto = True
+            End If
+        End If
+    End With
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのタイトルを設定する
+Private Sub PincSetChartTitle( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrChrtTtlTxt As String, _
+            Optional ByVal coXbisTtlSet As Boolean = True, _
+            Optional ByVal coXbisTtlVsbl As Boolean = True)
+'Includes PfixSetChartTitleVisibleFormula
+'Includes PfixSetChartTitleVisibleText
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrChrtTtlTxt = "X" : 文字列を設定
+'Chr(61) : イコール記号(=)
+    myXbisExitFlag = False
+    If Left(myXstrChrtTtlTxt, 1) = Chr(61) Then
+        Call PfixSetChartTitleVisibleFormula(myXbisExitFlag, _
+                myXobjChrt, myXstrChrtTtlTxt, coXbisTtlSet, coXbisTtlVsbl)
+    Else
+        Call PfixSetChartTitleVisibleText(myXbisExitFlag, _
+                myXobjChrt, myXstrChrtTtlTxt, coXbisTtlSet, coXbisTtlVsbl)
+    End If
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのX軸主軸のタイトルを設定する
+Private Sub PincSetChartPrimaryCategoryAxisTitle( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrAxsTtlX1 As String, _
+            Optional ByVal coXbisTtlSetX1 As Boolean = True, _
+            Optional ByVal coXbisTtlVsblX1 As Boolean = True)
+'Includes PfixSetChartAxisTitleVisibleFormula
+'Includes PfixSetChartAxisTitleVisibleText
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrAxsTtl = "X" : 文字列を設定
+'Chr(61) : イコール記号(=)
+    myXbisExitFlag = False
+  Dim myXobjChrtAxsX1 As Object
+    On Error GoTo ExitPath
+    Set myXobjChrtAxsX1 = myXobjChrt.Axes(xlCategory, xlPrimary)
+    On Error GoTo 0
+    If Left(myXstrAxsTtlX1, 1) = Chr(61) Then
+        Call PfixSetChartAxisTitleVisibleFormula(myXbisExitFlag, _
+                myXobjChrtAxsX1, myXstrAxsTtlX1, coXbisTtlSetX1, coXbisTtlVsblX1)
+    Else
+        Call PfixSetChartAxisTitleVisibleText(myXbisExitFlag, _
+                myXobjChrtAxsX1, myXstrAxsTtlX1, coXbisTtlSetX1, coXbisTtlVsblX1)
+    End If
+    Set myXobjChrtAxsX1 = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのY軸主軸のタイトルを設定する
+Private Sub PincSetChartPrimaryValueAxisTitle( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrAxsTtlY1 As String, _
+            Optional ByVal coXbisTtlSetY1 As Boolean = True, _
+            Optional ByVal coXbisTtlVsblY1 As Boolean = True)
+'Includes PfixSetChartAxisTitleVisibleFormula
+'Includes PfixSetChartAxisTitleVisibleText
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrAxsTtl = "X" : 文字列を設定
+'Chr(61) : イコール記号(=)
+    myXbisExitFlag = False
+  Dim myXobjChrtAxsY1 As Object
+    On Error GoTo ExitPath
+    Set myXobjChrtAxsY1 = myXobjChrt.Axes(xlValue, xlPrimary)
+    On Error GoTo 0
+    If Left(myXstrAxsTtlY1, 1) = Chr(61) Then
+        Call PfixSetChartAxisTitleVisibleFormula(myXbisExitFlag, _
+                myXobjChrtAxsY1, myXstrAxsTtlY1, coXbisTtlSetY1, coXbisTtlVsblY1)
+    Else
+        Call PfixSetChartAxisTitleVisibleText(myXbisExitFlag, _
+                myXobjChrtAxsY1, myXstrAxsTtlY1, coXbisTtlSetY1, coXbisTtlVsblY1)
+    End If
+    Set myXobjChrtAxsY1 = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのY軸第2軸のタイトルを設定する
+Private Sub PincSetChartSecondaryValueAxisTitle( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrAxsTtlY2 As String, _
+            Optional ByVal coXbisTtlSetY2 As Boolean = True, _
+            Optional ByVal coXbisTtlVsblY2 As Boolean = True)
+'Includes PfnclonCountSeriesCollectionSetAxisGroup
+'Includes PfixSetChartAxisTitleVisibleFormula
+'Includes PfixSetChartAxisTitleVisibleText
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrAxsTtl = "X" : 文字列を設定
+'Chr(61) : イコール記号(=)
+    myXbisExitFlag = False
+  Dim myXlonAxsGrp1Cnt As Long, myXlonAxsGrp2Cnt As Long
+    Call PfnclonCountSeriesCollectionSetAxisGroup(myXlonAxsGrp1Cnt, myXlonAxsGrp2Cnt, myXobjChrt)
+    If myXlonAxsGrp2Cnt <= 0 Then Exit Sub
+  Dim myXobjChrtAxsY2 As Object
+    On Error GoTo ExitPath
+    Set myXobjChrtAxsY2 = myXobjChrt.Axes(xlValue, xlSecondary)
+    On Error GoTo 0
+    If Left(myXstrAxsTtlY2, 1) = Chr(61) Then
+        Call PfixSetChartAxisTitleVisibleFormula(myXbisExitFlag, _
+                myXobjChrtAxsY2, myXstrAxsTtlY2, coXbisTtlSetY2, coXbisTtlVsblY2)
+    Else
+        Call PfixSetChartAxisTitleVisibleText(myXbisExitFlag, _
+                myXobjChrtAxsY2, myXstrAxsTtlY2, coXbisTtlSetY2, coXbisTtlVsblY2)
+    End If
+    Set myXobjChrtAxsY2 = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのタイトルの文字列を設定する
+Private Sub PfixSetChartTitleVisibleText( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrChrtTtl As String, _
+            Optional ByVal coXbisTtlSet As Boolean = True, _
+            Optional ByVal coXbisTtlVsbl As Boolean = True)
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrChrtTtlTxt = "X" : 文字列を設定
+    myXbisExitFlag = False
+    If coXbisTtlSet = False Then Exit Sub
+    On Error GoTo ExitPath
+    myXobjChrt.HasTitle = coXbisTtlVsbl
+    On Error GoTo 0
+    If coXbisTtlVsbl = False Then Exit Sub
+    myXobjChrt.ChartTitle.Text = myXstrChrtTtl
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのタイトルの参照式を設定する
+Private Sub PfixSetChartTitleVisibleFormula( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrChrtTtl As String, _
+            Optional ByVal coXbisTtlSet As Boolean = True, _
+            Optional ByVal coXbisTtlVsbl As Boolean = True)
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrChrtTtlTxt = "X" : 文字列を設定
+    myXbisExitFlag = False
+    If coXbisTtlSet = False Then Exit Sub
+    On Error GoTo ExitPath
+    myXobjChrt.HasTitle = coXbisTtlVsbl
+    On Error GoTo 0
+    If coXbisTtlVsbl = False Then Exit Sub
+    If Application.ReferenceStyle = xlA1 Then
+        myXobjChrt.ChartTitle.Formula = myXstrChrtTtl
+    Else
+        myXobjChrt.ChartTitle.FormulaR1C1 = myXstrChrtTtl
+    End If
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのX/Y軸のタイトルの文字列を設定する
+Private Sub PfixSetChartAxisTitleVisibleText( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtAxs As Object, ByVal myXstrAxsTtl As String, _
+            Optional ByVal coXbisTtlSet As Boolean = True, _
+            Optional ByVal coXbisTtlVsbl As Boolean = True)
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrAxsTtl = "X" : 文字列を設定
+    myXbisExitFlag = False
+    If coXbisTtlSet = False Then Exit Sub
+    On Error GoTo ExitPath
+    myXobjChrtAxs.HasTitle = coXbisTtlVsbl
+    On Error GoTo 0
+    If coXbisTtlVsbl = False Then Exit Sub
+    myXobjChrtAxs.AxisTitle.Text = myXstrAxsTtl
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのX/Y軸のタイトルの参照式を設定する
+Private Sub PfixSetChartAxisTitleVisibleFormula( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtAxs As Object, ByVal myXstrAxsTtl As String, _
+            Optional ByVal coXbisTtlSet As Boolean = True, _
+            Optional ByVal coXbisTtlVsbl As Boolean = True)
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrAxsTtl = "X" : 参照式を設定
+    myXbisExitFlag = False
+    If coXbisTtlSet = False Then Exit Sub
+    On Error GoTo ExitPath
+    myXobjChrtAxs.HasTitle = coXbisTtlVsbl
+    On Error GoTo 0
+    If coXbisTtlVsbl = False Then Exit Sub
+    If Application.ReferenceStyle = xlA1 Then
+        myXobjChrtAxs.AxisTitle.Formula = myXstrAxsTtl
+    Else
+        myXobjChrtAxs.AxisTitle.FormulaR1C1 = myXstrAxsTtl
+    End If
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのX/Y軸のタイトルの表示有無を設定する
+Private Sub PfixSetChartAxisTitleVisible( _
+            ByVal myXobjChrtAxs As Object, _
+            Optional ByVal coXbisTtlVsbl As Boolean = True)
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+  Const coXlonElementPrimaryValueAxisTitleAdjacentToAxis As Long = 307
+    On Error GoTo ExitPath
+    With myXobjChrtAxs.Parent
+    If myXobjChrtAxs.Type = xlCategory And myXobjChrtAxs.AxisGroup = xlPrimary Then
+        Select Case coXbisTtlVsbl
+            Case False
+                Call .SetElement(msoElementPrimaryCategoryAxisTitleNone)
+            Case Else
+                Call .SetElement(msoElementPrimaryCategoryAxisTitleAdjacentToAxis)
+        End Select
+    ElseIf myXobjChrtAxs.Type = xlValue And myXobjChrtAxs.AxisGroup = xlPrimary Then
+        Select Case coXbisTtlVsbl
+            Case False
+                Call .SetElement(msoElementPrimaryValueAxisTitleNone)
+            Case Else
+                Call .SetElement(coXlonElementPrimaryValueAxisTitleAdjacentToAxis)
+        End Select
+    ElseIf myXobjChrtAxs.Type = xlValue And myXobjChrtAxs.AxisGroup = xlSecondary Then
+        Select Case coXbisTtlVsbl
+            Case False
+                Call .SetElement(msoElementSecondaryValueAxisTitleNone)
+            Case Else
+                Call .SetElement(msoElementSecondaryValueAxisTitleAdjacentToAxis)
+        End Select
+    End If
+    End With
+    On Error GoTo 0
+ExitPath:
+End Sub
+
+ '定型Ｐ_グラフを標準フォーマットに調整する
+Private Sub PfixSetStandardChartFormat(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, _
+            Optional ByVal coXbisXMnrGrdLnsShw As Boolean = False, _
+            Optional ByVal coXbisYMnrGrdLnsShw As Boolean = False)
+'myXbisMnrGrdLnsShw = True  : 補助目盛線を表示する
+'myXbisMnrGrdLnsShw = False : 補助目盛線を表示しない
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+  Dim myXstrTmp As String: myXstrTmp = myXobjChrt.Name
+    On Error GoTo 0
+  Dim myXobjTrgt As Object
+    On Error Resume Next
+'//プロットエリアの枠線を設定
+    Set myXobjTrgt = Nothing
+    Set myXobjTrgt = myXobjChrt.PlotArea
+    If Not myXobjTrgt Is Nothing Then _
+        Call PsubSetStandardChartFormatForPlotArea(myXobjTrgt)
+'//X軸主軸の枠線を設定
+    Set myXobjTrgt = Nothing
+    Set myXobjTrgt = myXobjChrt.Axes(xlCategory, xlPrimary)
+    If Not myXobjTrgt Is Nothing Then _
+        Call PsubSetStandardChartFormatForAxes(myXobjTrgt)
+'//Y軸主軸の枠線を設定
+    Set myXobjTrgt = Nothing
+    Set myXobjTrgt = myXobjChrt.Axes(xlValue, xlPrimary)
+    If Not myXobjTrgt Is Nothing Then _
+        Call PsubSetStandardChartFormatForAxes(myXobjTrgt)
+'//Y軸第2軸の枠線を設定
+    Set myXobjTrgt = Nothing
+    Set myXobjTrgt = myXobjChrt.Axes(xlValue, xlSecondary)
+    If Not myXobjTrgt Is Nothing Then _
+        Call PsubSetStandardChartFormatForAxes(myXobjTrgt)
+    On Error GoTo 0
+'//X/Y軸のメモリ線を表示
+    With myXobjChrt
+    '//X軸主軸
+        If coXbisXMnrGrdLnsShw = False Then
+            Call .SetElement(msoElementPrimaryCategoryGridLinesMajor)
+        Else
+            Call .SetElement(msoElementPrimaryCategoryGridLinesMajor)
+            Call .SetElement(msoElementPrimaryCategoryGridLinesMinorMajor)
+        End If
+    '//Y軸主軸
+        If coXbisYMnrGrdLnsShw = False Then
+            Call .SetElement(msoElementPrimaryValueGridLinesMajor)
+        Else
+            Call .SetElement(msoElementPrimaryValueGridLinesMajor)
+            Call .SetElement(msoElementPrimaryValueGridLinesMinorMajor)
+        End If
+    End With
+    Set myXobjTrgt = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+Private Sub PsubSetStandardChartFormatForPlotArea(ByVal myXobjTrgt As Object)
+    With myXobjTrgt
+    '//枠線
+        .Format.Line.Visible = True
+        .Format.Line.ForeColor.ObjectThemeColor = msoThemeColorText1
+    End With
+End Sub
+Private Sub PsubSetStandardChartFormatForAxes(ByVal myXobjTrgt As Object)
+    With myXobjTrgt
+    '//枠線
+        .Format.Line.Visible = True
+        .Format.Line.ForeColor.ObjectThemeColor = msoThemeColorText1
+    '//目盛
+        .MajorTickMark = xlInside
+    If myXobjTrgt.AxisGroup = xlPrimary Then
+        .TickLabelPosition = xlLow
+    ElseIf myXobjTrgt.AxisGroup = xlSecondary Then
+        .TickLabelPosition = xlHigh
+    End If
+    End With
+End Sub
+
+ '定型Ｐ_グラフの凡例を標準フォーマットで設定する
+Private Sub PfixSetChartStandardLegend(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object)
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    If myXobjChrt.HasLegend = False Then myXobjChrt.HasLegend = True
+    On Error GoTo 0
+    With myXobjChrt.Legend
+    '//凡例の文字
+        .Font.Name = "Meiryo UI"
+        .Font.Size = 11
+    '//凡例の位置設定
+        .Position = xlLegendPositionCorner
+        .IncludeInLayout = False
+    '//凡例の塗りつぶし
+        .Format.Fill.Visible = True
+        .Format.Fill.Solid
+        .Format.Fill.ForeColor.ObjectThemeColor = msoThemeColorBackground1
+    '//凡例の枠線
+        .Format.Line.Visible = True
+        .Format.Line.ForeColor.ObjectThemeColor = msoThemeColorText1
+        .Format.Line.Weight = 0.75
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのタイトルを標準フォーマットで設定する
+Private Sub PfixSetChartStandardTitle(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object)
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    If myXobjChrt.HasTitle = False Then myXobjChrt.HasTitle = True
+    On Error GoTo 0
+    With myXobjChrt.ChartTitle
+    '//タイトルの文字
+        .Font.Name = "Meiryo UI"
+        .Font.Size = 11
+        .Font.Bold = True
+    '//タイトルの位置設定
+        .Position = xlChartElementPositionAutomatic
+        .IncludeInLayout = False
+    '//タイトルの塗りつぶし
+        .Format.Fill.Visible = True
+        .Format.Fill.Solid
+        .Format.Fill.ForeColor.ObjectThemeColor = msoThemeColorBackground1
+    '//タイトルの枠線
+        .Format.Line.Visible = True
+        .Format.Line.ForeColor.ObjectThemeColor = msoThemeColorText1
+        .Format.Line.Weight = 0.75
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのタイトルの位置をグラフの中心に設定する
+Private Sub PincSetChartTitleCenter(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, _
+            Optional ByVal coXbisPltAreaCntr As Boolean = False)
+'Includes PfncdouSetChartTargetTitleCenter
+'coXbisPltAreaCntr = True  : チャートエリア中心
+'coXbisPltAreaCntr = False : プロットエリア中心
+    myXbisExitFlag = False
+  Dim myXobjChrtTtl As Object
+    On Error GoTo ExitPath
+    If myXobjChrt.HasTitle = False Then myXobjChrt.HasTitle = True
+    Set myXobjChrtTtl = myXobjChrt.ChartTitle
+    On Error GoTo 0
+  Dim myXdouSetTtlTop As Double, myXdouSetTtlLft As Double
+  Dim myXlonTtlPstn As Long: myXlonTtlPstn = 1
+    Call PfncdouSetChartTargetTitleCenter( _
+            myXdouSetTtlTop, myXdouSetTtlLft, _
+            myXobjChrt, myXobjChrtTtl, myXlonTtlPstn, coXbisPltAreaCntr)
+    myXobjChrt.ChartTitle.Top = myXdouSetTtlTop
+    myXobjChrt.ChartTitle.Left = myXdouSetTtlLft
+    Set myXobjChrtTtl = Nothing
+ExitPath:
+End Sub
+
+ '定型Ｐ_グラフのX/Y軸のタイトルを標準フォーマットで設定する
+Private Sub PfixSetChartStandardAxisTitle(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object)
+    myXbisExitFlag = False
+  Dim myXobjChrtAxsX1 As Object, myXobjChrtAxsY1 As Object, myXobjChrtAxsY2 As Object
+  Dim myXobjAxsTtl As Object
+    On Error Resume Next
+    Set myXobjChrtAxsX1 = myXobjChrt.Axes(xlCategory, xlPrimary)
+    Set myXobjChrtAxsY1 = myXobjChrt.Axes(xlValue, xlPrimary)
+    Set myXobjChrtAxsY2 = myXobjChrt.Axes(xlValue, xlSecondary)
+    On Error GoTo 0
+'//X軸主軸
+    Set myXobjAxsTtl = Nothing
+    If Not myXobjChrtAxsX1 Is Nothing Then
+        If myXobjChrtAxsX1.HasTitle = False Then myXobjChrtAxsX1.HasTitle = True
+        Set myXobjAxsTtl = myXobjChrtAxsX1.AxisTitle
+        Call PsubSetChartStandardAxisTitle(myXobjAxsTtl)
+    End If
+'//Y軸主軸
+    Set myXobjAxsTtl = Nothing
+    If Not myXobjChrtAxsY1 Is Nothing Then
+        If myXobjChrtAxsY1.HasTitle = False Then myXobjChrtAxsY1.HasTitle = True
+        Set myXobjAxsTtl = myXobjChrtAxsY1.AxisTitle
+        Call PsubSetChartStandardAxisTitle(myXobjAxsTtl)
+    End If
+'//Y軸第2軸
+    Set myXobjAxsTtl = Nothing
+    If Not myXobjChrtAxsY2 Is Nothing Then
+        If myXobjChrtAxsY2.HasTitle = False Then myXobjChrtAxsY2.HasTitle = True
+        Set myXobjAxsTtl = myXobjChrtAxsY2.AxisTitle
+        Call PsubSetChartStandardAxisTitle(myXobjAxsTtl)
+    End If
+    Set myXobjChrtAxsX1 = Nothing
+    Set myXobjChrtAxsY1 = Nothing: Set myXobjChrtAxsY2 = Nothing
+    Set myXobjAxsTtl = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+Private Sub PsubSetChartStandardAxisTitle(ByVal myXobjAxsTtl As Object)
+    With myXobjAxsTtl
+    '//タイトルの文字
+        .Font.Name = "Meiryo UI"
+        .Font.Size = 11
+        .Font.Bold = True
+    End With
+End Sub
+
+ '定型Ｐ_グラフのX/Y軸のタイトルの位置をグラフの中心に設定する
+Private Sub PincSetChartAxisTitleCenter( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, _
+            Optional ByVal coXbisPltAreaCntr As Boolean = False)
+'Includes PfncdouSetChartTargetTitleCenter
+'coXbisPltAreaCntr = True  : チャートエリア中心
+'coXbisPltAreaCntr = False : プロットエリア中心
+    myXbisExitFlag = False
+  Dim myXobjChrtAxsX1 As Object, myXobjChrtAxsY1 As Object, myXobjChrtAxsY2 As Object
+    On Error Resume Next
+    Set myXobjChrtAxsX1 = myXobjChrt.Axes(xlCategory, xlPrimary)
+    Set myXobjChrtAxsY1 = myXobjChrt.Axes(xlValue, xlPrimary)
+    Set myXobjChrtAxsY2 = myXobjChrt.Axes(xlValue, xlSecondary)
+    On Error GoTo 0
+  Dim myXdouSetTtlTop As Double, myXdouSetTtlLft As Double
+  Dim myXobjAxsTtl As Object, myXlonTtlPstn As Long
+'//X軸主軸
+    Set myXobjAxsTtl = Nothing
+    If Not myXobjChrtAxsX1 Is Nothing Then
+        If myXobjChrtAxsX1.HasTitle = False Then myXobjChrtAxsX1.HasTitle = True
+        Set myXobjAxsTtl = myXobjChrtAxsX1.AxisTitle
+        myXlonTtlPstn = 2
+        Call PfncdouSetChartTargetTitleCenter( _
+                myXdouSetTtlTop, myXdouSetTtlLft, _
+                myXobjChrt, myXobjAxsTtl, myXlonTtlPstn, coXbisPltAreaCntr)
+        myXobjAxsTtl.Top = myXdouSetTtlTop
+        myXobjAxsTtl.Left = myXdouSetTtlLft
+    End If
+'//Y軸主軸
+    Set myXobjAxsTtl = Nothing
+    If Not myXobjChrtAxsY1 Is Nothing Then
+        If myXobjChrtAxsY1.HasTitle = False Then myXobjChrtAxsY1.HasTitle = True
+        Set myXobjAxsTtl = myXobjChrtAxsY1.AxisTitle
+        myXlonTtlPstn = 3
+        Call PfncdouSetChartTargetTitleCenter( _
+                myXdouSetTtlTop, myXdouSetTtlLft, _
+                myXobjChrt, myXobjAxsTtl, myXlonTtlPstn, coXbisPltAreaCntr)
+        myXobjAxsTtl.Top = myXdouSetTtlTop
+        myXobjAxsTtl.Left = myXdouSetTtlLft
+    End If
+'//Y軸第2軸
+    Set myXobjAxsTtl = Nothing
+    If Not myXobjChrtAxsY2 Is Nothing Then
+        If myXobjChrtAxsY2.HasTitle = False Then myXobjChrtAxsY2.HasTitle = True
+        Set myXobjAxsTtl = myXobjChrtAxsY2.AxisTitle
+        myXlonTtlPstn = 4
+        Call PfncdouSetChartTargetTitleCenter( _
+                myXdouSetTtlTop, myXdouSetTtlLft, _
+                myXobjChrt, myXobjAxsTtl, myXlonTtlPstn, coXbisPltAreaCntr)
+        myXobjAxsTtl.Top = myXdouSetTtlTop
+        myXobjAxsTtl.Left = myXdouSetTtlLft
+    End If
+    Set myXobjChrtAxsX1 = Nothing
+    Set myXobjChrtAxsY1 = Nothing: Set myXobjChrtAxsY2 = Nothing
+    Set myXobjAxsTtl = Nothing
+ExitPath:
+End Sub
+
+ '定型Ｐ_指定タイトル位置がグラフの中心となる設定位置を取得する
+Private Sub PfncdouSetChartTargetTitleCenter( _
+            myXdouSetTtlTop As Double, myXdouSetTtlLft As Double, _
+            ByVal myXobjChrt As Object, ByVal myXobjOrgTtl As Object, _
+            ByVal myXlonTtlPstn As Long, _
+            Optional ByVal coXbisPltAreaCntr As Boolean = False)
+'myXlonTtlPstn = 1  : 上側のタイトル
+'myXlonTtlPstn = 2  : 下側のタイトル
+'myXlonTtlPstn = 3  : 左側のタイトル
+'myXlonTtlPstn = 4  : 右側のタイトル
+'coXbisPltAreaCntr = True  : チャートエリア中心
+'coXbisPltAreaCntr = False : プロットエリア中心
+    myXdouSetTtlTop = Empty: myXdouSetTtlLft = Empty
+  Dim myXdouOrgTtlHght As Double, myXdouOrgTtlWdth As Double, _
+        myXdouChrtAreaHght As Double, myXdouChrtAreaWdth As Double, _
+        myXdouPltAreaTop As Double, myXdouPltAreaHght As Double, _
+        myXdouPltAreaLft As Double, myXdouPltAreaWdth As Double
+  Dim myXdouCal As Double
+    On Error GoTo ExitPath
+  Dim myXstrTmp As String: myXstrTmp = myXobjOrgTtl.Text
+    On Error GoTo 0
+    If myXlonTtlPstn = 3 Or myXlonTtlPstn = 4 Then GoTo JumpPath
+'//タイトル位置が上側と下側の場合の処理
+    With myXobjChrt
+    '//タイトルのサイズ情報を取得
+        myXdouOrgTtlWdth = myXobjOrgTtl.Width
+    '//チャートエリアの位置サイズ情報を取得
+        myXdouChrtAreaHght = .ChartArea.Height
+        myXdouChrtAreaWdth = .ChartArea.Width
+    '//プロットエリアの位置サイズ情報を取得
+        myXdouPltAreaLft = .PlotArea.Left
+        myXdouPltAreaWdth = .PlotArea.Width
+    End With
+'//タイトル位置を設定
+    Select Case myXlonTtlPstn
+        Case 1: myXdouSetTtlTop = 0
+        Case 2: myXdouSetTtlTop = myXdouChrtAreaHght
+    End Select
+    If coXbisPltAreaCntr = False Then
+        myXdouCal = myXdouChrtAreaWdth / 2
+        myXdouCal = myXdouCal - myXdouOrgTtlWdth / 2
+    Else
+        myXdouCal = myXdouPltAreaWdth / 2
+        myXdouCal = myXdouPltAreaLft + myXdouCal
+        myXdouCal = myXdouCal - myXdouOrgTtlWdth / 2
+    End If
+    myXdouSetTtlLft = myXdouCal
+    GoTo ExitPath
+JumpPath:
+'//タイトル位置が左側と右側の場合の処理
+    With myXobjChrt
+    '//タイトルのサイズ情報を取得
+        myXdouOrgTtlHght = myXobjOrgTtl.Height
+    '//チャートエリアの位置サイズ情報を取得
+        myXdouChrtAreaHght = .ChartArea.Height
+        myXdouChrtAreaWdth = .ChartArea.Width
+    '//プロットエリアの位置サイズ情報を取得
+        myXdouPltAreaTop = .PlotArea.Top
+        myXdouPltAreaHght = .PlotArea.Height
+    End With
+'//タイトル位置を設定
+    If coXbisPltAreaCntr = False Then
+        myXdouCal = myXdouChrtAreaHght / 2
+        myXdouCal = myXdouCal - myXdouOrgTtlHght / 2
+    Else
+        myXdouCal = myXdouPltAreaHght / 2
+        myXdouCal = myXdouPltAreaTop + myXdouCal
+        myXdouCal = myXdouCal - myXdouOrgTtlHght / 2
+    End If
+    myXdouSetTtlTop = myXdouCal
+    Select Case myXlonTtlPstn
+        Case 3: myXdouSetTtlLft = 0
+        Case 4: myXdouSetTtlLft = myXdouChrtAreaWdth
+    End Select
+ExitPath:
+End Sub
+
+ '定型Ｐ_グラフの数値軸を標準フォーマットで設定する
+Private Sub PfixSetChartStandardAxesScale(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object)
+    myXbisExitFlag = False
+  Dim myXobjChrtAxsX1 As Object, myXobjChrtAxsY1 As Object, myXobjChrtAxsY2 As Object
+    On Error Resume Next
+    With myXobjChrt
+        Set myXobjChrtAxsX1 = .Axes(xlCategory, xlPrimary)
+        Set myXobjChrtAxsY1 = .Axes(xlValue, xlPrimary)
+        Set myXobjChrtAxsY2 = .Axes(xlValue, xlSecondary)
+    End With
+    On Error GoTo 0
+'//X軸主軸
+    If Not myXobjChrtAxsX1 Is Nothing Then _
+        Call PsubSetChartStandardAxesScale(myXobjChrtAxsX1)
+'//Y軸主軸
+    If Not myXobjChrtAxsY1 Is Nothing Then _
+        Call PsubSetChartStandardAxesScale(myXobjChrtAxsY1)
+'//Y軸第2軸
+    If Not myXobjChrtAxsY2 Is Nothing Then _
+        Call PsubSetChartStandardAxesScale(myXobjChrtAxsY2)
+    Set myXobjChrtAxsX1 = Nothing: Set myXobjChrtAxsY1 = Nothing
+    Set myXobjChrtAxsY2 = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+Private Sub PsubSetChartStandardAxesScale(ByVal myXobjChrtAxs As Object)
+    With myXobjChrtAxs
+    '//軸の文字
+        .TickLabels.Font.Name = "Meiryo UI"
+        .TickLabels.Font.Size = 11
+    '//軸のスケール
+        .MinimumScaleIsAuto = True
+        .MaximumScaleIsAuto = True
+        .MajorUnitIsAuto = True
+        .MinorUnitIsAuto = True
+    End With
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
