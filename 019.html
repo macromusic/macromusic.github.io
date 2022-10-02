@@ -1,1 +1,293 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>macro sample</div>
+      <pre>
 
+
+ '定型Ｐ_一時停止する
+Private Sub PfixWait(Optional ByVal coXdobPauseTime As Double = 1)
+  Dim myXdatStart As Date: myXdatStart = Timer
+    Do While Timer < myXdatStart + coXdobPauseTime
+        DoEvents
+    Loop
+End Sub
+
+ '定型Ｐ_クリップボードにデータを格納する
+Private Sub PfixDataPutInClipboard(ByVal myXvarInptData As Variant)
+    If myXvarInptData = "" Then Exit Sub
+  Dim myXdobClpBrd As New DataObject, myXvarClpBrdData As Variant
+    With myXdobClpBrd
+        .SetText myXvarInptData         '変数をDataObjectに格納
+        .PutInClipboard                 'DataObjectのデータをクリップボードに格納
+        .GetFromClipboard               'クリップボードからDataObjectにデータを取得
+        myXvarClpBrdData = .GetText     'DataObjectのデータを変数に格納
+    End With
+End Sub
+
+ '定型Ｐ_クリップボードの格納データを取得する
+Private Sub PfixDataGetFromClipboard(myXvarClpBrdData As Variant)
+    myXvarClpBrdData = Empty
+  Dim myXdobClpBrd As New DataObject
+    With myXdobClpBrd
+        .GetFromClipboard               'クリップボードからDataObjectにデータを取得
+        myXvarClpBrdData = .GetText     'DataObjectのデータを変数に格納
+    End With
+End Sub
+
+ '定型Ｐ_キーストロークをアクティブなウィンドウに送信する
+Private Sub PfixSendKeys( _
+            ByVal myXstrSendKey As String, _
+            Optional ByVal myXbisWait As Boolean = True)
+'[キー] : [コード]
+'Shift  : +
+'Ctrl   : ^
+'alt    : %
+'↑     : {UP}
+'↓     : {DOWN}
+'→     : {RIGHT}
+'←     : {LEFT}
+'BackSpace      : {BACKSPACE}, {BS}, or{BKSP}
+'Break          : {BREAK}
+'CapsLock       : {CAPSLOCK}
+'Delete         : {DELETE} or{DEL}
+'End            : {END}
+'Enter          : {ENTER} or ~
+'Esc            : {ESC}
+'Help           : {HELP}
+'Home           : {HOME}
+'Insert         : {INSERT} or {INS}
+'NumLock        : {NUMLOCK}
+'PageDown       : {PGDN}
+'PageUp         : {PGUP}
+'PrintScreen    : {PRTSC}
+'ScrollLock     : {SCROLLLOCK}
+'Tab            : {TAB}
+'F1             : {F1}
+'Ctrlとvの同時入力 : ^v
+'A→B→C入力 : ABC
+    Call SendKeys(myXstrSendKey, myXbisWait)    'キーストロークを送信
+End Sub
+
+ '定型Ｆ_起動中でアクティブ状態のエクスプローラのアドレスを取得する
+Private Function PfncstrExplorerAddressBar( _
+            Optional ByVal coXdobPauseTime As Double = 0.1) As String
+    PfncstrExplorerAddressBar = Empty
+  Dim myXstrSendKey As String, myXdatStart As Date
+'「ALT+D(アドレスバーを選択)」のキーストロークを送信
+    myXdatStart = Timer
+    Do While Timer < myXdatStart + coXdobPauseTime
+        DoEvents
+    Loop
+    myXstrSendKey = "%D"
+    Call SendKeys(myXstrSendKey, True)
+'「CTRL+C(選択部分のコピー)」のキーストロークを送信
+    myXdatStart = Timer
+    Do While Timer < myXdatStart + coXdobPauseTime
+        DoEvents
+    Loop
+    myXstrSendKey = "^C"
+    Call SendKeys(myXstrSendKey, True)
+'「ENTER」のキーストロークを送信
+    myXdatStart = Timer
+    Do While Timer < myXdatStart + coXdobPauseTime
+        DoEvents
+    Loop
+    myXstrSendKey = "{ENTER}"
+    Call SendKeys(myXstrSendKey, True)
+'クリップボードの格納データを取得
+  Dim myXdobClpBrd As New DataObject
+  Dim myXstrWndwAdrs As String
+    With myXdobClpBrd
+        .GetFromClipboard               'クリップボードからDataObjectにデータを取得
+        myXstrWndwAdrs = .GetText       'DataObjectのデータを変数に格納
+    End With
+    PfncstrExplorerAddressBar = myXstrWndwAdrs
+End Function
+
+ '定型Ｐ_NumLockキーをオンにする
+Private Sub PfixNumLockOn()
+'→Declaration0:モジュールの宣言部分に記述
+''API宣言_キーストロークを合成する
+'  Private Declare Sub keybd_event Lib "user32" (ByVal bVk As Byte, _
+'     ByVal bScan As Byte, ByVal dwFlags As Long, ByVal dwExtraInfo As Long)
+''API宣言_キーボードの状態を取得する
+'  Private Declare Function GetKeyboardState Lib "user32" (pbKeyState As Byte) As Long
+'←EndDeclaration
+  Dim myXbisNumLockState As Boolean
+  Dim myXlonKeys(0 To 255) As Long
+  GetKeyboardState myXlonKeys(0)
+  myXbisNumLockState = myXlonKeys(&H90)     '「NumLock」キーの状態を取得
+  '「NumLock」キーがオフの場合はオンにする
+    If myXbisNumLockState = False Then
+        keybd_event &H90, &H45, &H1 Or 0, 0     'キーを押す
+        keybd_event &H90, &H45, &H1 Or &H2, 0   'キーを放す
+    End If
+End Sub
+
+ '定型Ｐ_NumLockキーをオフにする
+Private Sub PfixNumLockOff()
+'→Declaration0:モジュールの宣言部分に記述
+''API宣言_キーストロークを合成する
+'  Private Declare Sub keybd_event Lib "user32" (ByVal bVk As Byte, _
+'     ByVal bScan As Byte, ByVal dwFlags As Long, ByVal dwExtraInfo As Long)
+''API宣言_キーボードの状態を取得する
+'  Private Declare Function GetKeyboardState Lib "user32" (pbKeyState As Byte) As Long
+'←EndDeclaration
+  Dim myXbisNumLockState As Boolean
+  Dim myXlonKeys(0 To 255) As Long
+  GetKeyboardState myXlonKeys(0)
+  myXbisNumLockState = myXlonKeys(&H90)     '「NumLock」キーの状態を取得
+  '「NumLock」キーがオフの場合はオンにする
+    If myXbisNumLockState = True Then
+        keybd_event &H90, &H45, &H1 Or 0, 0     'キーを押す
+        keybd_event &H90, &H45, &H1 Or &H2, 0   'キーを放す
+    End If
+End Sub
+
+ '定型Ｐ_エクセルシート上のユーザー定義関数を強制的に再計算させる
+Public Sub PfixCalculateUserFunction()
+'Ctrl+Alt+F9 : ^%{F9}
+    Call SendKeys("^%{F9}", True)
+End Sub
+
+ '定型Ｆ_起動済みのエクスプローラウィンドウの数を取得する
+Private Function PfnclonCountExplorer() As Long
+    PfnclonCountExplorer = Empty
+  Const coXstrWndwName As String = "エクスプローラー"
+  Dim myXobjShell As Object: Set myXobjShell = CreateObject("Shell.Application")
+  Dim myXobjWndw As Object, n As Long: n = 0
+    For Each myXobjWndw In myXobjShell.Windows
+        If myXobjWndw.Name = coXstrWndwName Then n = n + 1
+    Next
+    PfnclonCountExplorer = n
+    Set myXobjShell = Nothing: Set myXobjWndw = Nothing
+End Function
+
+ '定型Ｐ_起動済みのエクスプローラウィンドウリストを取得する
+Private Sub PfixGetExplorerWindows(myXlonExplrCnt As Long, myZobjExplr() As Object)
+    myXlonExplrCnt = Empty: Erase myZobjExplr
+  Const coXstrWndwName As String = "エクスプローラー"
+  Dim myXobjShell As Object: Set myXobjShell = CreateObject("Shell.Application")
+  Dim myXobjWndw As Object, n As Long: n = 0
+    For Each myXobjWndw In myXobjShell.Windows
+        If myXobjWndw.Name <> coXstrWndwName Then GoTo NextPath
+        n = n + 1: ReDim Preserve myZobjExplr(n) As Object
+        Set myZobjExplr(n) = myXobjWndw
+NextPath:
+    Next
+    myXlonExplrCnt = n
+    Set myXobjShell = Nothing: Set myXobjWndw = Nothing
+End Sub
+
+ '定型Ｐ_起動済みエクスプローラウィンドウのタイトルを取得する
+Private Sub PfixGetExplorerInformation(myXlonExplrCnt As Long, myZstrExplrInfo() As String)
+'myZstrExplrInfo(n) = ウィンドウタイトル
+    myXlonExplrCnt = Empty: Erase myZstrExplrInfo
+  Const coXstrWndwName As String = "エクスプローラー"
+  Dim myXobjShell As Object: Set myXobjShell = CreateObject("Shell.Application")
+  Dim myXobjWndw As Object, n As Long: n = 0
+    For Each myXobjWndw In myXobjShell.Windows
+        If myXobjWndw.Name <> coXstrWndwName Then GoTo NextPath
+        n = n + 1: ReDim Preserve myZstrExplrInfo(n) As String
+        myZstrExplrInfo(n) = myXobjWndw.LocationName
+NextPath:
+    Next
+    myXlonExplrCnt = n
+    Set myXobjShell = Nothing: Set myXobjWndw = Nothing
+End Sub
+
+ '定型Ｆ_最初か最後に起動したエクスプローラウィンドウを取得する
+Private Function PfncobjGetExplorerObject(Optional ByVal coXlonWndwOptn As Long = 2) As Object
+'coXlonWndwOptn = 1 : 最初のエクスプローラウィンドウ
+'coXlonWndwOptn = 2 : 最後のエクスプローラウィンドウ
+    Set PfncobjGetExplorerObject = Nothing
+  Const coXstrWndwName As String = "エクスプローラー"
+  Dim myXobjShell As Object: Set myXobjShell = CreateObject("Shell.Application")
+  Dim myXobjWndw As Object
+    For Each myXobjWndw In myXobjShell.Windows
+        If myXobjWndw.Name <> coXstrWndwName Then GoTo NextPath
+        Set PfncobjGetExplorerObject = myXobjWndw
+        If coXlonWndwOptn = 1 Then Exit For
+NextPath:
+    Next
+    Set myXobjShell = Nothing: Set myXobjWndw = Nothing
+End Function
+
+Sub Test_20200620102923()
+  Dim myXlonExplrCnt As Long, myZobjExplr() As Object, myXstrExplrTtl As String
+    myXstrExplrTtl = "cls21_定期ToDo"
+    Call PincGetExplrWindowsDesignateTitle(myXlonExplrCnt, myZobjExplr, myXstrExplrTtl, True)
+End Sub
+
+
+ '定型Ｐ_起動済みエクスプローラのタイトルを指定してウィンドウリストを取得する
+Private Sub PincGetExplrWindowsDesignateTitle( _
+            myXlonExplrCnt As Long, myZobjExplr() As Object, _
+            ByVal myXstrExplrTtl As String, _
+            Optional ByVal coXbisInStrON As Boolean = True)
+'coXbisInStrON = False : タイトルが指定タイトルと一致するウィンドウを取得
+'coXbisInStrON = True  : タイトルが指定タイトルを含むウィンドウを取得
+    myXlonExplrCnt = Empty: Erase myZobjExplr
+    If myXstrExplrTtl = "" Then Exit Sub
+  Const coXstrWndwName As String = "エクスプローラー"
+  Dim myXobjShell As Object: Set myXobjShell = CreateObject("Shell.Application")
+  Dim myXobjWndw As Object, myXstrTmpTtl As String, n As Long: n = 0
+    For Each myXobjWndw In myXobjShell.Windows
+        If myXobjWndw.Name <> coXstrWndwName Then GoTo NextPath
+        myXstrTmpTtl = myXobjWndw.LocationName
+        Select Case coXbisInStrON
+            Case True: If InStr(myXstrTmpTtl, myXstrExplrTtl) = 0 Then GoTo NextPath
+            Case Else: If myXstrTmpTtl <> myXstrExplrTtl Then GoTo NextPath
+        End Select
+        n = n + 1: ReDim Preserve myZobjExplr(n) As Object
+        Set myZobjExplr(n) = myXobjWndw
+NextPath:
+    Next
+    myXlonExplrCnt = n
+    Set myXobjShell = Nothing: Set myXobjWndw = Nothing
+End Sub
+
+ '定型Ｆ_起動済みエクスプローラの中からタイトルを確認してウィンドウを取得する
+Private Function PfncobjGetExplorerWindowByCheckingTitle() As Object
+  Const coXstrWndwName As String = "エクスプローラー"
+    Set PfncobjGetExplorerWindowByCheckingTitle = Nothing
+  Dim myXobjShell As Object: Set myXobjShell = CreateObject("Shell.Application")
+  Dim myXobjTmpWndw As Object, myXstrTmpTtl As String
+  Dim myXstrTitle As String, myXstrPrompt As String, myXlonMsgBox As Long
+    myXstrTitle = "エクスプローラウィンドウの取得"
+    For Each myXobjTmpWndw In myXobjShell.Windows
+        If myXobjTmpWndw.Name <> coXstrWndwName Then GoTo NextPath
+        myXstrTmpTtl = myXobjTmpWndw.LocationName
+        myXstrPrompt = myXstrTmpTtl & vbCrLf & vbCrLf _
+                        & "上記エクスプローラウィンドウを取得しますか？"
+        myXlonMsgBox = MsgBox(myXstrPrompt, vbYesNo, myXstrTitle)
+        If myXlonMsgBox = vbNo Then GoTo NextPath
+        Set PfncobjGetExplorerWindowByCheckingTitle = myXobjTmpWndw
+        Exit For
+NextPath:
+    Next
+    Set myXobjShell = Nothing: Set myXobjTmpWndw = Nothing
+End Function
+
+ '定型Ｆ_エクスプローラウィンドウで表示しているフォルダパスを取得する
+Private Function PfncstrGetExplorerWindowLocationURL(ByVal myXobjExplrWndw As Object) As String
+  Const coXstrPrfx As String = "file:///"
+  Const coXstrSpc As String = "%20"
+    PfncstrGetExplorerWindowLocationURL = Empty
+  Dim myXstrLctnUrl As String, myXstrDirPath As String
+    myXstrLctnUrl = myXobjExplrWndw.LocationURL
+    myXstrDirPath = Mid(myXstrLctnUrl, Len(coXstrPrfx) + 1)
+    myXstrDirPath = Replace(myXstrDirPath, coXstrSpc, Space(1))
+    PfncstrGetExplorerWindowLocationURL = myXstrDirPath
+End Function
+
+      <br></pre>
+    </body>
+  </html>
