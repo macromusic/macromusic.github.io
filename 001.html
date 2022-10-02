@@ -1,1 +1,218 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>macro sample</div>
+      <pre>
+'
+'
+' '定型St_Withステートメント_XarbSttmntWith
+'    With XarbWithCondition
+'        '.XarbProgCode
+'    End With
+'
+' '定型St_Ifステートメント_XarbSttmntIf
+'    If XarbIfCondition Then
+'        'XarbProgCode1
+'    Else
+'        'XarbProgCode2
+'    End If
+'
+' '定型St_SelectCaseステートメント_XarbSttmntSelCase
+'    Select Case XarbSelectCondition
+'        Case XarbCaseCondition
+'            'XarbProgCode1
+'        Case Else
+'            'XarbProgCode2
+'    End Select
+'
+' '定型St_For...Nextステートメント_XarbSttmntForNext
+'  Dim i As Long
+'    For i = XarbLong1 To XarbLong2
+'        'XarbProgCode
+'    Next i
+'  Dim i As Long, j As Long
+'    For j = XarbLong21 To XarbLong22
+'        For i = XarbLong11 To XarbLong12
+'            'XarbProgCode
+'        Next i
+'    Next j
+'
+' '定型St_For...NextでLBoundとUBoundでループする_XarbSttmntForNext
+'  Dim i As Long
+'    For i = LBound(XarbArray) To UBound(XarbArray)
+'        'XarbProgCode
+'    Next i
+'  Dim i As Long, j As Long
+'    For j = LBound(XarbArray, 2) To UBound(XarbArray, 2)
+'        For i = LBound(XarbArray, 1) To UBound(XarbArray, 1)
+'            'XarbProgCode
+'        Next i
+'    Next j
+'
+' '定型St_ForEach...Nextステートメント(Variant)_XarbSttmntForEach
+'  Dim myXvarTmp As Variant
+'    For Each myXvarTmp In XarbArray
+'        'XarbProgCode
+'    Next
+'
+' '定型St_ForEach...Nextステートメント(Object)_XarbSttmntForEach
+'  Dim myXobjTmp As Object
+'    For Each myXobjTmp In XarbArray
+'        'XarbProgCode
+'    Next
+'
+' '定型St_For文から抜ける_XarbSttmntForNext
+'    Exit For
+'
+' '定型St_DoUntil...Loopステートメント_XarbSttmntDoLoop
+'    Do Until XarbDoCondition
+'        'XarbProgCode
+'    Loop
+'
+' '定型St_Do...LoopUntilステートメント_XarbSttmntDoLoop
+'    Do
+'        'XarbProgCode
+'    Loop Until XarbDoCondition
+'
+' '定型St_DoWhile...Loopステートメント_XarbSttmntDoLoop
+'    Do While XarbDoCondition
+'        'XarbProgCode
+'    Loop
+'
+' '定型St_Do...LoopWhileステートメント_XarbSttmntDoLoop
+'    Do
+'        XarbProgCode
+'    Loop While XarbDoCondition
+'
+' '定型St_OnErrorGoToステートメント_XarbSttmntError
+'    On Error GoTo ErrorPath     'エラーのトラップを有効にする
+'    'XarbProgCode1
+'    On Error GoTo 0
+'    Exit Sub
+'ErrorPath:
+'    'XarbProgCode2
+'
+' '定型St_OnErrorResumeNextステートメント_XarbSttmntError
+'    On Error Resume Next    'エラーのトラップを有効にする
+'
+' '定型St_OnErrorGoTo0ステートメント_XarbSttmntError
+'    On Error GoTo 0         'エラーのトラップを無効にする
+'
+' '定型St_エラー情報のクリア_XarbSttmntError
+'    Err.Clear         'エラー情報をクリアする
+'
+' '定型St_実行時エラーの生成_XarbSttmntError
+'    '実行時エラーを生成する_エラー番号,"発生元","説明文"
+'    Err.Raise XarbLong, XarbString, XarbString
+'
+' '定型St_値をメッセージボックスで表示する_MsgBox
+'    MsgBox XarbString
+'
+' '定型St_値をイミディエイトウィンドウに出力する_DebugPrint
+'    Debug.Print XarbString
+'
+' '定型St_エラー番号とエラー内容を調べる(MsgBox)_XarbSttmntError
+'    On Error GoTo ErrPath
+'    'XarbProgCode
+'    On Error GoTo 0
+'    Exit Sub
+'ErrPath:
+'    MsgBox "エラー番号： " & Err.Number & vbCrLf & _
+'            "エラー内容： " & Err.Description & vbCrLf & _
+'            "エラー発生元： " & Err.Source           'エラー番号とエラー内容の表示
+'
+' '定型St_エラー番号とエラー内容を調べる(DebugPrint)_XarbSttmntError
+'    On Error GoTo ErrPath
+'    XarbProgCode
+'    On Error GoTo 0
+'    Exit Sub
+'ErrPath:
+'    Debug.Print "エラー番号： " & Err.Number            'エラー番号の表示
+'    Debug.Print "エラー内容： " & Err.Description       'エラー内容の表示
+'    Debug.Print "エラー発生元： " & Err.Source          'エラー発生元のオブジェクト名の表示
+'
+' '定型St_エラーの種類によって条件を分岐する1_XarbSttmntError
+'ResumePath:
+'    'XarbProgCode1
+'    On Error GoTo ErrPath
+'    'XarbProgCode2
+'    On Error GoTo 0
+'    Exit Sub
+'ErrorPath:
+'    If XarbIfCondition1 Then
+'        'XarbProgCode3
+'        Resume ResumePath   'ResumePathへ戻る
+'    ElseIf XarbIfCondition2 Then
+'        'XarbProgCode4
+'        Resume Next         'エラーが発生したプログラムの次のプログラムへ戻る
+'    ElseIf XarbIfCondition3 Then
+'        'XarbProgCode5
+'        Resume              'エラーが発生したプログラムへ戻る
+'    End If
+'
+' '定型St_エラーの種類によって条件を分岐する2_XarbSttmntError
+'ResumePath:
+'    'XarbProgCode1
+'    On Error GoTo ErrorPath
+'    'XarbProgCode2
+'    On Error GoTo 0
+'    Exit Sub
+'ErrorPath:
+'    Select Case Err.Number
+'        Case XNum1
+'            MsgBox Err.Description
+'            'XarbProgCode3
+'            Resume ResumePath   'ResumePathへ戻る
+'        Case XNum2
+'            MsgBox Err.Description
+'            'XarbProgCode4
+'            Resume Next         'エラーが発生したプログラムの次のプログラムへ戻る
+'        Case XNum3
+'            MsgBox Err.Description
+'            'XarbProgCode5
+'            Resume              'エラーが発生したプログラムへ戻る
+'    End Select
+'
+' '定型St_条件内容を判別してフラグをTrueにしてExitする_XarbSttmntIf
+'    If XarbIfCondition Then
+'        XarbFlag = True
+'        Exit Sub
+'    End If
+'
+' '定型St_フラグを判別してTrueであればExitする_XarbSttmntIf
+'    If XarbFlag = True Then Exit Sub
+'
+' '定型St_Exitフラグ発生時にExit処理をする
+'    myXbisExitFlag = True
+'    MsgBox "ウィンドウの取得に失敗" & vbCrLf & vbCrLf _
+'            & "ファイル名,モジュール名を再確認して下さい"
+'    GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+''
+'' '定型St_異常フラグ発生時にプログラムを終了する
+''    If XarbFlag = True Then GoTo ExitPath
+''    'XarbProgCode
+''    Exit Sub
+''ExitPath:
+''    myXbisExitFlag = True
+''    MsgBox "Exitフラグ発生によりプログラムを終了"
+''
+'' '定型St_エラー発生時にプログラムを終了する
+''    On Error GoTo ExitPath
+''    'XarbProgCode
+''    On Error GoTo 0
+''    Exit Sub
+''ExitPath:
+''    myXbisExitFlag = True
+''    MsgBox "エラー発生によりプログラムを終了"
 
+      <br></pre>
+    </body>
+  </html>
