@@ -10,6 +10,513 @@
       <div>macro sample</div>
       <pre>
 
+
+ '定型Ｆ_指定行列が数値行列かどうかをチェックする
+Private Function PfncbisIsMatrixNumeric(ByRef myZvarMtrx As Variant) As Boolean
+    PfncbisIsMatrix = False
+  Dim myXdouTmp As Double, L1 As Long, L2 As Long
+    On Error GoTo ExitPath
+    L1 = LBound(myZvarMtrx, 1): L2 = LBound(myZvarMtrx, 2)
+    myXdouTmp = myZvarMtrx(L1, L2)
+    On Error GoTo 0
+    PfncbisIsMatrix = True
+ExitPath:
+End Function
+
+ '定型Ｆ_指定行列の行列長が指定値を満足するかをチェックする
+Private Function PfncbisCheckMatrixLength( _
+            ByRef myZdouOrgMtrx() As Double, _
+            ByVal myXlonMtrxRows As Long, ByVal myXlonMtrxCols As Long) As Boolean
+    PfncbisCheckMatrixLength = False
+    If myXlonMtrxRows <= 0 Or myXlonMtrxCols <= 0 Then Exit Function
+  Dim myXdouTmp As Double, L1 As Long, L2 As Long
+    On Error GoTo ExitPath
+    L1 = LBound(myZdouOrgMtrx, 1): L2 = LBound(myZdouOrgMtrx, 2)
+    myXdouTmp = myZdouOrgMtrx(L1, L2)
+    On Error GoTo 0
+  Dim myXlonRows As Long, myXlonCols As Long
+    myXlonRows = UBound(myZdouOrgMtrx, 1) - LBound(myZdouOrgMtrx, 1) + 1
+    myXlonCols = UBound(myZdouOrgMtrx, 2) - LBound(myZdouOrgMtrx, 2) + 1
+    If myXlonRows <> myXlonMtrxRows Then Exit Function
+    If myXlonCols <> myXlonMtrxCols Then Exit Function
+    PfncbisCheckMatrixLength = True
+ExitPath:
+End Function
+
+ '定型Ｆ_指定行列が指定範囲で処理可能かをチェックする
+Private Function PfncbisCheckMatrixRange(ByRef myZdouMtrx() As Double, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
+            ByVal myXlonEndRow As Long, ByVal myXlonEndCol As Long) As Boolean
+    PfncbisCheckMatrixRange = False
+  Dim myXdouTmp As Double
+    On Error GoTo ExitPath
+    If myXlonBgnRow < LBound(myZdouMtrx, 1) Then Exit Sub
+    If myXlonBgnCol < LBound(myZdouMtrx, 2) Then Exit Sub
+    If myXlonEndRow > UBound(myZdouMtrx, 1) Then Exit Sub
+    If myXlonEndCol > UBound(myZdouMtrx, 2) Then Exit Sub
+    If myXlonEndRow < myXlonBgnRow Then Exit Sub
+    If myXlonEndCol < myXlonBgnCol Then Exit Sub
+    myXdouTmp = myZdouOrgData(myXlonBgnRow, myXlonBgnCol)
+    myXdouTmp = myZdouOrgData(myXlonEndRow, myXlonEndCol)
+    On Error GoTo 0
+    PfncbisCheckMatrixRange = True
+ExitPath:
+End Function
+
+ '定型Ｆ_2個の指定行列で四則演算の行列計算可能かをチェックする
+Private Function PfncbisIsAbleMatrixArithmeticOperations( _
+            ByRef myZdouLMtrx() As Double, ByRef myZdouRMtrx() As Double) As Boolean
+    PfncbisIsAbleToMatrixArithmeticOperations = False
+    On Error GoTo ExitPath
+  Dim myXdouTmp As Double
+    myXdouTmp = myZdouLMtrx(LBound(myZdouLMtrx, 1), LBound(myZdouLMtrx, 2))
+    myXdouTmp = myZdouRMtrx(LBound(myZdouRMtrx, 1), LBound(myZdouRMtrx, 2))
+    On Error GoTo 0
+    If LBound(myZdouLMtrx, 1) <> LBound(myZdouRMtrx, 1) Then Exit Function
+    If LBound(myZdouLMtrx, 2) <> LBound(myZdouRMtrx, 2) Then Exit Function
+    If UBound(myZdouLMtrx, 1) <> UBound(myZdouRMtrx, 1) Then Exit Function
+    If UBound(myZdouLMtrx, 2) <> UBound(myZdouRMtrx, 2) Then Exit Function
+    PfncbisIsAbleToMatrixArithmeticOperations = True
+ExitPath:
+End Function
+
+ '定型Ｆ_2個の指定行列で乗算の行列計算可能かをチェックする
+Private Function PfncbisIsAbleMatrixProduct( _
+            ByRef myZdouLMtrx() As Double, ByRef myZdouRMtrx() As Double) As Boolean
+    PfncbisIsAbleToMatrixProduct = False
+    On Error GoTo ExitPath
+  Dim myXdouTmp As Double
+    myXdouTmp = myZdouLMtrx(LBound(myZdouLMtrx, 1), LBound(myZdouLMtrx, 2))
+    myXdouTmp = myZdouRMtrx(LBound(myZdouRMtrx, 1), LBound(myZdouRMtrx, 2))
+    On Error GoTo 0
+    If LBound(myZdouLMtrx, 1) <> LBound(myZdouRMtrx, 1) Then Exit Function
+    If LBound(myZdouLMtrx, 2) <> LBound(myZdouRMtrx, 2) Then Exit Function
+    If UBound(myZdouLMtrx, 1) <> UBound(myZdouRMtrx, 2) Then Exit Function
+    PfncbisIsAbleToMatrixProduct = True
+ExitPath:
+End Function
+ 
+ '定型Ｆ_2個の指定行列で内積計算可能かをチェックする
+Private Function PfncbisIsAbleInnerProduct( _
+            ByRef myZdouLAry() As Double, ByRef myZdouRAry() As Double) As Boolean
+'myZdouLAry(i) : 左側元配列
+'myZdouRAry(i) : 右側元配列
+    PfncbisIsAbleInnerProduct = False
+  Dim myXdouTmp As Double, L1 As Long, L2 As Long
+    On Error GoTo ExitPath
+    L1 = LBound(myZdouLAry): myXdouTmp = myZdouLAry(L1)
+    L2 = LBound(myZdouRAry): myXdouTmp = myZdouRAry(L2)
+    On Error GoTo 0
+    If L1 <> L2 Then Exit Function
+    If UBound(myZdouLAry) <> UBound(myZdouRAry) Then Exit Function
+    PfncbisIsAbleInnerProduct = True
+ExitPath:
+End Function
+
+ '定型Ｆ_2個の指定変数で外積計算可能かをチェックする
+Private Function PfncbisIsAbleCrossProduct( _
+            ByRef myZdouLAry() As Double, ByRef myZdouRAry() As Double) As Boolean
+'myZdouLAry(i) : 左側元配列
+'myZdouRAry(i) : 右側元配列
+    PfncbisIsAbleCrossProduct = False
+  Dim myXdouTmp As Double, L1 As Long, L2 As Long
+    On Error GoTo ExitPath
+    L1 = LBound(myZdouLAry): myXdouTmp = myZdouLAry(L1)
+    L2 = LBound(myZdouRAry): myXdouTmp = myZdouRAry(L2)
+    On Error GoTo 0
+    If L1 <> L2 Then Exit Function
+    If UBound(myZdouLAry) <> UBound(myZdouRAry) Then Exit Function
+    If UBound(myZdouLAry) <> 3 Then Exit Function
+    PfncbisIsAbleCrossProduct = True
+ExitPath:
+End Function
+
+ '定型Ｆ_正方行列の次数が指定次数と一致するかをチェックする
+Private Function PfncbisCheckSquareMatrixOrder( _
+            ByRef myZdouOrgMtrx() As Double, ByVal myXlonOrdr As Long) As Boolean
+'myZdouOrgMtrx(i, i) : 元行列
+'myXlonOrdr : 正方行列の次数
+    PfncbisCheckSquareMatrixOrder = False
+    If myXlonOrdr <= 0 Then Exit Function
+  Dim myXdouTmp As Double, L1 As Long, L2 As Long
+    On Error GoTo ExitPath
+    L1 = LBound(myZdouOrgMtrx, 1): L2 = LBound(myZdouOrgMtrx, 2)
+    myXdouTmp = myZdouOrgMtrx(L1, L2)
+    On Error GoTo 0
+  Dim myXlonRows As Long, myXlonCols As Long
+    myXlonRows = UBound(myZdouOrgMtrx, 1) - LBound(myZdouOrgMtrx, 1) + 1
+    myXlonCols = UBound(myZdouOrgMtrx, 2) - LBound(myZdouOrgMtrx, 2) + 1
+    If myXlonRows <> myXlonCols Then Exit Function
+    If myXlonRows <> myXlonOrdr Then Exit Function
+    PfncbisCheckSquareMatrixOrder = True
+ExitPath:
+End Function
+
+'行列計算:単位行列
+Private Sub PfixIdentityMatrix( _
+            myZdouIdnttyMtrx() As Double, _
+            ByVal myXlonOrdr As Double)
+'myZdouIdnttyMtrx(i, i) : 単位行列
+'myXlonOrdr : 正方行列の次数
+    Erase myZdouIdnttyMtrx
+    If myXlonOrdr <= 0 Then Exit Sub
+    ReDim myZdouIdnttyMtrx(myXlonOrdr, myXlonOrdr) As Double
+  Dim i As Long, j As Long
+    For i = LBound(myZdouIdnttyMtrx, 2) To UBound(myZdouIdnttyMtrx, 2)
+        For j = LBound(myZdouIdnttyMtrx, 1) To UBound(myZdouIdnttyMtrx, 1)
+            Select Case i
+                Case j
+                    myZdouIdnttyMtrx(i, j) = 1
+                Case Else
+                    myZdouIdnttyMtrx(i, j) = 0
+            End Select
+        Next j
+    Next i
+End Sub
+
+ '定型Ｆ_ゼロ行列
+Private Sub PfixZeroMatrix( _
+            myZdouZeroMtrx() As Double, _
+            ByVal myXlonOrdr As Double)
+'myZdouZeroMtrx(i, j) : ゼロ行列
+'myXlonOrdr : 正方行列の次数
+    Erase myZdouZeroMtrx
+  Dim myXdouRet As Double, i As Long, j As Long
+    ReDim myZdouZeroMtrx(myXlonOrdr, myXlonOrdr)
+    For j = LBound(myZdouZeroMtrx) To UBound(myZdouZeroMtrx)
+        For i = LBound(myZdouZeroMtrx) To UBound(myZdouZeroMtrx)
+            myZdouZeroMtrx(i, j) = 0
+        Next i
+    Next j
+End Sub
+
+ '定型Ｐ_行列計算-加算(行列＋定数)
+Private Sub PfixAddMatrixCtoM( _
+            myZdouCalMtrx() As Double, _
+            ByRef myZdouOrgMtrx() As Double, ByVal myXdouConst As Double)
+    Erase myZdouCalMtrx
+  Dim i As Long, j As Long
+    i = UBound(myZdouOrgMtrx, 1): j = UBound(myZdouOrgMtrx, 2)
+    ReDim myZdouCalMtrx(i, j) As Double
+    For i = LBound(myZdouOrgMtrx, 1) To UBound(myZdouOrgMtrx, 1)
+        For j = LBound(myZdouOrgMtrx, 2) To UBound(myZdouOrgMtrx, 2)
+            myZdouCalMtrx(i, j) = myZdouOrgMtrx(i, j) + myXdouConst
+        Next j
+    Next i
+End Sub
+
+ '定型Ｐ_行列計算-加算(行列＋行列)
+Private Sub PfixAddMatrixMtoM( _
+            myZdouCalMtrx() As Double, _
+            ByRef myZdouLMtrx() As Double, ByRef myZdouRMtrx() As Double)
+    Erase myZdouCalMtrx
+  Dim i As Long, j As Long
+    i = UBound(myZdouLMtrx, 1): j = UBound(myZdouLMtrx, 2)
+    ReDim myZdouCalMtrx(i, j) As Double
+    For i = LBound(myZdouLMtrx, 1) To UBound(myZdouLMtrx, 1)
+        For j = LBound(myZdouLMtrx, 2) To UBound(myZdouLMtrx, 2)
+            myZdouCalMtrx(i, j) = myZdouLMtrx(i, j) + myZdouRMtrx(i, j)
+        Next j
+    Next i
+End Sub
+
+ '定型Ｐ_行列計算-減算(行列－定数)
+Private Sub PfixSubtractMatrixCfromM( _
+            myZdouCalMtrx() As Double, _
+            ByRef myZdouOrgMtrx() As Double, ByVal myXdouConst As Double)
+    Erase myZdouCalMtrx
+  Dim i As Long, j As Long
+    i = UBound(myZdouOrgMtrx, 1): j = UBound(myZdouOrgMtrx, 2)
+    ReDim myZdouCalMtrx(i, j) As Double
+    For i = LBound(myZdouOrgMtrx, 1) To UBound(myZdouOrgMtrx, 1)
+        For j = LBound(myZdouOrgMtrx, 2) To UBound(myZdouOrgMtrx, 2)
+            myZdouCalMtrx(i, j) = myZdouOrgMtrx(i, j) - myXdouConst
+        Next j
+    Next i
+End Sub
+
+ '定型Ｐ_行列計算-減算(定数－行列)
+Private Sub PfixSubtractMatrixMfromC( _
+            myZdouCalMtrx() As Double, _
+            ByVal myXdouConst As Double, ByRef myZdouOrgMtrx() As Double)
+    Erase myZdouCalMtrx
+  Dim i As Long, j As Long
+    i = UBound(myZdouOrgMtrx, 1): j = UBound(myZdouOrgMtrx, 2)
+    ReDim myZdouCalMtrx(i, j) As Double
+    For i = LBound(myZdouOrgMtrx, 1) To UBound(myZdouOrgMtrx, 1)
+        For j = LBound(myZdouOrgMtrx, 2) To UBound(myZdouOrgMtrx, 2)
+            myZdouCalMtrx(i, j) = myXdouConst - myZdouOrgMtrx(i, j)
+        Next j
+    Next i
+End Sub
+
+ '定型Ｐ_行列計算-減算(行列－行列)
+Private Sub PfixSubtractMatrixMfromM( _
+            myZdouCalMtrx() As Double, _
+            ByRef myZdouLMtrx() As Double, ByRef myZdouRMtrx() As Double)
+    Erase myZdouCalMtrx
+  Dim i As Long, j As Long
+    i = UBound(myZdouLMtrx, 1): j = UBound(myZdouLMtrx, 2)
+    ReDim myZdouCalMtrx(i, j) As Double
+    For i = LBound(myZdouLMtrx, 1) To UBound(myZdouLMtrx, 1)
+        For j = LBound(myZdouLMtrx, 2) To UBound(myZdouLMtrx, 2)
+            myZdouCalMtrx(i, j) = myZdouLMtrx(i, j) - myZdouRMtrx(i, j)
+        Next j
+    Next i
+End Sub
+
+ '定型Ｐ_行列計算-乗算(行列×定数)
+Private Sub PfixMultiplyMatrixMbyC( _
+            myZdouCalMtrx() As Double, _
+            ByRef myZdouOrgMtrx() As Double, ByVal myXdouConst As Double)
+    Erase myZdouCalMtrx
+  Dim i As Long, j As Long
+    i = UBound(myZdouOrgMtrx, 1): j = UBound(myZdouOrgMtrx, 2)
+    ReDim myZdouCalMtrx(i, j) As Double
+    For i = LBound(myZdouOrgMtrx, 1) To UBound(myZdouOrgMtrx, 1)
+        For j = LBound(myZdouOrgMtrx, 2) To UBound(myZdouOrgMtrx, 2)
+            myZdouCalMtrx(i, j) = myZdouOrgMtrx(i, j) * myXdouConst
+        Next j
+    Next i
+End Sub
+
+ '定型Ｐ_行列計算-乗算(行列×行列)
+Private Sub PincInnerProductMatrix( _
+            myZdouCalMtrx() As Double, _
+            ByRef myZdouLMtrx() As Double, ByRef myZdouRMtrx() As Double)
+'Includes PfixGet1DArrayFromMatrix
+'Includes PfncdouProduct1stOrderMatrix
+    Erase myZdouCalMtrx
+  Dim i As Long, j As Long
+    i = UBound(myZdouLMtrx, 1): j = UBound(myZdouRMtrx, 2)
+    ReDim myZdouCalMtrx(i, j) As Double
+  Dim myZdouCalAryL() As Double, myZdouCalAryR() As Double
+    For i = LBound(myZdouCalMtrx, 1) To UBound(myZdouCalMtrx, 1)
+        For j = LBound(myZdouCalMtrx, 2) To UBound(myZdouCalMtrx, 2)
+            ReDim myZdouCalAryL(UBound(myZdouLMtrx, 2)) As Double
+            Call PfixGet1DArrayFromMatrix(myZdouCalAryL, myZdouLMtrx, i, False)
+            ReDim myZdouCalAryR(UBound(myZdouRMtrx, 1)) As Double
+            Call PfixGet1DArrayFromMatrix(myZdouCalAryR, myZdouRMtrx, j, True)
+            myZdouCalMtrx(i, j) = PfncdouProduct1stOrderMatrix(myZdouCalAryL, myZdouCalAryR)
+        Next j
+    Next i
+End Sub
+
+ '定型Ｐ_行列から指定行または指定列の要素の1次元行列を取得する
+Private Sub PfixGet1DArrayFromMatrix( _
+            myZdouCalMtrx() As Double, _
+            ByRef myZdouOrgMtrx() As Double, ByVal myXlonRowColNo As Long, _
+            Optional ByVal coXbisRowDrctn As Boolean = True)
+'myZdouCalMtrx(i) : 取得データ
+'myZdouOrgMtrx(i, j) : 元行列
+'myXlonRowColNo : 抽出する行or列要素No
+'coXbisRowDrctn = True  : 行全体
+'coXbisRowDrctn = False : 列全体
+    If myXlonRowColNo <= 0 Then Exit Sub
+  Dim i As Long, j As Long
+    If coXbisRowDrctn = True Then
+        For i = LBound(myZdouOrgMtrx, 1) To UBound(myZdouOrgMtrx, 1)
+            myZdouCalMtrx(i) = myZdouOrgMtrx(i, myXlonRowColNo)
+        Next i
+    Else
+        For j = LBound(myZdouOrgMtrx, 2) To UBound(myZdouOrgMtrx, 2)
+            myZdouCalMtrx(j) = myZdouOrgMtrx(myXlonRowColNo, j)
+        Next j
+    End If
+End Sub
+
+ '定型Ｆ_行列計算-乗算(行列×行列)Sub
+Private Function PfncdouProduct1stOrderMatrix( _
+            ByRef myZdouLMtrx() As Double, ByRef myZdouRMtrx() As Double) As Double
+    PfncdouProduct1stOrderMatrix = Empty
+  Dim myXdouRet As Double, i As Long, j As Long
+    For i = LBound(myZdouLMtrx) To UBound(myZdouLMtrx)
+        myXdouRet = myXdouRet + myZdouLMtrx(i) * myZdouRMtrx(i)
+    Next i
+    PfncdouProduct1stOrderMatrix = myXdouRet
+End Function
+
+ '定型Ｐ_行列計算-余算(行列／定数)
+Private Sub PfixDivideMatrixMbyC( _
+            myZdouCalMtrx() As Double, _
+            ByRef myZdouOrgMtrx() As Double, ByVal myXdouConst As Double)
+    Erase myZdouCalMtrx
+  Dim i As Long, j As Long
+    i = UBound(myZdouOrgMtrx, 1): j = UBound(myZdouOrgMtrx, 2)
+    ReDim myZdouCalMtrx(i, j) As Double
+    For i = LBound(myZdouOrgMtrx, 1) To UBound(myZdouOrgMtrx, 1)
+        For j = LBound(myZdouOrgMtrx, 2) To UBound(myZdouOrgMtrx, 2)
+            myZdouCalMtrx(i, j) = myZdouOrgMtrx(i, j) / myXdouConst
+        Next j
+    Next i
+End Sub
+
+ '定型Ｐ_行列計算-余算(定数／行列)
+Private Sub PfixDivideMatrixCbyM( _
+            myZdouCalMtrx() As Double, _
+            ByVal myXdouConst As Double, ByRef myZdouOrgMtrx() As Double)
+    Erase myZdouCalMtrx
+  Dim i As Long, j As Long
+    i = UBound(myZdouOrgMtrx, 1): j = UBound(myZdouOrgMtrx, 2)
+    ReDim myZdouCalMtrx(i, j) As Double
+    For i = LBound(myZdouOrgMtrx, 1) To UBound(myZdouOrgMtrx, 1)
+        For j = LBound(myZdouOrgMtrx, 2) To UBound(myZdouOrgMtrx, 2)
+            myZdouCalMtrx(i, j) = myXdouConst / myZdouOrgMtrx(i, j)
+        Next j
+    Next i
+End Sub
+
+ '定型Ｐ_行列計算-行列から一部を取得
+Private Sub PfixExtractMatrix( _
+            myZdouCalMtrx() As Double, _
+            ByRef myZdouOrgMtrx() As Double, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
+            ByVal myXlonEndRow As Long, ByVal myXlonEndCol As Long)
+    Erase myZdouCalMtrx
+  Dim i As Long, j As Long, L As Long: L = LBound(myZdouOrgMtrx, 1)
+    i = myXlonEndRow - myXlonBgnRow + L: j = myXlonEndCol - myXlonBgnCol + L
+    ReDim myZdouCalMtrx(i, j) As Double
+  Dim m As Long, n As Long: m = L - 1
+    For i = myXlonBgnRow To myXlonEndRow
+        m = m + 1: n = L - 1
+        For j = myXlonBgnCol To myXlonEndCol
+            n = n + 1: myZdouCalMtrx(m, n) = myZdouOrgMtrx(i, j)
+        Next j
+    Next i
+End Sub
+
+ '定型Ｆ_内積計算
+Private Function PfncdouInnerProduct( _
+            ByRef myZdouLAry() As Double, ByRef myZdouRAry() As Double) As Double
+'myZdouLAry(i) : 左側元配列
+'myZdouRAry(i) : 右側元配列
+    PfncdouInnerProduct = Empty
+  Dim myXdouRet As Double, i As Long, j As Long
+    For i = LBound(myZdouLAry) To UBound(myZdouLAry)
+        myXdouRet = myXdouRet + myZdouLAry(i) * myZdouRAry(i)
+    Next i
+    PfncdouInnerProduct = myXdouRet
+End Function
+
+ '定型Ｐ_外積計算
+Private Sub PincCrossProduct( _
+            myZdouCalAry() As Double, myXdouCalLngth As Double, _
+            ByRef myZdouLAry() As Double, ByRef myZdouRAry() As Double)
+'Includes PfncdouDeterminant2ndOrderMatrix
+'myZdouCalAry(i) : 取得外積配列
+'myXdouCalLngth : 外積の大きさ
+'myZdouLAry(i) : 左側元配列
+'myZdouRAry(i) : 右側元配列
+    Erase myZdouCalAry: myXdouCalLngth = Empty
+'//外積の成分の導出
+    ReDim myZdouCalAry(3) As Double
+  Dim myZdouCalMtrx(2, 2) As Double, myXdouRet1 As Double
+  Dim i As Long, j As Long, m As Long, n As Long
+    For i = 1 To 3
+        m = 1: n = 0
+        For j = LBound(myZdouLAry) To UBound(myZdouLAry)
+            If j <> i Then
+                n = n + 1
+                myZdouCalMtrx(m, n) = myZdouLAry(j)
+            End If
+        Next j
+        m = 2: n = 0
+        For j = LBound(myZdouRAry) To UBound(myZdouRAry)
+            If j <> i Then
+                n = n + 1
+                myZdouCalMtrx(m, n) = myZdouRAry(j)
+            End If
+        Next j
+        myXdouRet1 = PfncdouDeterminant2ndOrderMatrix(myZdouCalMtrx)
+        myZdouCalAry(i) = ((-1) ^ (i + 1)) * myXdouRet1
+    Next i
+    Erase myZdouCalMtrx
+'//外積の大きさの導出
+  Dim myXdouRet2 As Double
+    For i = 1 To 3
+        myXdouRet2 = myXdouRet2 + myZdouCalAry(i) ^ 2
+    Next i
+    myXdouCalLngth = myXdouRet2 ^ 0.5
+End Sub
+
+ '定型Ｆ_行列式計算-2×2
+Private Function PfncdouDeterminant2ndOrderMatrix(ByRef myZdouOrgMtrx() As Double) As Double
+    PfncdouDeterminant2ndOrderMatrix = Empty
+'myZdouOrgMtrx(i, i) : 元正方行列
+  Dim myXdouRet As Double
+  Dim L1 As Long, U1 As Long, L2 As Long, U2 As Long
+    L1 = LBound(myZdouOrgMtrx, 1): U1 = UBound(myZdouOrgMtrx, 1)
+    L2 = LBound(myZdouOrgMtrx, 2): U2 = UBound(myZdouOrgMtrx, 2)
+    myXdouRet = myZdouOrgMtrx(L1, L2) * myZdouOrgMtrx(U1, U2)
+    myXdouRet = myXdouRet - myZdouOrgMtrx(L1, U2) * myZdouOrgMtrx(U1, L2)
+    PfncdouDeterminant2ndOrderMatrix = myXdouRet
+End Function
+
+ '定型Ｐ_行列計算-余因子
+Private Sub PfixAdjugateMatrix( _
+            myZdouCalMtrx() As Double, _
+            ByRef myZdouOrgMtrx() As Double, ByVal myXlonRow As Long, ByVal myXlonCol As Long)
+'myZdouOrgMtrx(i, i) : 元正方行列
+'myXlonRow : 余因子に含まない行
+'myXlonCol : 余因子に含まない列
+    Erase myZdouCalMtrx
+  Dim i As Long, j As Long, m As Long, n As Long
+    i = UBound(myZdouOrgMtrx, 1) - 1: j = UBound(myZdouOrgMtrx, 2) - 1
+    ReDim myZdouCalMtrx(i, j) As Double
+    m = 0
+    For i = LBound(myZdouOrgMtrx, 1) To UBound(myZdouOrgMtrx, 1)
+        If i = myXlonRow Then GoTo NextRow
+        m = m + 1: n = 0
+        For j = LBound(myZdouOrgMtrx, 2) To UBound(myZdouOrgMtrx, 2)
+            If j = myXlonCol Then GoTo NextCol
+            n = n + 1
+            myZdouCalMtrx(m, n) = myZdouOrgMtrx(i, j)
+NextCol:
+        Next j
+NextRow:
+    Next i
+End Sub
+
+ '定型Ｆ_行列式計算-3×3
+Private Function PincdouDeterminant3rdOdreMatrix(myZdouOrgMtrx() As Double) As Double
+'Includes PfixAdjugateMatrix
+'Includes PfncdouDeterminant2ndOrderMatrix
+'myZdouOrgMtrx(i, i) : 元正方行列
+    PincdouDeterminant3rdOdreMatrix = Empty
+  Dim L1 As Long, L2 As Long
+    L1 = LBound(myZdouOrgMtrx, 1): L2 = LBound(myZdouOrgMtrx, 2)
+  Dim myZdouCalMtrx() As Double, myXdouRet As Double, myXdouBuf As Double
+  Dim i As Long, j As Long
+    i = L1 + 0
+    For j = L2 + 0 To L2 + 2
+        Call PfixAdjugateMatrix(myZdouCalMtrx, myZdouOrgMtrx, i, j)
+        myXdouBuf = PfncdouDeterminant2ndOrderMatrix(myZdouCalMtrx)
+        myXdouRet = myXdouRet + ((-1) ^ (i + j)) * myZdouOrgMtrx(i, j) * myXdouBuf
+    Next j
+    PincdouDeterminant3rdOdreMatrix = myXdouRet
+    Erase myZdouCalMtrx
+End Function
+
+ '定型Ｆ_行列式計算-4×4
+Private Function PincdouDeterminant4thOrderMatrix(myZdouOrgMtrx() As Double) As Double
+'Includes PfixAdjugateMatrix
+'Includes PincdouDeterminant3rdOdreMatrix
+'myZdouOrgMtrx(i, i) : 元正方行列
+    PincdouDeterminant4thOrderMatrix = Empty
+  Dim L1 As Long, L2 As Long
+    L1 = LBound(myZdouOrgMtrx, 1): L2 = LBound(myZdouOrgMtrx, 2)
+  Dim myZdouCalMtrx() As Double, myXdouRet As Double, myXdouBuf As Double
+  Dim i As Long, j As Long
+    i = L1 + 0
+    For j = L2 + 0 To L2 + 3
+        Call PfixAdjugateMatrix(myZdouCalMtrx, myZdouOrgMtrx, i, j)
+        myXdouBuf = PincdouDeterminant3rdOdreMatrix(myZdouCalMtrx)
+        myXdouRet = myXdouRet + ((-1) ^ (i + j)) * myZdouOrgMtrx(i, j) * myXdouBuf
+    Next j
+    PincdouDeterminant4thOrderMatrix = myXdouRet
+    Erase myZdouCalMtrx
+End Function
+
       <br></pre>
     </body>
   </html>
