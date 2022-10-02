@@ -1,1 +1,493 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>macro sample</div>
+      <pre>
 
+
+ '定型Ｐ_エクセルブックのプロパティのハイパーリンクの基点を取得する
+Private Function PfncstrGetHyperLinkBase(ByVal myXobjBook As Object) As String
+  Const coXstrBkPrptyName As String = "Hyperlink base"
+    PfncstrGetHyperLinkBase = Empty
+    On Error GoTo ExitPath
+    PfncstrGetHyperLinkBase = myXobjBook.BuiltinDocumentProperties(coXstrBkPrptyName).Value
+    On Error GoTo 0
+ExitPath:
+End Function
+
+ '定型Ｐ_エクセルブックのプロパティのハイパーリンクの基点を設定する
+Private Sub PfixSetHyperLinkBase(myXbisExitFlag As Boolean, _
+            ByVal myXobjBook As Object, ByVal myXstrHypLnkBase As String)
+  Const coXstrBkPrptyName As String = "Hyperlink base"
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    myXobjBook.BuiltinDocumentProperties(coXstrBkPrptyName).Value = myXstrHypLnkBase
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_ハイパーリンク基点を変更する時にメッセージボックスを表示する
+Private Sub PfixMsgBoxHyperLinkBaseChange( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXstrNewBase As String, ByVal myXobjBook As Object)
+  Const coXstrBkPrptyName As String = "Hyperlink base"
+    myXbisExitFlag = False
+'//ブックのパスとプロパティのハイパーリンクの基点を比較
+    On Error GoTo ExitPath
+  Dim myXstrPrsntBase As String
+    myXstrPrsntBase = myXobjBook.BuiltinDocumentProperties(coXstrBkPrptyName).Value
+    If myXstrNewBase = myXstrPrsntBase Then Exit Sub
+'//ハイパーリンクの基点変更の確認
+  Dim myXstrMsg As String
+    myXstrMsg = "ハイパーリンクの基点を変更します。" & vbCrLf & vbCrLf _
+                & "変更前：" & myXstrPrsntBase & vbCrLf _
+                & " ↓ " & vbCrLf _
+                & "変更後：" & myXstrNewBase
+    MsgBox myXstrMsg
+'//ブックのプロパティのハイパーリンクの基点を設定
+    myXobjBook.BuiltinDocumentProperties(coXstrBkPrptyName).Value = myXstrNewBase
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_ハイパーリンク基点を変更する時に選択ボックスを表示する
+Private Sub PfixYesNoCancelHyperLinkBaseChange( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXstrNewBase As String, ByVal myXobjBook As Object)
+  Const coXstrBkPrptyName As String = "Hyperlink base"
+    myXbisExitFlag = False
+'//指定パスとプロパティのハイパーリンクの基点を比較
+    On Error GoTo ExitPath
+  Dim myXstrPrsntBase As String
+    myXstrPrsntBase = myXobjBook.BuiltinDocumentProperties(coXstrBkPrptyName).Value
+    If myXstrNewBase = myXstrPrsntBase Then Exit Sub
+'//ハイパーリンクの基点変更の確認
+  Dim myXstrMsgBox As Long, myXstrPrompt As String, myXstrTitle As String
+    myXstrTitle = "はい/いいえ/キャンセルの選択"
+    myXstrPrompt = "ハイパーリンクの基点を変更しますか？" & vbCrLf & vbCrLf _
+                & "変更前：" & myXstrPrsntBase & vbCrLf _
+                & " ↓ " & vbCrLf _
+                & "変更後：" & myXstrNewBase & vbCrLf & vbCrLf _
+                & "「はい」　　：基点を変更して継続" & vbCrLf _
+                & "「いいえ」　 ：基点を変更せずに継続" & vbCrLf _
+                & "「キャンセル」：プログラムを終了"
+  Dim myXlonMsgBox As Long
+    myXlonMsgBox = MsgBox(myXstrPrompt, vbYesNoCancel, myXstrTitle)
+    Select Case myXlonMsgBox
+        Case vbNo: Exit Sub
+        Case vbCancel: GoTo ExitPath
+    End Select
+'//ブックのプロパティのハイパーリンクの基点を設定
+    myXobjBook.BuiltinDocumentProperties(coXstrBkPrptyName).Value = myXstrNewBase
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_指定セル範囲に設定されたハイパーリンク先のパスを取得する
+Private Function PfncstrGetHyperLinkPathAtRange(ByVal myXobjRange As Object) As String
+    PfncstrGetHyperLinkPathAtRange = Empty
+    On Error GoTo ExitPath
+    PfncstrGetHyperLinkPathAtRange = myXobjRange.Hyperlinks(1).Address
+    On Error GoTo 0
+ExitPath:
+End Function
+
+ '定型Ｐ_指定セル範囲にハイパーリンクを設定する
+Private Sub PfixSetHyperLinkAtRange(myXbisExitFlag As Boolean, _
+            ByVal myXobjRange As Object, ByVal myXstrHypLnkAdrs As String, _
+            ByVal myXstrSubAdrs As String, ByVal myXstrTxt As String)
+'myXstrSubAdrs : "シート名!セル位置"
+    myXbisExitFlag = False
+    If myXobjRange Is Nothing Then Exit Sub
+    If myXstrHypLnkAdrs = "" And myXstrSubAdrs = "" Then Exit Sub
+    If myXstrTxt = "" Then myXstrTxt = myXobjRange.Value
+    On Error GoTo ExitPath
+    Call myXobjRange.Worksheet.Hyperlinks.Add( _
+            Anchor:=myXobjRange, Address:=myXstrHypLnkAdrs, _
+            SubAddress:=myXstrSubAdrs, TextToDisplay:=myXstrTxt)
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_指定セル範囲に設定されたハイパーリンクを起動する
+Private Sub PfixFollowHyperLinkAtRange(myXbisExitFlag As Boolean, _
+            ByVal myXobjRange As Object, _
+            Optional ByVal coXbisNewWndw As Boolean = True)
+'coXbisNewWndw = True  : 新規ウィンドウで開く
+'coXbisNewWndw = False : 現在のウィンドウで開く
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    Call myXobjRange.Hyperlinks(1).Follow(NewWindow:=coXbisNewWndw)
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_指定図形に設定されたハイパーリンク先のパスを取得する
+Private Function PfncstrGetHyperLinkPathAtShape(ByVal myXobjShape As Object) As String
+    PfncstrGetHyperLinkPathAtShape = Empty
+    On Error GoTo ExitPath
+    PfncstrGetHyperLinkPathAtShape = myXobjShape.Hyperlink.Address
+    On Error GoTo 0
+ExitPath:
+End Function
+
+ '定型Ｐ_指定図形にハイパーリンクを設定する
+Private Sub PfixSetHyperLinkAtShape(myXbisExitFlag As Boolean, _
+            ByVal myXobjShape As Object, ByVal myXstrHypLnkAdrs As String)
+    myXbisExitFlag = False
+    If myXstrHypLnkAdrs = "" Then Exit Sub
+    On Error GoTo ExitPath
+    Call myXobjShape.Parent.Hyperlinks _
+        .Add(Anchor:=myXobjShape, Address:=myXstrHypLnkAdrs)
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_指定図形に設定されたハイパーリンクを起動する
+Private Sub PfixFollowHyperLinkAtShape(myXbisExitFlag As Boolean, _
+            ByVal myXobjShape As Object, _
+            Optional ByVal coXbisNewWndw As Boolean = True)
+'coXbisNewWndw = True  : 新規ウィンドウで開く
+'coXbisNewWndw = False : 現在のウィンドウで開く
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    Call myXobjShape.Hyperlink.Follow(NewWindow:=coXbisNewWndw)
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_指定ディレクトリ内のショートカットのサブファイル一覧を取得する
+Private Sub PincGetShortCutSubFileArray( _
+            myXlonFileCnt As Long, myZobjShrtCutFile() As Object, _
+            ByVal myXobjDir As Object)
+'Includes PfncbisCheckShortCutFile
+'myZobjShrtCutFile(i) : ショートカットファイル
+    myXlonFileCnt = Empty: Erase myZobjShrtCutFile
+    If myXobjDir Is Nothing Then Exit Sub
+    If myXobjDir.Files.Count <= 0 Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myXobjSubFile As Object, myXstrFilePath As String
+  Dim myXbisShrtCutChck As Boolean, n As Long: n = L - 1
+    For Each myXobjSubFile In myXobjDir.Files
+        myXstrFilePath = myXobjSubFile.Path
+        myXbisShrtCutChck = PfncbisCheckShortCutFile(myXstrFilePath)
+        If myXbisShrtCutChck = False Then GoTo NextPath
+        n = n + 1: ReDim Preserve myZobjShrtCutFile(n) As Object
+        Set myZobjShrtCutFile(n) = myXobjSubFile
+NextPath:
+    Next myXobjSubFile
+    myXlonFileCnt = n - L + 1
+    Set myXobjSubFile = Nothing
+End Sub
+
+ '定型Ｐ_指定パスからハイパーリンク用の絶対パスと相対パスを取得する
+Private Sub PincGetAbsoluteAndRelativePath( _
+            myXbisExitFlag As Boolean, _
+            myXstrAbsltPath As String, myXstrRltvPath As String, _
+            myXstrBasePath As String, _
+            ByVal myXstrHypLnkPath As String, ByVal myXstrHypLnkBase As String, _
+            ByVal myXstrBookPath As String)
+'Includes PfncstrGetRelativePath
+'Includes PfncstrGetAbsolutePath
+    myXbisExitFlag = False
+    myXstrAbsltPath = Empty: myXstrRltvPath = Empty: myXstrBasePath = Empty
+    If myXstrHypLnkPath = "" Then Exit Sub
+    If myXstrBookPath = "" Then Exit Sub
+'//指定パスのフォルダもしくはファイルの存在を確認
+  Dim myXbisFldrExist As Boolean, myXbisFileExist As Boolean, myXbisExistFlag As Boolean
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    myXbisFldrExist = myXobjFSO.FolderExists(myXstrHypLnkPath)
+    Select Case myXbisFldrExist
+        Case True: myXbisExistFlag = True
+        Case Else
+            myXbisFileExist = myXobjFSO.FileExists(myXstrHypLnkPath)
+            Select Case myXbisFileExist
+                Case True: myXbisExistFlag = True
+                Case Else: myXbisExistFlag = False
+            End Select
+    End Select
+'//ハイパーリンクパス情報から絶対パスと相対パスを取得
+    Select Case myXbisExistFlag
+        Case True
+        '//絶対ファイルパスと基点パスを指定して相対パスを取得
+            myXstrAbsltPath = myXstrHypLnkPath
+            myXstrBasePath = myXstrBookPath
+            myXstrRltvPath = PfncstrGetRelativePath(myXstrAbsltPath, myXstrBasePath)
+        Case Else
+        '//相対ファイルパスと基点パスを指定して絶対パスを取得
+            Select Case myXstrHypLnkBase
+                Case ""
+                    myXstrRltvPath = myXstrHypLnkPath
+                    myXstrBasePath = myXstrBookPath
+                Case Else
+                    myXbisFldrExist = myXobjFSO.FolderExists(myXstrHypLnkBase)
+                    If myXbisFldrExist = False Then GoTo ExitPath
+                    myXstrRltvPath = myXstrHypLnkPath
+                    myXstrBasePath = myXstrHypLnkBase
+            End Select
+            myXstrAbsltPath = PfncstrGetAbsolutePath(myXstrRltvPath, myXstrBasePath)
+            myXbisFldrExist = myXobjFSO.FolderExists(myXstrAbsltPath)
+            Select Case myXbisFldrExist
+                Case True: myXbisExistFlag = True
+                Case Else
+                    myXbisFileExist = myXobjFSO.FileExists(myXstrAbsltPath)
+                    Select Case myXbisFileExist
+                        Case True: myXbisExistFlag = True
+                        Case Else: myXbisExistFlag = False
+                    End Select
+            End Select
+            If myXbisExistFlag = False Then GoTo ExitPath
+    End Select
+    Set myXobjFSO = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+    myXstrAbsltPath = Empty: myXstrRltvPath = Empty: myXstrBasePath = Empty
+End Sub
+
+ '定型Ｆ_絶対パスと基点パスを指定して相対パスを取得する
+Private Function PfncstrGetRelativePath( _
+            ByVal myXstrAbsltPath As String, ByVal myXstrBasePath As String) As String
+    PfncstrGetRelativePath = Empty
+    If myXstrAbsltPath = "" Then Exit Function
+    If myXstrBasePath = "" Then Exit Function
+    myXstrAbsltPath = Replace(myXstrAbsltPath, "/", "\")
+    myXstrBasePath = Replace(myXstrBasePath, "/", "\")
+    If Right(myXstrBasePath, Len("\")) = "\" Then _
+        myXstrBasePath = Left(myXstrBasePath, Len(myXstrBasePath) - Len("\"))
+  Dim myXstrRltvPath As String
+  Dim myXstrPrntPath As String, myXstrChldPath As String
+  Dim i As Long, j As Long, m As Long, n As Long: m = 0: n = 0
+    Select Case Left(myXstrAbsltPath, Len(myXstrBasePath))
+    '//対象パスが基点の下層に有る場合
+        Case myXstrBasePath
+            myXstrPrntPath = myXstrBasePath
+            myXstrChldPath = Mid(myXstrAbsltPath, Len(myXstrBasePath) + 2)
+            myXstrRltvPath = myXstrChldPath
+    '//対象パスが基点の下層に無い場合
+        Case Else
+            For i = 1 To Len(myXstrPrntPath)
+                If Mid(myXstrPrntPath, i, Len("\")) = "\" Then m = m + 1
+            Next i
+            For j = 1 To Len(myXstrChldPath)
+                If Mid(myXstrChldPath, i, Len("..")) = ".." Then n = n + 1
+            Next j
+            If m >= n Then
+              Dim myXobjFSO As Object
+                Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+                myXstrPrntPath = myXstrBasePath
+                myXstrRltvPath = ""
+                Do While Left(myXstrAbsltPath, Len(myXstrPrntPath)) <> myXstrPrntPath
+                    myXstrPrntPath = myXobjFSO.GetParentFolderName(myXstrPrntPath)
+                    myXstrRltvPath = ".." & "\" & myXstrRltvPath
+                Loop
+                Select Case myXstrPrntPath
+                    Case ""
+                        myXstrChldPath = myXstrAbsltPath
+                        myXstrRltvPath = myXstrChldPath
+                    Case Else
+                        myXstrChldPath = Mid(myXstrAbsltPath, Len(myXstrPrntPath) + 2)
+                        myXstrRltvPath = myXstrRltvPath & myXstrChldPath
+                End Select
+                Set myXobjFSO = Nothing
+            Else
+                Exit Function
+            End If
+    End Select
+'    Debug.Print "親パス: " & myXstrPrntPath
+'    Debug.Print "子パス: " & myXstrChldPath
+'    Debug.Print "相対パス: " & myXstrRltvPath
+    PfncstrGetRelativePath = myXstrRltvPath
+End Function
+
+ '定型Ｆ_相対パスと基点パスを指定して絶対パスを取得する
+Private Function PfncstrGetAbsolutePath( _
+            ByVal myXstrRltvPath As String, ByVal myXstrBasePath As String) As String
+    PfncstrGetAbsolutePath = Empty
+    If myXstrRltvPath = "" Then Exit Function
+    If myXstrBasePath = "" Then Exit Function
+    myXstrRltvPath = Replace(myXstrRltvPath, "/", "\")
+    myXstrBasePath = Replace(myXstrBasePath, "/", "\")
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXstrRltvDrv As String, myXstrBaseDrv As String
+    myXstrRltvDrv = myXobjFSO.GetDriveName(myXstrRltvPath)
+    myXstrBaseDrv = myXobjFSO.GetDriveName(myXstrBasePath)
+  Dim myXstrAbsltPath As String
+  Dim myXstrPrntPath As String, myXstrChldPath As String
+  Dim i As Long, j As Long, m As Long, n As Long: m = 0: n = 0
+    If myXstrRltvDrv <> "" And myXstrBaseDrv <> "" Then
+    '//相対パスと基点パスにドライブが含まれる場合
+        If Left(myXstrRltvPath, Len(myXstrBasePath)) = myXstrBasePath Then
+        '//相対パスに基点パスが含まれる場合
+            myXstrPrntPath = myXstrBasePath
+            myXstrChldPath = Mid(myXstrRltvPath, Len(myXstrBasePath) + 2)
+        ElseIf myXstrRltvDrv <> myXstrBaseDrv Then
+        '//相対パスと基点パスのドライブが異なる場合
+            myXstrPrntPath = myXstrRltvPath
+            myXstrChldPath = ""
+        Else
+            myXstrPrntPath = myXstrRltvPath
+            myXstrChldPath = ""
+        End If
+    ElseIf Left(myXstrRltvPath, Len("..")) = ".." Then
+    '//相対パスに".."が含まれる場合
+        For i = 1 To Len(myXstrPrntPath)
+            If Mid(myXstrPrntPath, i, Len("\")) = "\" Then m = m + 1
+        Next i
+        For j = 1 To Len(myXstrChldPath)
+            If Mid(myXstrChldPath, i, Len("..")) = ".." Then n = n + 1
+        Next j
+        If m >= n Then
+            myXstrPrntPath = myXstrBasePath
+            myXstrChldPath = myXstrRltvPath
+            Do While Left(myXstrChldPath, Len("..")) = ".."
+                myXstrPrntPath = myXobjFSO.GetParentFolderName(myXstrPrntPath)
+                myXstrChldPath = Mid(myXstrChldPath, Len("..") + 2)
+            Loop
+        Else
+            Exit Function
+        End If
+    Else
+    '//上記条件ではない場合
+        myXstrPrntPath = myXstrBasePath
+        myXstrChldPath = myXstrRltvPath
+    End If
+    Select Case myXstrChldPath
+        Case "": myXstrAbsltPath = myXstrPrntPath
+        Case Else: myXstrAbsltPath = myXstrPrntPath & "\" & myXstrChldPath
+    End Select
+    Set myXobjFSO = Nothing
+'    Debug.Print "親パス: " & myXstrPrntPath
+'    Debug.Print "子パス: " & myXstrChldPath
+'    Debug.Print "絶対パス: " & myXstrAbsltPath
+    PfncstrGetAbsolutePath = myXstrAbsltPath
+End Function
+
+ '定型Ｆ_指定ショートカットファイルの存在を確認する
+Private Function PfncbisCheckShortCutFile(ByVal myXstrFilePath As String) As Boolean
+  Const coXstrLnkExtsn As String = "lnk"
+    PfncbisCheckShortCutFile = False
+    If myXstrFilePath = "" Then Exit Function
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXstrExist As Boolean, myXstrExtsn As String
+    myXstrExist = myXobjFSO.FileExists(myXstrFilePath)
+    If myXstrExist = False Then Exit Function
+    myXstrExtsn = myXobjFSO.GetExtensionName(myXstrFilePath)
+    If LCase(myXstrExtsn) = LCase(coXstrLnkExtsn) Then PfncbisCheckShortCutFile = True
+    Set myXobjFSO = Nothing
+End Function
+
+ '定型Ｆ_指定ショートカットファイルのリンク先のパスを取得する
+Private Function PfncstrGetShortCutLinkPath(ByVal myXstrFilePath As String) As String
+    PfncstrGetShortCutLinkPath = Empty
+  Dim myXobjShrtCut As Object, myXstrShrtCutLnk As String
+  Dim myXobjWSH As Object: Set myXobjWSH = CreateObject("WScript.Shell")
+    On Error GoTo ExitPath
+    Set myXobjShrtCut = myXobjWSH.CreateShortcut(myXstrFilePath)
+    myXstrShrtCutLnk = myXobjShrtCut.TargetPath
+    On Error GoTo 0
+    PfncstrGetShortCutLinkPath = myXstrShrtCutLnk
+    Set myXobjShrtCut = Nothing: Set myXobjWSH = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_ショートカットファイルを作成する
+Private Function PfncobjMakeShortCutFile( _
+            ByVal myXstrDirPath As String, ByVal myXstrBaseName As String, _
+            ByVal myXstrLnkPath As String) As Object
+  Const coXstrLnkExtsn As String = "lnk"
+    Set PfncobjMakeShortCutFile = Nothing
+    If myXstrDirPath = "" Or myXstrBaseName = "" Then Exit Function
+    If myXstrLnkPath = "" Then Exit Function
+  Dim myXstrFileName As String, myXstrFilePath As String, myXobjShrtCut As Object
+  Dim myXobjWSH As Object: Set myXobjWSH = CreateObject("WScript.Shell")
+    myXstrFileName = myXstrBaseName & "." & coXstrLnkExtsn
+    myXstrFilePath = myXstrDirPath & "\" & myXstrFileName
+    On Error GoTo ExitPath
+    Set myXobjShrtCut = myXobjWSH.CreateShortcut(myXstrFilePath)
+    myXobjShrtCut.TargetPath = myXstrLnkPath
+    myXobjShrtCut.Save
+    On Error GoTo 0
+    Set PfncobjMakeShortCutFile = myXobjShrtCut
+    Set myXobjShrtCut = Nothing: Set myXobjWSH = Nothing
+ExitPath:
+End Function
+
+ '定型Ｐ_ショートカットファイルのリンク先を変更する
+Private Sub PfixChangeShortCutLinkPath(myXbisExitFlag As Boolean, _
+            ByVal myXstrFilePath As String, ByVal myXstrLnkPath As String)
+    myXbisExitFlag = False
+    If myXstrFilePath = "" Or myXstrLnkPath = "" Then GoTo ExitPath
+  Dim myXobjShrtCut As Object
+  Dim myXobjWSH As Object: Set myXobjWSH = CreateObject("WScript.Shell")
+    On Error GoTo ExitPath
+    Set myXobjShrtCut = myXobjWSH.CreateShortcut(myXstrFilePath)
+    myXobjShrtCut.TargetPath = myXstrLnkPath
+    myXobjShrtCut.Save
+    On Error GoTo 0
+    Set myXobjShrtCut = Nothing: Set myXobjWSH = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_指定ショートカットファイルのリンクパスの一部を変更する
+Private Sub PfixChangeShortCutLinkPartPath(myXbisExitFlag As Boolean, _
+            ByVal myXstrFilePath As String, _
+            ByVal myXstrOrgLnkPath As String, ByVal myXstrNewLnkPath As String)
+  Const coXstrLnkExtsn As String = "lnk"
+    myXbisExitFlag = False
+    If myXstrFilePath = "" Then GoTo ExitPath
+    If myXstrOrgLnkPath = "" Or myXstrNewLnkPath = "" Then GoTo ExitPath
+'//ショートカットファイルの存在を確認
+  Dim myXstrExist As Boolean, myXstrExtsn As String
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    myXstrExist = myXobjFSO.FileExists(myXstrFilePath)
+    If myXstrExist = False Then GoTo ExitPath
+    myXstrExtsn = myXobjFSO.GetExtensionName(myXstrFilePath)
+    If LCase(myXstrExtsn) <> LCase(coXstrLnkExtsn) Then GoTo ExitPath
+'//ショートカットファイルのリンク先のパスを取得
+  Dim myXobjShrtCut As Object
+  Dim myXstrOrgShrtCutLnk As String, myXstrNewShrtCutLnk As String
+  Dim myXobjWSH As Object: Set myXobjWSH = CreateObject("WScript.Shell")
+    Set myXobjShrtCut = myXobjWSH.CreateShortcut(myXstrFilePath)
+    myXstrOrgShrtCutLnk = myXobjShrtCut.TargetPath
+'//リンクパスの一部を変更
+    myXstrNewShrtCutLnk = Replace(myXstrOrgShrtCutLnk, myXstrOrgLnkPath, myXstrNewLnkPath)
+'//リンクパスのファイルの存在を確認
+    myXstrExist = myXobjFSO.FileExists(myXstrNewShrtCutLnk)
+    If myXstrExist = False Then GoTo ExitPath
+'//ショートカットファイルのリンク先を変更
+    On Error GoTo ExitPath
+    myXobjShrtCut.TargetPath = myXstrNewShrtCutLnk
+    myXobjShrtCut.Save
+    On Error GoTo 0
+    Set myXobjFSO = Nothing: Set myXobjWSH = Nothing: Set myXobjShrtCut = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
