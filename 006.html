@@ -11,18 +11,6 @@
       <pre>
 
 
- '定型Ｆ_指定シートの存在を確認して無ければアクティブシートに設定する
-Private Function PfncobjCheckSheet(ByVal myXobjSheet As Object) As Object
-    Set PfncobjCheckSheet = Nothing
-    On Error GoTo ExitPath
-  Dim myXstrShtName As String: myXstrShtName = myXobjSheet.Name
-    On Error GoTo 0
-    Set PfncobjCheckSheet = myXobjSheet
-    Exit Function
-ExitPath:
-    Set PfncobjCheckSheet = ActiveSheet
-End Function
-
  '定型Ｆ_指定グラフの存在を確認して無ければアクティブグラフに設定する
 Private Function PfncobjCheckChart(ByVal myXobjChrt As Object) As Object
     Set PfncobjCheckChart = Nothing
@@ -172,13 +160,13 @@ Private Function PfncobjSearchChartObject( _
   Dim myXlonChrtCnt As Long: myXlonChrtCnt = myXobjSheet.ChartObjects.Count
     On Error GoTo 0
     If myXlonChrtCnt <= 0 Then Exit Function
-  Dim myXobjChrtObj As Object
-    For Each myXobjChrtObj In myXobjSheet.ChartObjects
-        If myXobjChrtObj.Name = myXstrChrtObjName Then
-            Set PfncobjSearchChartObject = myXobjChrtObj: Exit For
+  Dim myXobjChrtObjct As Object
+    For Each myXobjChrtObjct In myXobjSheet.ChartObjects
+        If myXobjChrtObjct.Name = myXstrChrtObjName Then
+            Set PfncobjSearchChartObject = myXobjChrtObjct: Exit For
         End If
     Next
-    Set myXobjChrtObj = Nothing
+    Set myXobjChrtObjct = Nothing
 ExitPath:
 End Function
 
@@ -241,14 +229,17 @@ Private Function PfncstrGetChartObjectName(ByVal myXobjChrtObjct As Object) As S
     On Error GoTo 0
 End Function
 
- '定型Ｆ_グラフの名前を取得する
-Private Function PfncstrGetChartName(ByVal myXobjChrtObjct As Object) As String
-    PfncstrGetChartName = Empty
-    If myXobjChrtObjct Is Nothing Then Exit Function
+ '定型Ｐ_グラフの名前を取得する
+Private Sub PfncstrGetChartName( _
+            myXstrChrtObjName As String, myXstrChrtName As String, _
+            ByVal myXobjChrtObjct As Object)
+    myXstrChrtObjName = Empty: myXstrChrtName = Empty
+    If myXobjChrtObjct Is Nothing Then Exit Sub
     On Error Resume Next
-    PfncstrGetChartName = myXobjChrtObjct.Chart.Name
+    myXstrChrtObjName = myXobjChrtObjct.Name
+    myXstrChrtName = myXobjChrtObjct.Chart.Name
     On Error GoTo 0
-End Function
+End Sub
 
  '定型Ｐ_グラフオブジェクトに名前を設定する
 Private Sub PfixSetChartObjectName(myXbisExitFlag As Boolean, _
@@ -309,11 +300,11 @@ Private Sub PfixDeleteChartObjects(myXbisExitFlag As Boolean, _
   Dim myXlonChrtObjCnt As Long: myXlonChrtObjCnt = myXobjSheet.ChartObjects.Count
     On Error GoTo 0
     If myXlonChrtObjCnt <= 0 Then GoTo ExitPath
-  Dim myXobjChrtObj As Object
-    For Each myXobjChrtObj In myXobjSheet.ChartObjects
-        myXobjChrtObj.Delete
-    Next myXobjChrtObj
-    Set myXobjChrtObj = Nothing
+  Dim myXobjChrtObjct As Object
+    For Each myXobjChrtObjct In myXobjSheet.ChartObjects
+        myXobjChrtObjct.Delete
+    Next myXobjChrtObjct
+    Set myXobjChrtObjct = Nothing
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
@@ -328,13 +319,13 @@ Private Sub PfixDeleteDesignateChartObject(myXbisExitFlag As Boolean, _
   Dim myXlonChrtObjCnt As Long: myXlonChrtObjCnt = myXobjSheet.ChartObjects.Count
     On Error GoTo 0
     If myXlonChrtObjCnt <= 0 Then GoTo ExitPath
-  Dim myXobjChrtObj As Object
-    For Each myXobjChrtObj In myXobjSheet.ChartObjects
-        If myXobjChrtObj.Name = myXstrChrtObjName Then
-            myXobjChrtObj.Delete: Exit For
+  Dim myXobjChrtObjct As Object
+    For Each myXobjChrtObjct In myXobjSheet.ChartObjects
+        If myXobjChrtObjct.Name = myXstrChrtObjName Then
+            myXobjChrtObjct.Delete: Exit For
         End If
-    Next myXobjChrtObj
-    Set myXobjChrtObj = Nothing
+    Next myXobjChrtObjct
+    Set myXobjChrtObjct = Nothing
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
@@ -349,13 +340,13 @@ Private Sub PfixDeleteNoDesignateChartObjects(myXbisExitFlag As Boolean, _
   Dim myXlonChrtObjCnt As Long: myXlonChrtObjCnt = myXobjSheet.ChartObjects.Count
     On Error GoTo 0
     If myXlonChrtObjCnt <= 0 Then GoTo ExitPath
-  Dim myXobjChrtObj As Object
-    For Each myXobjChrtObj In myXobjSheet.ChartObjects
-        If myXobjChrtObj.Name <> myXstrChrtObjName Then
-            myXobjChrtObj.Delete
+  Dim myXobjChrtObjct As Object
+    For Each myXobjChrtObjct In myXobjSheet.ChartObjects
+        If myXobjChrtObjct.Name <> myXstrChrtObjName Then
+            myXobjChrtObjct.Delete
         End If
-    Next myXobjChrtObj
-    Set myXobjChrtObj = Nothing
+    Next myXobjChrtObjct
+    Set myXobjChrtObjct = Nothing
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
@@ -377,7 +368,6 @@ Private Function PfncobjCopyPasteSpecialChartAsPicture( _
     On Error GoTo ExitPath
   Dim myXobjSheet As Object: Set myXobjSheet = myXobjChrtObjct.Parent
     myXobjSheet.Activate
-    On Error GoTo 0
   Dim myXstrPstFrmt As String
     If coXlonPstFrmt = 1 Then
         myXstrPstFrmt = "図 (PNG)"
@@ -399,9 +389,12 @@ Private Function PfncobjCopyPasteSpecialChartAsPicture( _
     Set myXobjTopLftCell = myXobjChrtObjct.TopLeftCell
     myXobjTopLftCell.Select
     Call myXobjSheet.PasteSpecial(Format:=myXstrPstFrmt)
-  Dim myXlonPicCnt As Long: myXlonPicCnt = myXobjSheet.Pictures.Count
-    Set PfncobjCopyPasteSpecialChartAsPicture = myXobjSheet.Pictures(myXlonPicCnt)
-    Set myXobjTopLftCell = Nothing
+  Dim myXlonPicCnt As Long, myXobjPic As Object
+    myXlonPicCnt = myXobjSheet.Pictures.Count
+    Set myXobjPic = myXobjSheet.Pictures(myXlonPicCnt)
+    On Error GoTo 0
+    Set PfncobjCopyPasteSpecialChartAsPicture = myXobjPic
+    Set myXobjTopLftCell = Nothing: Set myXobjPic = Nothing
 ExitPath:
 End Function
 
@@ -874,36 +867,473 @@ ExitPath:
     myXbisExitFlag = True
 End Sub
 
- '定型Ｐ_グラフのデータ範囲を指定範囲で設定する
-Private Sub PfixSetChartSourceData(myXbisExitFlag As Boolean, _
-            ByVal myXobjChrt As Object, ByVal myXobjRng As Object, _
-            Optional ByVal coXlonPltBy As Long = xlColumns)
-'coXlonPltBy = xlColumns = 2 : データ系列の方向を列方向に指定
-'coXlonPltBy = xlRows    = 1 : データ系列の方向を行方向に指定
+ '定型Ｆ_指定グラフの系列番号を指定してデータ系列を取得する
+Private Function PfncobjGetChartSeriesCollection( _
+            ByVal myXobjChrt As Object, ByVal myXlonSrsClctnNo As Long) As Object
+    Set PfncobjGetChartSeriesCollection = Nothing
+  Dim myXobjSrsClctn As Object
+    On Error GoTo ExitPath
+    Set myXobjSrsClctn = myXobjChrt.SeriesCollection(myXlonSrsClctnNo)
+    On Error GoTo 0
+    Set PfncobjGetChartSeriesCollection = myXobjSrsClctn
+    Set myXobjSrsClctn = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_指定グラフの最後の系列番号のデータ系列を取得する
+Private Function PfncobjGetChartLastSeriesCollection(ByVal myXobjChrt As Object) As Object
+    Set PfncobjGetChartLastSeriesCollection = Nothing
+  Dim myXlonSrsClctnCnt As Long, myXobjSrsClctn As Object
+    On Error GoTo ExitPath
+    myXlonSrsClctnCnt = myXobjChrt.SeriesCollection.Count
+    Set myXobjSrsClctn = myXobjChrt.SeriesCollection(myXlonSrsClctnCnt)
+    On Error GoTo 0
+    Set PfncobjGetChartLastSeriesCollection = myXobjSrsClctn
+    Set myXobjSrsClctn = Nothing
+ExitPath:
+End Function
+
+ '定型Ｐ_グラフの指定系列の参照範囲を取得する
+Private Sub PfixGetSeriesCollectionFormula( _
+            myXstrSrsFrmlA1 As String, myXstrSrsFrmlR1C1 As String, _
+            ByVal myXobjSrsClctn As Object)
+    myXstrSrsFrmlA1 = Empty: myXstrSrsFrmlR1C1 = Empty
+    On Error GoTo ExitPath
+    myXstrSrsFrmlA1 = myXobjSrsClctn.Formula
+    myXstrSrsFrmlR1C1 = myXobjSrsClctn.FormulaR1C1
+    On Error GoTo 0
+ExitPath:
+End Sub
+
+ '定型Ｆ_グラフの指定データ系列の系列番号を取得する
+Private Function PfnclonGetChartSeriesCollectionOrder( _
+            ByVal myXobjSrsClctn As Object) As Long
+'objSrsClctn.Formula =“=SERIES(項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号)”
+  Const coXstrPreChr As String = "("
+  Const coXstrPstChr As String = ")"
+    PfnclonGetChartSeriesCollectionOrder = Empty
+    If myXobjSrsClctn Is Nothing Then Exit Function
+  Dim myZstrSrsFrml As String, myZvarSplt As Variant, myXlonSpltCnt As Long
+  Dim myXlonBgn As Long, myXlonEnd As Long, myXlonLen As Long, myXstrSndwchd As String
+    On Error GoTo ExitPath
+    myZstrSrsFrml = myXobjSrsClctn.Formula
+    On Error GoTo 0
+    myXlonBgn = InStr(myZstrSrsFrml, coXstrPreChr) + 1
+    myXlonEnd = InStrRev(myZstrSrsFrml, coXstrPstChr) - 1
+    myXlonLen = myXlonEnd - myXlonBgn + 1
+    myXstrSndwchd = Mid(myZstrSrsFrml, myXlonBgn, myXlonLen)
+    myZvarSplt = Split(myXstrSndwchd, ",")
+    myXlonSpltCnt = UBound(myZvarSplt) - LBound(myZvarSplt) + 1
+    If myXlonSpltCnt <= 0 Then Exit Function
+  Dim myXvarSCNo As Variant, myXlonSrsClctnNo As Long
+    myXvarSCNo = myZvarSplt(UBound(myZvarSplt))
+    If IsNumeric(myXvarSCNo) = True Then myXlonSrsClctnNo = CLng(myXvarSCNo)
+    PfnclonGetChartSeriesCollectionOrder = myXlonSrsClctnNo
+ExitPath:
+End Function
+
+ '定型Ｐ_グラフの指定データ系列の設定軸とプロット番号を取得する
+Private Sub PfixGetChartSeriesCollectionOrderInformation( _
+            myXlonAxsGrp As Long, myXlonPltOrdr As Long, _
+            ByVal myXobjSrsClctn As Object)
+    myXlonAxsGrp = Empty: myXlonPltOrdr = Empty
+    If myXobjSrsClctn Is Nothing Then Exit Sub
+'//設定軸を取得
+    myXlonAxsGrp = myXobjSrsClctn.AxisGroup
+'//プロット番号を取得
+    myXlonPltOrdr = myXobjSrsClctn.PlotOrder
+End Sub
+
+ '定型Ｐ_散布図グラフのデータ系列の参照式からセル範囲アドレスを取得する
+Private Sub PfixGetDataRangeAddressInXYScatter( _
+            myXstrNameAdrs As String, myXstrXvalAdrs As String, myXstrYvalAdrs As String, _
+            myXlonSrsClctnNo As Long, _
+            ByVal myXstrSrsFrml As String)
+'objSrsClctn.Formula =“=SERIES(項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号)”
+    myXstrNameAdrs = Empty: myXstrXvalAdrs = Empty: myXstrYvalAdrs = Empty
+    If myXstrSrsFrml = "" Then Exit Sub
+'//参照式からアドレス部分を取得
+  Dim myXlonBgn As Long, myXlonEnd As Long, myXlonLen As Long, myXstrSndwchd As String
+    myXlonBgn = InStr(myXstrSrsFrml, "(") + 1
+    myXlonEnd = InStrRev(myXstrSrsFrml, ")") - 1
+    myXlonLen = myXlonEnd - myXlonBgn + 1
+    If myXlonBgn <= 0 Or myXlonEnd <= 0 Or myXlonLen < 0 Then Exit Sub
+    myXstrSndwchd = Mid(myXstrSrsFrml, myXlonBgn, myXlonLen)
+'//項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号を取得
+  Dim myZvarSplt As Variant, myXlonSpltCnt As Long
+    myZvarSplt = Split(myXstrSndwchd, ",")
+    myXlonSpltCnt = UBound(myZvarSplt) - LBound(myZvarSplt) + 1
+  Dim myXstrSCNo As String
+    If myXlonSpltCnt = 4 Then
+        myXstrNameAdrs = myZvarSplt(0)
+        myXstrXvalAdrs = myZvarSplt(1)
+        myXstrYvalAdrs = myZvarSplt(2)
+        myXstrSCNo = myZvarSplt(3)
+    Else
+        Exit Sub
+    End If
+    If IsNumeric(myXstrSCNo) = True Then myXlonSrsClctnNo = CLng(myXstrSCNo)
+    myZvarSplt = Empty
+End Sub
+
+ '定型Ｐ_セル範囲アドレスからパス[ブック]シート!セル範囲情報を分離する
+Private Sub PfixGetPathBookSheetRangeAddress( _
+            myXstrPathBkSht As String, myXstrRngAdrs As String, _
+            myXstrDirPath As String, myXstrBookName As String, myXstrShtName As String, _
+            ByVal myXstrRngAdrsWEx As String)
+'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
+    myXstrPathBkSht = Empty: myXstrRngAdrs = Empty
+    myXstrDirPath = Empty: myXstrBookName = Empty: myXstrShtName = Empty
+    If myXstrRngAdrsWEx = "" Then Exit Sub
+'//パス[ブック]シート部分とセル範囲部分を分離
+  Dim myZvarSplt As Variant, myXlonSpltCnt As Long, myXstrTmp As String
+    myZvarSplt = Split(myXstrRngAdrsWEx, "!")
+    myXlonSpltCnt = UBound(myZvarSplt) - LBound(myZvarSplt) + 1
+    If myXlonSpltCnt = 2 Then
+        myXstrTmp = myZvarSplt(0)
+        myXstrRngAdrs = myZvarSplt(1)
+    Else
+        Exit Sub
+    End If
+'//パス[ブック]シート部分を取得
+  Dim myXlonBgn As Long, myXlonEnd As Long, myXlonLen As Long, myXstrSndwchd As String
+    myXlonBgn = InStr(myXstrTmp, "'") + 1
+    myXlonEnd = InStrRev(myXstrTmp, "'") - 1
+    myXlonLen = myXlonEnd - myXlonBgn + 1
+    If myXlonBgn <= 0 Or myXlonEnd <= 0 Or myXlonLen < 0 Then
+        myXstrPathBkSht = myXstrTmp
+    Else
+        myXstrPathBkSht = Mid(myXstrTmp, myXlonBgn, myXlonLen)
+    End If
+'//シート部分を取得
+    myZvarSplt = Split(myXstrPathBkSht, "]")
+    myXlonSpltCnt = UBound(myZvarSplt) - LBound(myZvarSplt) + 1
+    If myXlonSpltCnt = 1 Then
+        myXstrShtName = myZvarSplt(0)
+    ElseIf myXlonSpltCnt = 2 Then
+        myXstrShtName = myZvarSplt(1)
+    Else
+        Exit Sub
+    End If
+'//ブック部分を取得
+    myXlonBgn = InStr(myXstrPathBkSht, "[") + 1
+    myXlonEnd = InStrRev(myXstrPathBkSht, "]") - 1
+    myXlonLen = myXlonEnd - myXlonBgn + 1
+    If myXlonBgn <= 0 Or myXlonEnd <= 0 Or myXlonLen < 0 Then Exit Sub
+    myXstrBookName = Mid(myXstrPathBkSht, myXlonBgn, myXlonLen)
+'//パス部分を取得
+    myZvarSplt = Split(myXstrPathBkSht, "[")
+    myXlonSpltCnt = UBound(myZvarSplt) - LBound(myZvarSplt) + 1
+    If myXlonSpltCnt = 2 Then
+        myXstrDirPath = myZvarSplt(0)
+        If myXstrDirPath <> "" Then _
+            myXstrDirPath = Left(myXstrDirPath, Len(myXstrDirPath) - 1)
+    Else
+        Exit Sub
+    End If
+End Sub
+
+ '定型Ｐ_セル範囲アドレスから行列情報を取得する
+Private Sub PfixGetRowColumnInRangeAddress( _
+            myXlonBgnRow As Long, myXlonBgnCol As Long, _
+            myXlonEndRow As Long, myXlonEndCol As Long, _
+            ByVal myXstrRngAdrsWEx As String)
+'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
+    myXlonBgnRow = Empty: myXlonBgnCol = Empty: myXlonEndRow = Empty: myXlonEndCol = Empty
+    If myXstrRngAdrsWEx = "" Then Exit Sub
+  Dim myXstrRngAdrs As String, myXstrBgnAdrs As String, myXstrEndAdrs As String
+  Dim myXstrBgnRow As String, myXstrBgnCol As String, _
+        myXstrEndRow As String, myXstrEndCol As String
+'//パス[ブック]シート部分とセル範囲部分を分離
+  Dim myZvarSplt As Variant, myXlonSpltCnt As Long, myXstrTmp As String
+    myZvarSplt = Split(myXstrRngAdrsWEx, "!")
+    myXlonSpltCnt = UBound(myZvarSplt) - LBound(myZvarSplt) + 1
+    If myXlonSpltCnt = 2 Then
+        myXstrTmp = myZvarSplt(0)
+        myXstrRngAdrs = myZvarSplt(1)
+    Else
+        Exit Sub
+    End If
+'//セル範囲をR1C1形式に変換
+    On Error Resume Next
+    myXstrRngAdrs = Application.ConvertFormula(Formula:=myXstrRngAdrs, _
+                        FromReferenceStyle:=xlA1, ToReferenceStyle:=xlR1C1, ToAbsolute:=True)
+    On Error GoTo 0
+    If myXstrRngAdrs = "" Then Exit Sub
+'//セル範囲の前半部分と後半部分を分離
+    myZvarSplt = Split(myXstrRngAdrs, ":")
+    myXlonSpltCnt = UBound(myZvarSplt) - LBound(myZvarSplt) + 1
+    If myXlonSpltCnt = 1 Then
+        myXstrBgnAdrs = myZvarSplt(0)
+    ElseIf myXlonSpltCnt = 2 Then
+        myXstrBgnAdrs = myZvarSplt(0)
+        myXstrEndAdrs = myZvarSplt(1)
+    Else
+        Exit Sub
+    End If
+'//最初の行と最初の列を取得
+    myZvarSplt = Split(myXstrBgnAdrs, "R")
+    myXlonSpltCnt = UBound(myZvarSplt) - LBound(myZvarSplt) + 1
+    If myXlonSpltCnt = 2 Then
+        myXstrTmp = myZvarSplt(1)
+    Else
+        Exit Sub
+    End If
+    myZvarSplt = Split(myXstrTmp, "C")
+    myXlonSpltCnt = UBound(myZvarSplt) - LBound(myZvarSplt) + 1
+    If myXlonSpltCnt = 2 Then
+        myXstrBgnRow = myZvarSplt(0)
+        myXstrBgnCol = myZvarSplt(1)
+    Else
+        Exit Sub
+    End If
+    If IsNumeric(myXstrBgnRow) = True Then myXlonBgnRow = CLng(myXstrBgnRow)
+    If IsNumeric(myXstrBgnCol) = True Then myXlonBgnCol = CLng(myXstrBgnCol)
+'//最後の行と最後の列を取得
+    myZvarSplt = Split(myXstrEndAdrs, "R")
+    myXlonSpltCnt = UBound(myZvarSplt) - LBound(myZvarSplt) + 1
+    If myXlonSpltCnt = 2 Then
+        myXstrTmp = myZvarSplt(1)
+    Else
+        Exit Sub
+    End If
+    myZvarSplt = Split(myXstrTmp, "C")
+    myXlonSpltCnt = UBound(myZvarSplt) - LBound(myZvarSplt) + 1
+    If myXlonSpltCnt = 2 Then
+        myXstrEndRow = myZvarSplt(0)
+        myXstrEndCol = myZvarSplt(1)
+    Else
+        Exit Sub
+    End If
+    If IsNumeric(myXstrEndRow) = True Then myXlonEndRow = CLng(myXstrEndRow)
+    If IsNumeric(myXstrEndCol) = True Then myXlonEndCol = CLng(myXstrEndCol)
+End Sub
+
+ '定型Ｆ_セル範囲アドレスのパス[ブック]シート情報を指定シート名に置換する
+Private Function PfncstrReplacePathBookSheetToSheet( _
+            ByVal myXstrRngAdrsWEx As String, ByVal myXstrShtName As String) As String
+'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
+    PfncstrReplacePathBookSheetToSheet = Empty
+    If myXstrRngAdrsWEx = "" Then Exit Function
+    If myXstrShtName = "" Then Exit Function
+  Dim myXstrPathBkSht As String, myXstrNewAdrs As String
+'//パス[ブック]シート部分とセル範囲部分を分離
+  Dim myZvarSplt As Variant, myXlonSpltCnt As Long, myXstrTmp As String
+    myZvarSplt = Split(myXstrRngAdrsWEx, "!")
+    myXlonSpltCnt = UBound(myZvarSplt) - LBound(myZvarSplt) + 1
+    If myXlonSpltCnt = 2 Then
+        myXstrPathBkSht = myZvarSplt(0)
+    Else
+        Exit Function
+    End If
+'//パス[ブック]シート部分を置換
+    myXstrNewAdrs = Replace(myXstrRngAdrsWEx, myXstrPathBkSht, myXstrShtName)
+    PfncstrReplacePathBookSheetToSheet = myXstrNewAdrs
+End Function
+
+ '定型Ｆ_グラフ系列用のセル範囲アドレスを設定する
+Private Function PfncstrSetRangeAddress( _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
+            ByVal myXlonEndRow As Long, ByVal myXlonEndCol As Long) As String
+    PfncstrSetRangeAddress = Empty
+'//セル範囲の表記→"R1C1"
+  Dim myXstrRng1 As String, myXstrRng2 As String, myXstrRngAdrs As String
+    If myXlonBgnRow >= 1 And myXlonBgnCol >= 1 Then
+        myXstrRng1 = "R" & myXlonBgnRow & "C" & myXlonBgnCol
+    Else
+        Exit Function
+    End If
+'//セル範囲の表記→"R2C2"
+    If myXlonEndRow >= 1 And myXlonEndCol >= 1 Then
+        myXstrRng2 = "R" & myXlonEndRow & "C" & myXlonEndCol
+    End If
+'//セル範囲の表記→"R1C1:R2C2"
+    myXstrRngAdrs = myXstrRng1 & ":" & myXstrRng2
+'//セル範囲をA1形式に変換
+    On Error Resume Next
+    If Application.ReferenceStyle = xlA1 Then _
+        myXstrRngAdrs = Application.ConvertFormula(Formula:=myXstrRngAdrs, _
+                        FromReferenceStyle:=xlR1C1, ToReferenceStyle:=xlA1, ToAbsolute:=True)
+    On Error GoTo 0
+    PfncstrSetRangeAddress = myXstrRngAdrs
+End Function
+
+ '定型Ｆ_グラフ系列用の外部参照を含めたセル範囲アドレスを設定する
+Private Function PfncstrSetRangeAddressWithExternal( _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
+            ByVal myXlonEndRow As Long, ByVal myXlonEndCol As Long, _
+            ByVal myXstrShtName As String, _
+            ByVal myXstrBkName As String, ByVal myXstrDirPath As String) As String
+'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
+    PfncstrSetRangeAddressWithExternal = Empty
+'//セル範囲の表記→"R1C1"
+  Dim myXstrRng1 As String, myXstrRng2 As String, myXstrRngAdrs As String
+    If myXlonBgnRow >= 1 And myXlonBgnCol >= 1 Then
+        myXstrRng1 = "R" & myXlonBgnRow & "C" & myXlonBgnCol
+    Else
+        Exit Function
+    End If
+'//セル範囲の表記→"R2C2"
+    If myXlonEndRow >= 1 And myXlonEndCol >= 1 Then
+        myXstrRng2 = "R" & myXlonEndRow & "C" & myXlonEndCol
+    End If
+'//セル範囲の表記→"R1C1:R2C2"
+    myXstrRngAdrs = myXstrRng1 & ":" & myXstrRng2
+'//セル範囲をA1形式に変換
+    On Error Resume Next
+    If Application.ReferenceStyle = xlA1 Then _
+        myXstrRngAdrs = Application.ConvertFormula(Formula:=myXstrRngAdrs, _
+                        FromReferenceStyle:=xlR1C1, ToReferenceStyle:=xlA1, ToAbsolute:=True)
+    On Error GoTo 0
+'//セル範囲アドレスの表記
+  Dim myXstrPathBkSht As String
+    If myXstrDirPath = "" And myXstrBkName = "" And myXstrShtName = "" Then
+        myXstrPathBkSht = ""
+    ElseIf myXstrDirPath = "" And myXstrBkName = "" And myXstrShtName <> "" Then
+        myXstrPathBkSht = myXstrShtName & "!"
+    ElseIf myXstrDirPath = "" And myXstrBkName <> "" And myXstrShtName <> "" Then
+        myXstrPathBkSht = "[" & myXstrBkName & "]" & myXstrShtName & "!"
+    ElseIf myXstrDirPath <> "" And myXstrBkName <> "" And myXstrShtName <> "" Then
+        myXstrPathBkSht = "[" & myXstrBkName & "]" & myXstrShtName
+        myXstrPathBkSht = myXstrDirPath & "\" & myXstrPathBkSht
+        myXstrPathBkSht = "'" & myXstrPathBkSht & "'" & "!"
+    End If
+    myXstrRngAdrs = myXstrPathBkSht & myXstrRngAdrs
+    PfncstrSetRangeAddressWithExternal = myXstrRngAdrs
+End Function
+
+ '定型Ｆ_グラフ用に指定セル範囲から最終行までのセル範囲アドレスを取得する
+Private Function PfncstrRangeAddressToEndRow(ByVal myXstrRngAdrsWEx As String) As String
+    PfncstrRangeAddressToEndRow = Empty
+    If myXstrRngAdrsWEx = "" Then Exit Function
+  Dim myXobjSheet As Object, myXobjOrgRng As Object
+    On Error Resume Next
+    myXstrRngAdrsWEx = Application.ConvertFormula(Formula:=myXstrRngAdrsWEx, _
+                    FromReferenceStyle:=xlR1C1, ToReferenceStyle:=xlA1, ToAbsolute:=True)
+    Set myXobjOrgRng = Range(myXstrRngAdrsWEx)
+    Set myXobjSheet = myXobjOrgRng.Parent
+    On Error GoTo 0
+    If myXobjOrgRng Is Nothing Then Exit Function
+  Dim myXlonRow1 As Long, myXlonRow2 As Long, myXlonCol1 As Long, myXlonCol2 As Long
+    myXlonRow1 = myXobjOrgRng.Row
+    myXlonRow2 = myXlonRow1 + myXobjOrgRng.Rows.Count - 1
+    myXlonCol1 = myXobjOrgRng.Column
+    myXlonCol2 = myXlonCol1 + myXobjOrgRng.Columns.Count - 1
+  Dim myXstrNewAdrs As String, myXobjNewRng As Object
+  Dim j As Long, myXlonEndRow As Long, myXlonTmpRow As Long
+    With myXobjSheet
+        For j = myXlonCol1 To myXlonCol2
+            myXlonTmpRow = .Cells(.Rows.Count, j).End(xlUp).Row
+            If myXlonTmpRow < myXlonRow1 Then myXlonTmpRow = myXlonRow2
+            If myXlonEndRow < myXlonTmpRow Then myXlonEndRow = myXlonTmpRow
+        Next j
+        Set myXobjNewRng = .Range(.Cells(myXlonRow1, myXlonCol1), .Cells(myXlonEndRow, myXlonCol2))
+    End With
+    myXstrNewAdrs = myXobjNewRng.Address(ReferenceStyle:=Application.ReferenceStyle, external:=True)
+    PfncstrRangeAddressToEndRow = myXstrNewAdrs
+    Set myXobjOrgRng = Nothing: Set myXobjNewRng = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_グラフ用に指定セル範囲から最終列までのセル範囲アドレスを取得する
+Private Function PfncstrRangeAddressToEndColumn(ByVal myXstrRngAdrsWEx As String) As String
+    PfncstrRangeAddressToEndColumn = Empty
+    If myXstrRngAdrsWEx = "" Then Exit Function
+  Dim myXobjSheet As Object, myXobjOrgRng As Object
+    On Error Resume Next
+    myXstrRngAdrsWEx = Application.ConvertFormula(Formula:=myXstrRngAdrsWEx, _
+                    FromReferenceStyle:=xlR1C1, ToReferenceStyle:=xlA1, ToAbsolute:=True)
+    Set myXobjOrgRng = Range(myXstrRngAdrsWEx)
+    Set myXobjSheet = myXobjOrgRng.Parent
+    On Error GoTo 0
+    If myXobjOrgRng Is Nothing Then Exit Function
+  Dim myXlonRow1 As Long, myXlonRow2 As Long, myXlonCol1 As Long, myXlonCol2 As Long
+    myXlonRow1 = myXobjOrgRng.Row
+    myXlonRow2 = myXlonRow1 + myXobjOrgRng.Rows.Count - 1
+    myXlonCol1 = myXobjOrgRng.Column
+    myXlonCol2 = myXlonCol1 + myXobjOrgRng.Columns.Count - 1
+  Dim myXstrNewAdrs As String, myXobjNewRng As Object
+  Dim i As Long, myXlonEndCol As Long, myXlonTmpCol As Long
+    With myXobjSheet
+        For i = myXlonRow1 To myXlonRow2
+            myXlonTmpCol = .Cells(i, .Columns.Count).End(xlToLeft).Column
+            If myXlonTmpCol < myXlonCol1 Then myXlonTmpCol = myXlonCol2
+            If myXlonEndCol < myXlonTmpCol Then myXlonEndCol = myXlonTmpCol
+        Next i
+        Set myXobjNewRng = .Range(.Cells(myXlonRow1, myXlonCol1), .Cells(myXlonRow2, myXlonEndCol))
+    End With
+    myXstrNewAdrs = myXobjNewRng.Address(ReferenceStyle:=Application.ReferenceStyle, external:=True)
+    PfncstrRangeAddressToEndColumn = myXstrNewAdrs
+    Set myXobjOrgRng = Nothing: Set myXobjNewRng = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_グラフ用にセル範囲のアドレスをA1からR1C1に変換する
+Private Function PfncstrConvertFormulaA1ToR1C1(ByVal myXstrRngAdrsWEx As String) As String
+    PfncstrConvertFormulaA1ToR1C1 = Empty
+    If myXstrRngAdrsWEx = "" Then Exit Function
+    On Error Resume Next
+    myXstrRngAdrsWEx = Application.ConvertFormula(Formula:=myXstrRngAdrsWEx, _
+                    FromReferenceStyle:=xlA1, ToReferenceStyle:=xlR1C1, ToAbsolute:=xlAbsolute)
+    On Error GoTo 0
+    PfncstrConvertFormulaA1ToR1C1 = myXstrRngAdrsWEx
+End Function
+
+ '定型Ｆ_グラフ用にセル範囲のアドレスをR1C1からA1に変換する
+Private Function PfncstrConvertFormulaR1C1ToA1(ByVal myXstrRngAdrsWEx As String) As String
+    PfncstrConvertFormulaR1C1ToA1 = Empty
+    If myXstrRngAdrsWEx = "" Then Exit Function
+    On Error Resume Next
+    myXstrRngAdrsWEx = Application.ConvertFormula(Formula:=myXstrRngAdrsWEx, _
+                    FromReferenceStyle:=xlR1C1, ToReferenceStyle:=xlA1, ToAbsolute:=xlAbsolute)
+    On Error GoTo 0
+    PfncstrConvertFormulaR1C1ToA1 = myXstrRngAdrsWEx
+End Function
+
+ '定型Ｆ_グラフ用にセル範囲のアドレスを変換する
+Private Function PfncstrConvertFormula(ByVal myXstrRngAdrsWEx As String) As String
+    PfncstrConvertFormula = Empty
+    If myXstrRngAdrsWEx = "" Then Exit Function
+    On Error Resume Next
+    If Application.ReferenceStyle = xlA1 Then
+        myXstrRngAdrsWEx = Application.ConvertFormula(Formula:=myXstrRngAdrsWEx, _
+                        FromReferenceStyle:=xlR1C1, ToReferenceStyle:=xlA1, ToAbsolute:=True)
+    Else
+        myXstrRngAdrsWEx = Application.ConvertFormula(Formula:=myXstrRngAdrsWEx, _
+                        FromReferenceStyle:=xlA1, ToReferenceStyle:=xlR1C1, ToAbsolute:=True)
+    End If
+    On Error GoTo 0
+    PfncstrConvertFormula = myXstrRngAdrsWEx
+End Function
+
+ '定型Ｐ_グラフにソースデータを設定する
+Private Sub PfixSetGraphSourceData(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrRngAdrsWEx As String)
     myXbisExitFlag = False
     On Error GoTo ExitPath
-    Call myXobjChrt.SetSourceData(Source:=myXobjRng, PlotBy:=coXlonPltBy)
+    myXobjChrt.SetSourceData Source:=Range(myXstrRngAdrsWEx)
     On Error GoTo 0
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
 End Sub
 
- '定型Ｐ_グラフのデータ範囲として2種類の指定範囲で設定する
-Private Sub PfixSetChartSourceDataUnionRange(myXbisExitFlag As Boolean, _
-            ByVal myXobjChrt As Object, _
-            ByVal myXobjRng1 As Object, ByVal myXobjRng2 As Object, _
-            Optional ByVal coXlonPltBy As Long = xlColumns)
-'coXlonPltBy = xlColumns = 2 : データ系列の方向を列方向に指定
-'coXlonPltBy = xlRows    = 1 : データ系列の方向を行方向に指定
-'Set myXobjSrcRng = Union(項目軸ラベルのセル範囲, グラフデータのセル範囲)
+ '定型Ｐ_InputBoxメソッドを使用してグラフにソースデータを設定する
+Private Sub PfixSetGraphSourceDataByInputBox(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrPrompt As String, ByVal myXstrTitle As String)
     myXbisExitFlag = False
-  Dim myXobjSrcRng As Object
+    If myXstrTitle = "" Then myXstrTitle = "セル範囲の選択"
+    If myXstrPrompt = "" Then myXstrPrompt = "グラフのソースデータを選択"
+  Dim myXobjDfltRng As Object, myXstrDfltAdrs As String, myXobjInptRng As Object
     On Error GoTo ExitPath
-    Set myXobjSrcRng = Union(myXobjRng1, myXobjRng2)
-    Call myXobjChrt.SetSourceData(Source:=myXobjSrcRng, PlotBy:=coXlonPltBy)
+    Set myXobjDfltRng = Selection
+    myXstrDfltAdrs = myXobjDfltRng.Address(ReferenceStyle:=Application.ReferenceStyle, _
+                        RowAbsolute:=True, ColumnAbsolute:=True, external:=True)
+    Set myXobjInptRng = Application.InputBox(prompt:=myXstrPrompt, Title:=myXstrTitle, _
+                                                Default:=myXstrDfltAdrs, Type:=8)
+    myXobjChrt.SetSourceData Source:=myXobjInptRng
     On Error GoTo 0
-    Set myXobjSrcRng = Nothing
+    Set myXobjDfltRng = Nothing: Set myXobjInptRng = Nothing
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
@@ -921,88 +1351,36 @@ ExitPath:
     myXbisExitFlag = True
 End Sub
 
- '定型Ｆ_グラフ系列用の外部参照を含めたセル範囲アドレスを設定する
-Private Function PfncstrSetRangeAddressWithExternal( _
-            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
-            ByVal myXlonEndRow As Long, ByVal myXlonEndCol As Long, _
-            ByVal myXstrShtName As String, _
-            ByVal myXstrDirPath As String, ByVal myXstrBkName As String, _
-            Optional ByVal coXlonAdrsOptn As Long = 1, _
-            Optional ByVal coXbisR1C1 As Boolean = False) As String
-'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
-'coXlonAdrsOptn = 1 : セル範囲
-'coXlonAdrsOptn = 2 : シート!セル範囲
-'coXlonAdrsOptn = 3 : 'パス\[ブック]シート'!セル範囲
-'coXlonAdrsOptn = 4 : パス\[ブック]
-'Chr(82) : R
-'Chr(67) : C
-'Chr(92) : 円記号(\)
-'Chr(91) : 始め大括弧([)
-'Chr(93) : 終わり大括弧(])
-'Chr(39) : シングルクォーテーション(')
-'Chr(33) : エクスクラメーション(!)
-'Chr(58) : コロン(:)
-    PfncstrSetRangeAddressWithExternal = Empty
-    If coXlonAdrsOptn < 1 And coXlonAdrsOptn > 4 Then Exit Function
-'//セル範囲の表記
-  Dim myXstrRng As String
-    If myXlonBgnRow >= 1 And myXlonBgnCol >= 1 Then
-    '//セル範囲→"R1C1"
-        myXstrRng = Chr(82) & myXlonBgnRow & Chr(67) & myXlonBgnCol
-    Else
-        Exit Function
-    End If
-    If myXlonEndRow >= 1 And myXlonEndCol >= 1 Then
-    '//セル範囲→"R1C1:R2C2"
-        myXstrRng = myXstrRng & Chr(58) & Chr(82) & myXlonEndRow & Chr(67) & myXlonEndCol
-    End If
-'//セル範囲をA1形式に変換
-    If coXbisR1C1 = False Then _
-        myXstrRng = Application.ConvertFormula(Formula:=myXstrRng, _
-                        FromReferenceStyle:=xlR1C1, ToReferenceStyle:=xlA1, ToAbsolute:=True)
-'//セル範囲アドレスの表記
-  Dim myXstrPthSht As String, myXstrRngAdrs As String
-    Select Case coXlonAdrsOptn
-        Case 1
-            myXstrRngAdrs = myXstrRng
-        Case 2
-        '//シート名の表記→シート!
-            If myXstrShtName = "" Then Exit Function
-            myXstrPthSht = myXstrShtName & Chr(33)
-            myXstrRngAdrs = myXstrPthSht & myXstrRng
-        Case 3
-        '//ファイルパス+シート名の表記→'パス\[ブック]シート'!
-            If myXstrDirPath = "" Or myXstrBkName = "" Or myXstrShtName = "" Then Exit Function
-            myXstrPthSht = Chr(91) & myXstrBkName & Chr(93)
-            myXstrPthSht = myXstrDirPath & Chr(92) & myXstrPthSht & myXstrShtName
-            myXstrPthSht = Chr(39) & myXstrPthSht & Chr(39) & Chr(33)
-            myXstrRngAdrs = myXstrPthSht & myXstrRng
-        Case 4
-        '//ファイルパスの表記→パス\[ブック]
-            If myXstrDirPath = "" Or myXstrBkName = "" Then Exit Function
-            myXstrPthSht = Chr(91) & myXstrBkName & Chr(93)
-            myXstrPthSht = myXstrDirPath & Chr(92) & myXstrPthSht & myXstrShtName
-            myXstrRngAdrs = myXstrPthSht
-    End Select
-    PfncstrSetRangeAddressWithExternal = myXstrRngAdrs
-End Function
-
- '定型Ｐ_グラフの指定データ系列の項目名/項目軸/データを設定する
-Private Sub PfixSetSeriesCollectionNameValue( _
+ '定型Ｐ_散布図グラフ用に項目名/項目軸/データのセル範囲からセル範囲アドレスを設定する
+Private Sub PfixSetRangeAddressForXYScatter( _
             myXbisExitFlag As Boolean, _
-            ByVal myXobjChrt As Object, ByVal myXlonSCNo As Long, _
+            myXstrNameAdrs As String, myXstrXvalAdrs As String, myXstrYvalAdrs As String, _
             ByVal myXobjNameRng As Object, _
             ByVal myXobjXvalRng As Object, ByVal myXobjYvalRng As Object)
     myXbisExitFlag = False
-  Dim myXstrNameAdrs As String, myXstrXvalAdrs As String, myXstrYvalAdrs As String
+    myXstrNameAdrs = Empty: myXstrXvalAdrs = Empty: myXstrYvalAdrs = Empty
     On Error GoTo ExitPath
-    myXstrNameAdrs = myXobjNameRng.Address( _
-                        ReferenceStyle:=Application.ReferenceStyle, external:=True)
-    myXstrXvalAdrs = myXobjXvalRng.Address( _
-                        ReferenceStyle:=Application.ReferenceStyle, external:=True)
-    myXstrYvalAdrs = myXstrYvalAdrs.Address( _
-                        ReferenceStyle:=Application.ReferenceStyle, external:=True)
-    With myXobjChrt.SeriesCollection(myXlonSCNo)
+    With Application
+        myXstrNameAdrs = myXobjNameRng.Address(ReferenceStyle:=.ReferenceStyle, external:=True)
+        myXstrXvalAdrs = myXobjXvalRng.Address(ReferenceStyle:=.ReferenceStyle, external:=True)
+        myXstrYvalAdrs = myXobjYvalRng.Address(ReferenceStyle:=.ReferenceStyle, external:=True)
+    End With
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_散布図グラフの指定データ系列の項目名/項目軸/データを設定する
+Private Sub PfixSetSeriesCollectionNameValueInXYScatter( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjSrsClctn As Object, _
+            ByVal myXstrNameAdrs As String, _
+            ByVal myXstrXvalAdrs As String, ByVal myXstrYvalAdrs As String)
+    myXbisExitFlag = False
+    If myXobjSrsClctn Is Nothing Then Exit Sub
+    On Error GoTo ExitPath
+    With myXobjSrsClctn
         .Name = "=" & myXstrNameAdrs
         .XValues = "=" & myXstrXvalAdrs
         .Values = "=" & myXstrYvalAdrs
@@ -1013,73 +1391,33 @@ ExitPath:
     myXbisExitFlag = True
 End Sub
 
- '定型Ｐ_グラフの指定データ系列にデータ参照範囲を設定する
-Private Sub PfixSetSeriesCollectionFormula( _
-            myXbisExitFlag As Boolean, _
-            ByVal myXobjChrt As Object, ByVal myXlonSCNo As Long, _
-            ByVal myXobjNameRng As Object, _
-            ByVal myXobjXvalRng As Object, ByVal myXobjYvalRng As Object)
+ '定型Ｆ_散布図グラフの指定データ系列設定用のSERIES関数式を設定する
+Private Function PfncstrSetSeriesFormulaInXYScatter( _
+            ByVal myXlonSrsClctnNo As Long, _
+            ByVal myXstrNameAdrs As String, _
+            ByVal myXstrXvalAdrs As String, ByVal myXstrYvalAdrs As String) As String
 'Formula =“=SERIES(項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号)”
-    myXbisExitFlag = False
-  Dim myXstrNameAdrs As String, myXstrXvalAdrs As String, myXstrYvalAdrs As String
-    If Not myXobjNameRng Is Nothing Then _
-        myXstrNameAdrs = myXobjNameRng.Address( _
-                            ReferenceStyle:=Application.ReferenceStyle, external:=True)
-    If Not myXobjXvalRng Is Nothing Then _
-        myXstrXvalAdrs = myXobjXvalRng.Address( _
-                            ReferenceStyle:=Application.ReferenceStyle, external:=True)
-    If Not myXobjYvalRng Is Nothing Then _
-        myXstrYvalAdrs = myXobjYvalRng.Address( _
-                            ReferenceStyle:=Application.ReferenceStyle, external:=True)
-    On Error GoTo ExitPath
-    If Application.ReferenceStyle = xlA1 Then
-        myXobjChrt.SeriesCollection(myXlonSCNo).Formula = _
-            "=SERIES(" & myXstrNameAdrs & "," & _
-                            myXstrXvalAdrs & "," & myXstrYvalAdrs & "," & myXlonSCNo & ")"
-    Else
-        myXobjChrt.SeriesCollection(myXlonSCNo).FormulaR1C1 = _
-            "=SERIES(" & myXstrNameAdrs & "," & _
-                            myXstrXvalAdrs & "," & myXstrYvalAdrs & "," & myXlonSCNo & ")"
-    End If
-    On Error GoTo 0
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
-End Sub
-
- '定型Ｆ_グラフの指定データ系列設定用のSERIES関数式を設定する
-Private Function PfncstrSetSeriesFormula( _
-            ByVal myXlonSCNo As Long, ByVal myXobjNameRng As Object, _
-            ByVal myXobjXvalRng As Object, ByVal myXobjYvalRng As Object)
-'Formula =“=SERIES(項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号)”
-    PfncstrSetSeriesFormula = Empty
-  Dim myXstrNameAdrs As String, myXstrXvalAdrs As String, myXstrYvalAdrs As String
-    On Error GoTo ExitPath
-    myXstrNameAdrs = myXobjNameRng.Address( _
-                        ReferenceStyle:=Application.ReferenceStyle, external:=True)
-    myXstrXvalAdrs = myXobjXvalRng.Address( _
-                        ReferenceStyle:=Application.ReferenceStyle, external:=True)
-    myXstrYvalAdrs = myXobjYvalRng.Address( _
-                        ReferenceStyle:=Application.ReferenceStyle, external:=True)
-    On Error GoTo 0
+    PfncstrSetSeriesFormulaInXYScatter = Empty
   Dim myXstrSrsFrml As String
-    myXstrSrsFrml = "=SERIES(" & myXstrNameAdrs & "," & _
-                        myXstrXvalAdrs & "," & myXstrYvalAdrs & "," & myXlonSCNo & ")"
-    PfncstrSetSeriesFormula = myXstrSrsFrml
+    myXstrSrsFrml = myXstrNameAdrs & "," & myXstrXvalAdrs & "," & _
+                    myXstrYvalAdrs & "," & myXlonSrsClctnNo
+    myXstrSrsFrml = "=SERIES(" & myXstrSrsFrml & ")"
+    PfncstrSetSeriesFormulaInXYScatter = myXstrSrsFrml
 ExitPath:
 End Function
 
- '定型Ｐ_グラフの指定データ系列にSERIES関数でデータ参照範囲を設定する
-Public Sub PfixSetSeriesCollectionBySeriesFormula( _
+ '定型Ｐ_散布図グラフの指定データ系列にSERIES関数でデータ参照範囲を設定する
+Private Sub PfixSetSeriesCollectionFormulaInXYScatter( _
             myXbisExitFlag As Boolean, _
-            ByVal myXobjChrt As Object, ByVal myXlonSCNo As Long, _
-            ByVal myXstrSrsFrml As String)
+            ByVal myXobjSrsClctn As Object, ByVal myXstrSrsFrml As String)
     myXbisExitFlag = False
+    If myXobjSrsClctn Is Nothing Then Exit Sub
+    If myXstrSrsFrml = "" Then Exit Sub
     On Error GoTo ExitPath
     If Application.ReferenceStyle = xlA1 Then
-        myXobjChrt.SeriesCollection(myXlonSCNo).Formula = myXstrSrsFrml
+        myXobjSrsClctn.Formula = myXstrSrsFrml
     Else
-        myXobjChrt.SeriesCollection(myXlonSCNo).FormulaR1C1 = myXstrSrsFrml
+        myXobjSrsClctn.FormulaR1C1 = myXstrSrsFrml
     End If
     On Error GoTo 0
     Exit Sub
@@ -1087,396 +1425,43 @@ ExitPath:
     myXbisExitFlag = True
 End Sub
 
- '定型Ｆ_指定グラフの系列番号を指定してデータ系列を取得する
-Private Function PfncobjGetChartSeriesCollection( _
-            ByVal myXobjChrtObj As Object, ByVal myXlonSrsClctnNo As Long) As Object
-    Set PfncobjGetChartSeriesCollection = Nothing
+ '定型Ｐ_指定オブジェクトに設定されている参照式を取得する
+Private Sub PfixGetObjectFormula( _
+            myXstrObjFrmlA1 As String, myXstrObjFrmlR1C1 As String, _
+            ByVal myXobjOrg As Object)
+    myXstrObjFrmlA1 = Empty: myXstrObjFrmlR1C1 = Empty
     On Error GoTo ExitPath
-    Set PfncobjGetChartSeriesCollection = myXobjChrtObj.Chart.SeriesCollection(myXlonSrsClctnNo)
+    myXstrObjFrmlA1 = myXobjOrg.Formula
+    myXstrObjFrmlR1C1 = myXobjOrg.FormulaR1C1
     On Error GoTo 0
 ExitPath:
-End Function
-
- '定型Ｆ_指定グラフの最後の系列番号のデータ系列を取得する
-Private Function PfncobjGetChartLastSeriesCollection(ByVal myXobjChrtObj As Object) As Object
-    Set PfncobjGetChartLastSeriesCollection = Nothing
-  Dim myXlonSrsClctnCnt As Long
-    On Error GoTo ExitPath
-    myXlonSrsClctnCnt = myXobjChrtObj.Chart.SeriesCollection.Count
-    Set PfncobjGetChartLastSeriesCollection _
-            = myXobjChrtObj.Chart.SeriesCollection(myXlonSrsClctnCnt)
-    On Error GoTo 0
-ExitPath:
-End Function
-
- '定型Ｆ_グラフの指定系列の参照範囲をA1形式で取得する
-Private Function PfncstrGetSeriesCollectionFormulaA1( _
-            ByVal myXobjSrsClctn As Object) As String
-    PfncstrGetSeriesCollectionFormulaA1 = Empty
-    On Error GoTo ExitPath
-    PfncstrGetSeriesCollectionFormulaA1 = myXobjSrsClctn.Formula
-    On Error GoTo 0
-ExitPath:
-End Function
-
- '定型Ｆ_グラフの指定系列の参照範囲をR1C1形式で取得する
-Private Function PfncstrGetSeriesCollectionFormulaR1C1( _
-            ByVal myXobjSrsClctn As Object) As String
-    PfncstrGetSeriesCollectionFormulaR1C1 = Empty
-    On Error GoTo ExitPath
-    PfncstrGetSeriesCollectionFormulaR1C1 = myXobjSrsClctn.FormulaR1C1
-    On Error GoTo 0
-ExitPath:
-End Function
-
- '定型Ｆ_グラフの指定系列の参照範囲を取得する
-Private Function PfncstrGetSeriesCollectionFormula( _
-            ByVal myXobjSrsClctn As Object) As String
-    PfncstrGetSeriesCollectionFormula = Empty
-  Dim myXstrOrgFrml As String
-    On Error GoTo ExitPath
-    If Application.ReferenceStyle = xlA1 Then
-        myXstrOrgFrml = myXobjSrsClctn.Formula
-    Else
-        myXstrOrgFrml = myXobjSrsClctn.FormulaR1C1
-    End If
-    On Error GoTo 0
-    PfncstrGetSeriesCollectionFormula = myXstrOrgFrml
-ExitPath:
-End Function
-
- '定型Ｐ_グラフの指定系列の参照範囲を変更する
-Private Sub PfixChangeSeriesCollectionFormula( _
-            myXbisExitFlag As Boolean, _
-            myXstrOrgFrml As String, myXstrNewFrml As String, _
-            ByVal myXobjSrsClctn As Object, _
-            ByVal myXstrOrgAdrs As String, ByVal myXstrNewAdrs As String)
-    myXbisExitFlag = False
-    myXstrOrgFrml = Empty: myXstrNewFrml = Empty
-    If myXstrOrgAdrs = "" Or myXstrNewAdrs = "" Then GoTo ExitPath
-    On Error GoTo ExitPath
-  Dim myXstrTmp As String: myXstrTmp = myXobjSrsClctn.Formula
-    On Error GoTo 0
-    If Application.ReferenceStyle = xlA1 Then
-        myXstrOrgFrml = myXobjSrsClctn.Formula
-'        Debug.Print "系列参照式: " & myXstrOrgFrml
-        If InStr(myXstrOrgFrml, myXstrOrgAdrs) <= 0 Then GoTo ExitPath
-        myXstrNewFrml = Replace(myXstrOrgFrml, myXstrOrgAdrs, myXstrNewAdrs)
-        myXobjSrsClctn.Formula = myXstrNewFrml
-        myXstrNewFrml = myXobjSrsClctn.Formula
-    Else
-        myXstrOrgFrml = myXobjSrsClctn.FormulaR1C1
-'        Debug.Print "系列参照式: " & myXstrOrgFrml
-        If InStr(myXstrOrgFrml, myXstrOrgAdrs) <= 0 Then GoTo ExitPath
-        myXstrNewFrml = Replace(myXstrOrgFrml, myXstrOrgAdrs, myXstrNewAdrs)
-        myXobjSrsClctn.FormulaR1C1 = myXstrNewFrml
-        myXstrNewFrml = myXobjSrsClctn.FormulaR1C1
-    End If
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
 End Sub
-
- '定型Ｆ_指定オブジェクトに設定されている参照式を取得する
-Private Function PfncstrGetObjectFormula( _
-            ByVal myXobjOrg As Object) As String
-    PfncstrGetObjectFormula = Empty
-  Dim myXstrOrgFrml As String
-    On Error GoTo ExitPath
-    If Application.ReferenceStyle = xlA1 Then
-        myXstrOrgFrml = myXobjOrg.Formula
-    Else
-        myXstrOrgFrml = myXobjOrg.FormulaR1C1
-    End If
-    On Error GoTo 0
-    PfncstrGetObjectFormula = myXstrOrgFrml
-ExitPath:
-End Function
 
  '定型Ｐ_指定オブジェクトに設定されている参照式を変更する
 Private Sub PfixChangeObjectFormula( _
             myXbisExitFlag As Boolean, _
-            myXstrOrgFrml As String, myXstrNewFrml As String, _
             ByVal myXobjOrg As Object, _
             ByVal myXstrOrgAdrs As String, ByVal myXstrNewAdrs As String)
     myXbisExitFlag = False
-    myXstrOrgFrml = Empty: myXstrNewFrml = Empty
+    If myXobjOrg Is Nothing Then Exit Function
     If myXstrOrgAdrs = "" Or myXstrNewAdrs = "" Then GoTo ExitPath
+  Dim myXstrOrgFrml As String, myXstrNewFrml As String
     On Error GoTo ExitPath
-  Dim myXstrTmp As String: myXstrTmp = myXobjOrg.Formula
-    On Error GoTo 0
+    myXstrOrgFrml = myXobjOrg.Formula
+'    Debug.Print "系列参照式: " & myXstrOrgFrml
+    If InStr(myXstrOrgFrml, myXstrOrgAdrs) <= 0 Then GoTo ExitPath
+    myXstrNewFrml = Replace(myXstrOrgFrml, myXstrOrgAdrs, myXstrNewAdrs)
+'    Debug.Print "系列参照式: " & myXstrNewFrml
     If Application.ReferenceStyle = xlA1 Then
-        myXstrOrgFrml = myXobjOrg.Formula
-'        Debug.Print "系列参照式: " & myXstrOrgFrml
-        If InStr(myXstrOrgFrml, myXstrOrgAdrs) <= 0 Then GoTo ExitPath
-        myXstrNewFrml = Replace(myXstrOrgFrml, myXstrOrgAdrs, myXstrNewAdrs)
         myXobjOrg.Formula = myXstrNewFrml
-        myXstrNewFrml = myXobjOrg.Formula
     Else
-        myXstrOrgFrml = myXobjOrg.FormulaR1C1
-'        Debug.Print "系列参照式: " & myXstrOrgFrml
-        If InStr(myXstrOrgFrml, myXstrOrgAdrs) <= 0 Then GoTo ExitPath
-        myXstrNewFrml = Replace(myXstrOrgFrml, myXstrOrgAdrs, myXstrNewAdrs)
         myXobjOrg.FormulaR1C1 = myXstrNewFrml
-        myXstrNewFrml = myXobjOrg.FormulaR1C1
     End If
+    On Error GoTo 0
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
 End Sub
-
- '定型Ｆ_グラフの指定データ系列の系列番号取得する
-Private Function PfnclonGetChartSeriesCollectionOrder( _
-            ByVal myXobjSrsClctn As Object) As Long
-'Chr(44) : カンマ(,)
-'myXstrSrsFrml =“=SERIES(項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号)”
-  Const coXstrSERIES As String = "=SERIES("
-    PfnclonGetChartSeriesCollectionOrder = Empty
-    If myXobjSrsClctn Is Nothing Then Exit Function
-  Dim myZstrSrsFrml As String, myZvarTmp As Variant, myXlonSpltCnt As Long
-    On Error GoTo ExitPath
-    myZstrSrsFrml = myXobjSrsClctn.Formula
-    myZstrSrsFrml = Mid(myZstrSrsFrml, Len(coXstrSERIES) + 1)
-    myZstrSrsFrml = Mid(myZstrSrsFrml, 1, Len(myZstrSrsFrml) - 1)
-    myZvarTmp = Split(myZstrSrsFrml, Chr(44))
-    On Error GoTo 0
-    myXlonSpltCnt = UBound(myZvarTmp) - LBound(myZvarTmp) + 1
-    If myXlonSpltCnt <= 0 Then Exit Function
-  Dim myXvarSCNo As Variant, myXlonSCNo As Long
-    myXvarSCNo = myZvarTmp(UBound(myZvarTmp))
-    If IsNumeric(myXvarSCNo) = True Then myXlonSCNo = CLng(myXvarSCNo)
-    PfnclonGetChartSeriesCollectionOrder = myXlonSCNo
-ExitPath:
-End Function
- 
- '定型Ｐ_グラフの指定データ系列の系列番号/設定軸/プロット番号を取得する
-Private Sub PincGetChartSeriesCollectionOrderInformation( _
-            myXlonSCNo As Long, myXlonAxsGrp As Long, myXlonPltOrdr As Long, _
-            ByVal myXobjSrsClctn As Object)
-'Includes PfnclonGetChartSeriesCollectionOrder
-    myXlonSCNo = Empty: myXlonAxsGrp = Empty: myXlonPltOrdr = Empty
-    If myXobjSrsClctn Is Nothing Then Exit Sub
-'//系列番号を取得
-    myXlonSCNo = PfnclonGetChartSeriesCollectionOrder(myXobjSrsClctn)
-'//設定軸を取得
-    myXlonAxsGrp = myXobjSrsClctn.AxisGroup
-'//プロット番号を取得
-    myXlonPltOrdr = myXobjSrsClctn.PlotOrder
-End Sub
-
- '定型Ｐ_散布図グラフのデータ系列の参照式からセル範囲アドレスを取得する
-Private Sub PincGetDataRangeAddressInXYScatter( _
-            myXstrNameAdrs As String, myXstrXvalAdrs As String, myXstrYvalAdrs As String, _
-            myXlonSCNo As Long, _
-            ByVal myXstrSrsFrml As String)
-'Includes PfixExtractSandwichedStringByCharacters
-'Includes PfixSplitString
-'Chr(40) : 始め小括弧(()
-'Chr(41) : 終わり小括弧())
-'Chr(44) : カンマ(,)
-'myXstrSrsFrml =“=SERIES(項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号)”
-    myXstrNameAdrs = Empty: myXstrXvalAdrs = Empty: myXstrYvalAdrs = Empty
-    If myXstrSrsFrml = "" Then Exit Sub
-  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
-'//参照式からアドレス部分を取得
-  Dim myXlonStrCnt As Long, myZstrSndwchd() As String, myZstrSpltData() As String
-    Call PfixExtractSandwichedStringByCharacters( _
-            myXlonStrCnt, myZstrSndwchd, myXstrSrsFrml, Chr(40), Chr(41))
-  Dim myXstrSrsAdrs As String
-    If myXlonStrCnt = 1 Then
-        myXstrSrsAdrs = myZstrSndwchd(L + 0)
-    ElseIf myXlonStrCnt = 3 Then
-        myXstrSrsAdrs = myZstrSndwchd(L + 0)
-        myXstrXvalAdrs = myZstrSndwchd(L + 1)
-        myXstrYvalAdrs = myZstrSndwchd(L + 2)
-    Else
-        Exit Sub
-    End If
-'//項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号を取得
-    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrSrsAdrs, Chr(44))
-  Dim myXstrSCNo As String
-    If myXlonStrCnt = 4 Then
-        myXstrNameAdrs = myZstrSpltData(L + 0)
-        myXstrXvalAdrs = myZstrSpltData(L + 1)
-        myXstrYvalAdrs = myZstrSpltData(L + 2)
-        myXstrSCNo = myZstrSpltData(L + 3)
-    ElseIf myXlonStrCnt > 4 Then
-        myXstrNameAdrs = myZstrSpltData(L + 0)
-        myXstrSCNo = myZstrSpltData(myXlonStrCnt)
-    Else
-        Exit Sub
-    End If
-    If IsNumeric(myXstrSCNo) = True Then myXlonSCNo = CLng(myXstrSCNo)
-    Erase myZstrSndwchd: Erase myZstrSpltData
-End Sub
-
- '定型Ｐ_セル範囲アドレスから行列情報を取得する
-Private Sub PincGetDataRangeAddress( _
-            myXlonBgnRow As Long, myXlonBgnCol As Long, _
-            myXlonEndRow As Long, myXlonEndCol As Long, _
-            ByVal myXstrOrgAdrs As String)
-'Includes PfixSplitString
-'Includes PfixExtractSandwichedStringByCharacters
-'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
-'Chr(33) : エクスクラメーション(!)
-'Chr(58) : コロン(:)
-'Chr(82) : R
-'Chr(67) : C
-    myXlonBgnRow = Empty: myXlonBgnCol = Empty: myXlonEndRow = Empty: myXlonEndCol = Empty
-    If myXstrOrgAdrs = "" Then Exit Sub
-  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
-  Dim myXlonStrCnt As Long, myZstrSndwchd() As String, myZstrSpltData() As String
-  Dim myXstrPath As String, myXstrRngAdrs As String
-  Dim myXstrBgnAdrs As String, myXstrEndAdrs As String
-  Dim myXstrBgnRow As String, myXstrBgnCol As String, _
-        myXstrEndRow As String, myXstrEndCol As String
-'//パス[ブック]シート部分とセル範囲部分を分離
-    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrOrgAdrs, Chr(33))
-    If myXlonStrCnt = 1 Then
-        myXstrRngAdrs = myZstrSpltData(L)
-    ElseIf myXlonStrCnt = 2 Then
-        myXstrPath = myZstrSpltData(L + 0)
-        myXstrRngAdrs = myZstrSpltData(L + 1)
-    Else
-        Exit Sub
-    End If
-'//セル範囲をR1C1形式に変換
-    On Error Resume Next
-    myXstrRngAdrs = Application.ConvertFormula(Formula:=myXstrRngAdrs, _
-                        FromReferenceStyle:=xlA1, ToReferenceStyle:=xlR1C1, ToAbsolute:=True)
-    On Error GoTo 0
-'//セル範囲の前半部分と後半部分を分離
-    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrRngAdrs, Chr(58))
-    If myXlonStrCnt = 1 Then
-        myXstrBgnAdrs = myZstrSpltData(L + 0)
-    ElseIf myXlonStrCnt = 2 Then
-        myXstrBgnAdrs = myZstrSpltData(L + 0)
-        myXstrEndAdrs = myZstrSpltData(L + 1)
-    Else
-        Exit Sub
-    End If
-'//最初の行を取得
-    Call PfixExtractSandwichedStringByCharacters( _
-            myXlonStrCnt, myZstrSndwchd, myXstrBgnAdrs, Chr(82), Chr(67))
-    If myXlonStrCnt = 1 Then
-        myXstrBgnRow = myZstrSndwchd(L)
-        If IsNumeric(myXstrBgnRow) = True Then myXlonBgnRow = CLng(myXstrBgnRow)
-    End If
-'//最初の列を取得
-    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrBgnAdrs, Chr(67))
-    If myXlonStrCnt = 2 Then
-        myXstrBgnCol = myZstrSpltData(L + 1)
-        If IsNumeric(myXstrBgnCol) = True Then myXlonBgnCol = CLng(myXstrBgnCol)
-    End If
-'//最後の行を取得
-    Call PfixExtractSandwichedStringByCharacters( _
-            myXlonStrCnt, myZstrSndwchd, myXstrEndAdrs, Chr(82), Chr(67))
-    If myXlonStrCnt = 1 Then
-        myXstrEndRow = myZstrSndwchd(L)
-        If IsNumeric(myXstrEndRow) = True Then myXlonEndRow = CLng(myXstrEndRow)
-    End If
-'//最後の列を取得
-    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrEndAdrs, Chr(67))
-    If myXlonStrCnt = 2 Then
-        myXstrEndCol = myZstrSpltData(L + 1)
-        If IsNumeric(myXstrEndCol) = True Then myXlonEndCol = CLng(myXstrEndCol)
-    End If
-    Erase myZstrSndwchd: Erase myZstrSpltData
-End Sub
-
- '定型Ｐ_セル範囲アドレスからパス[ブック]シート!セル範囲情報を分離する
-Private Sub PincGetPathBookSheetFromRangeAddress( _
-            myXstrRngAdrs As String, myXstrOrgPath As String, myXstrShtName As String, _
-            myXstrBookName As String, myXstrDirPath As String, _
-            ByVal myXstrOrgAdrs As String)
-'Includes PfixSplitString
-'Includes PfixExtractSandwichedString
-'Includes PfixExtractSandwichedStringByCharacters
-'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
-'Chr(44) : カンマ(,)
-'Chr(33) : エクスクラメーション(!)
-'Chr(39) : シングルクォーテーション(')
-'Chr(91) : 始め大括弧([)
-'Chr(93) : 終わり大括弧(])
-    myXstrRngAdrs = Empty: myXstrOrgPath = Empty: myXstrShtName = Empty
-    myXstrBookName = Empty: myXstrDirPath = Empty
-    If myXstrOrgAdrs = "" Then Exit Sub
-  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
-  Dim myXlonStrCnt As Long, myZstrSndwchd() As String, myZstrSpltData() As String
-  Dim myXstrPath As String
-'//範囲が分割されている場合には最初の範囲を取得
-    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrOrgAdrs, Chr(44))
-    If myXlonStrCnt >= 1 Then
-        myXstrOrgAdrs = myZstrSpltData(L)
-    Else
-        Exit Sub
-    End If
-'//パス[ブック]シート部分とセル範囲部分を分離
-    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrOrgAdrs, Chr(33))
-    If myXlonStrCnt = 2 Then
-        myXstrOrgPath = myZstrSpltData(L + 0)
-        myXstrRngAdrs = myZstrSpltData(L + 1)
-    Else
-        Exit Sub
-    End If
-'//パス[ブック]シート部分を取得
-    Call PfixExtractSandwichedString(myXlonStrCnt, myZstrSndwchd, myXstrOrgPath, Chr(39))
-    If myXlonStrCnt = 1 Then
-        myXstrPath = myZstrSndwchd(L)
-    End If
-'//シート部分を取得
-    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrPath, Chr(93))
-    If myXlonStrCnt = 1 Then
-        myXstrShtName = myZstrSpltData(L + 0)
-    ElseIf myXlonStrCnt = 2 Then
-        myXstrShtName = myZstrSpltData(L + 1)
-    End If
-'//ブック部分を取得
-    Call PfixExtractSandwichedStringByCharacters( _
-            myXlonStrCnt, myZstrSndwchd, _
-            myXstrPath, Chr(91), Chr(93))
-    If myXlonStrCnt = 1 Then myXstrBookName = myZstrSndwchd(L)
-'//パス部分を取得
-    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrPath, Chr(91))
-    If myXlonStrCnt = 2 Then
-        myXstrDirPath = myZstrSpltData(L)
-        myXstrDirPath = Left(myXstrDirPath, Len(myXstrDirPath) - 1)
-    End If
-    Erase myZstrSndwchd: Erase myZstrSpltData
-End Sub
-
- '定型Ｆ_セル範囲アドレスのパス[ブック]シート情報を指定シート名に置換する
-Private Function incPfncstrReplacePathBookSheetInRangeAddress( _
-            ByVal myXstrOrgAdrs As String, ByVal myXstrShtName As String) As String
-'Includes PfixSplitString
-'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
-'Chr(44) : カンマ(,)
-'Chr(33) : エクスクラメーション(!)
-    incPfncstrReplacePathBookSheetInRangeAddress = Empty
-    If myXstrOrgAdrs = "" Then Exit Function
-    If myXstrShtName = "" Then Exit Function
-  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
-  Dim myXlonStrCnt As Long, myZstrSpltData() As String
-  Dim myXstrOrgPath As String, myXstrNewAdrs As String
-'//範囲が分割されている場合には最初の範囲を取得
-    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrOrgAdrs, Chr(44))
-    If myXlonStrCnt >= 1 Then
-        myXstrOrgAdrs = myZstrSpltData(L)
-    Else
-        Exit Function
-    End If
-'//パス[ブック]シート部分とセル範囲部分を分離
-    Call PfixSplitString(myXlonStrCnt, myZstrSpltData, myXstrOrgAdrs, Chr(33))
-    If myXlonStrCnt = 2 Then
-        myXstrOrgPath = myZstrSpltData(L + 0)
-    Else
-        Exit Function
-    End If
-'//パス[ブック]シート部分を置換
-    myXstrNewAdrs = Replace(myXstrOrgAdrs, myXstrOrgPath, myXstrShtName)
-    incPfncstrReplacePathBookSheetInRangeAddress = myXstrNewAdrs
-    Erase myZstrSpltData
-End Function
 
  '定型Ｐ_グラフの凡例を設定する
 Private Sub PfixSetChartLegend(myXbisExitFlag As Boolean, _
@@ -1680,9 +1665,8 @@ Private Sub PincSetChartTitle( _
 'coXbisTtlVsbl = True  : タイトル表示
 'coXbisTtlVsbl = False : タイトル非表示
 'myXstrChrtTtlTxt = "X" : 文字列を設定
-'Chr(61) : イコール記号(=)
     myXbisExitFlag = False
-    If Left(myXstrChrtTtlTxt, 1) = Chr(61) Then
+    If Left(myXstrChrtTtlTxt, 1) = "=" Then
         Call PfixSetChartTitleVisibleFormula(myXbisExitFlag, _
                 myXobjChrt, myXstrChrtTtlTxt, coXbisTtlSet, coXbisTtlVsbl)
     Else
@@ -1706,13 +1690,12 @@ Private Sub PincSetChartPrimaryCategoryAxisTitle( _
 'coXbisTtlVsbl = True  : タイトル表示
 'coXbisTtlVsbl = False : タイトル非表示
 'myXstrAxsTtl = "X" : 文字列を設定
-'Chr(61) : イコール記号(=)
     myXbisExitFlag = False
   Dim myXobjChrtAxsX1 As Object
     On Error GoTo ExitPath
     Set myXobjChrtAxsX1 = myXobjChrt.Axes(xlCategory, xlPrimary)
     On Error GoTo 0
-    If Left(myXstrAxsTtlX1, 1) = Chr(61) Then
+    If Left(myXstrAxsTtlX1, 1) = "=" Then
         Call PfixSetChartAxisTitleVisibleFormula(myXbisExitFlag, _
                 myXobjChrtAxsX1, myXstrAxsTtlX1, coXbisTtlSetX1, coXbisTtlVsblX1)
     Else
@@ -1737,13 +1720,12 @@ Private Sub PincSetChartPrimaryValueAxisTitle( _
 'coXbisTtlVsbl = True  : タイトル表示
 'coXbisTtlVsbl = False : タイトル非表示
 'myXstrAxsTtl = "X" : 文字列を設定
-'Chr(61) : イコール記号(=)
     myXbisExitFlag = False
   Dim myXobjChrtAxsY1 As Object
     On Error GoTo ExitPath
     Set myXobjChrtAxsY1 = myXobjChrt.Axes(xlValue, xlPrimary)
     On Error GoTo 0
-    If Left(myXstrAxsTtlY1, 1) = Chr(61) Then
+    If Left(myXstrAxsTtlY1, 1) = "=" Then
         Call PfixSetChartAxisTitleVisibleFormula(myXbisExitFlag, _
                 myXobjChrtAxsY1, myXstrAxsTtlY1, coXbisTtlSetY1, coXbisTtlVsblY1)
     Else
@@ -1769,7 +1751,6 @@ Private Sub PincSetChartSecondaryValueAxisTitle( _
 'coXbisTtlVsbl = True  : タイトル表示
 'coXbisTtlVsbl = False : タイトル非表示
 'myXstrAxsTtl = "X" : 文字列を設定
-'Chr(61) : イコール記号(=)
     myXbisExitFlag = False
   Dim myXlonAxsGrp1Cnt As Long, myXlonAxsGrp2Cnt As Long
     Call PfnclonCountSeriesCollectionSetAxisGroup(myXlonAxsGrp1Cnt, myXlonAxsGrp2Cnt, myXobjChrt)
@@ -1778,7 +1759,7 @@ Private Sub PincSetChartSecondaryValueAxisTitle( _
     On Error GoTo ExitPath
     Set myXobjChrtAxsY2 = myXobjChrt.Axes(xlValue, xlSecondary)
     On Error GoTo 0
-    If Left(myXstrAxsTtlY2, 1) = Chr(61) Then
+    If Left(myXstrAxsTtlY2, 1) = "=" Then
         Call PfixSetChartAxisTitleVisibleFormula(myXbisExitFlag, _
                 myXobjChrtAxsY2, myXstrAxsTtlY2, coXbisTtlSetY2, coXbisTtlVsblY2)
     Else
