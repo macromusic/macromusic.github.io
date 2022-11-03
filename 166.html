@@ -1,1 +1,341 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>macro sample</div>
+      <pre>
+'Includes PfixGetRangePlaceSize
+'Includes PfixSetChartAreaPlace
+'Includes PfixSetChartAreaSize
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_グラフのチャートエリアの外形サイズを設定する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CChrtPlaceSizeChrtArea"
+  
+'//モジュール内定数
+  Private Const coXdouOfst As Double = 2
+  
+'//PropertyGet_出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//PropertySetLet_入力制御信号
+  Private myXbisSetByShtRng As Boolean
+  
+'//PropertySetLet_入力データ
+  Private myXobjSheet As Object, myXobjChrtObjct As Object
+  
+  Private myXlonTopRow As Long, myXlonBttmRow As Long, _
+            myXlonLftCol As Long, myXlonRghtCol As Long
+    
+  Private myXdouTopPoint As Double, myXdouLftPoint As Double, _
+            myXdouHghtPoint As Double, myXdouWdthPoint As Double
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXdouTopOfst As Double, myXdouLftOfst As Double, _
+            myXdouBttmOfst As Double, myXdouRghtOfst As Double
+
+  Private myXdouRngTop As Double, myXdouRngLft As Double, _
+            myXdouRngHght As Double, myXdouRngWdth As Double
+  Private myXdouChrtAreaTop As Double, myXdouChrtAreaLft As Double, _
+            myXdouChrtAreaHght As Double, myXdouChrtAreaWdth As Double
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXdouTopOfst = Empty: myXdouLftOfst = Empty
+    myXdouBttmOfst = Empty: myXdouRghtOfst = Empty
+
+    myXdouRngTop = Empty: myXdouRngLft = Empty
+    myXdouRngHght = Empty: myXdouRngWdth = Empty
+    myXdouChrtAreaTop = Empty: myXdouChrtAreaLft = Empty
+    myXdouChrtAreaHght = Empty: myXdouChrtAreaWdth = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getCmpltFlag() As Boolean
+    getCmpltFlag = myXbisCmpltFlag
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letSetByShtRng(ByVal RHS As Boolean)
+    myXbisSetByShtRng = RHS
+End Property
+
+Public Property Set setSheet(ByVal RHS As Object)
+    Set myXobjSheet = RHS
+End Property
+
+Public Property Set setChrtObjct(ByVal RHS As Object)
+    Set myXobjChrtObjct = RHS
+End Property
+
+Public Property Let letTopBttmLftRghtShtRng(ByVal k As Long, ByVal RHS As Long)
+    Select Case k
+        Case 1: myXlonTopRow = RHS
+        Case 2: myXlonBttmRow = RHS
+        Case 3: myXlonLftCol = RHS
+        Case 4: myXlonRghtCol = RHS
+    End Select
+End Property
+
+Public Property Let letTopLftHghtWdthPoint(ByVal k As Long, ByVal RHS As Double)
+    Select Case k
+        Case 1: myXdouTopPoint = RHS
+        Case 2: myXdouLftPoint = RHS
+        Case 3: myXdouHghtPoint = RHS
+        Case 4: myXdouWdthPoint = RHS
+    End Select
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXobjChrtObjct Is Nothing Then GoTo ExitPath
+    If myXobjSheet Is Nothing Then Set myXobjSheet = myXobjChrtObjct.Parent
+    
+    If myXbisSetByShtRng = True Then
+        If myXlonTopRow <= 0 Or myXlonBttmRow <= 0 Or _
+            myXlonLftCol <= 0 Or myXlonRghtCol <= 0 Then GoTo ExitPath
+    Else
+        If myXdouTopPoint < 0 Or myXdouLftPoint < 0 Or _
+            myXdouHghtPoint <= 0 Or myXdouWdthPoint <= 0 Then GoTo ExitPath
+    End If
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicF_
+Public Function fncbisCmpltFlag() As Boolean
+    fncbisCmpltFlag = Empty
+    Call ctrProc
+    fncbisCmpltFlag = myXbisCmpltFlag
+End Function
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+    If myXbisSetByShtRng = True Then
+    '//Run:チャートエリアの位置とサイズをエクセルシートの行列位置で設定
+        Call runProc1
+        If myXbisExitFlag = True Then GoTo ExitPath
+    '    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+    Else
+    '//Run:チャートエリアの位置とサイズを設定
+        Call runProc2
+        If myXbisExitFlag = True Then GoTo ExitPath
+    '    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+    End If
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'RunP_チャートエリアの位置とサイズをエクセルシートの行列位置で設定
+Private Sub runProc1()
+    myXbisExitFlag = False
+    
+'//エクセルシートの指定セル範囲の位置情報とサイズ情報を取得
+    Call PfixGetRangePlaceSize( _
+            myXdouRngTop, myXdouRngLft, myXdouRngHght, myXdouRngWdth, _
+            myXobjSheet, myXlonTopRow, myXlonLftCol, myXlonBttmRow, myXlonRghtCol)
+    If myXdouRngTop < 0 Or myXdouRngLft < 0 Or _
+        myXdouRngHght <= 0 Or myXdouRngWdth <= 0 Then GoTo ExitPath
+
+'//グラフオブジェクトのチャートエリアの位置を設定
+    myXdouTopOfst = coXdouOfst
+    myXdouLftOfst = coXdouOfst
+    myXdouChrtAreaTop = myXdouRngTop + myXdouTopOfst
+    myXdouChrtAreaLft = myXdouRngLft + myXdouLftOfst
+    Call PfixSetChartAreaPlace(myXbisExitFlag, _
+            myXobjChrtObjct, myXdouChrtAreaTop, myXdouChrtAreaLft)
+    If myXbisExitFlag = True Then GoTo ExitPath
+
+'//グラフオブジェクトのチャートエリアのサイズを設定
+    myXdouBttmOfst = (-1) * myXdouTopOfst
+    myXdouRghtOfst = (-1) * myXdouLftOfst
+    myXdouChrtAreaHght = myXdouRngHght - myXdouTopOfst + myXdouBttmOfst
+    myXdouChrtAreaWdth = myXdouRngWdth - myXdouLftOfst + myXdouRghtOfst
+    Call PfixSetChartAreaSize(myXbisExitFlag, _
+            myXobjChrtObjct, myXdouChrtAreaHght, myXdouChrtAreaWdth)
+    If myXbisExitFlag = True Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_チャートエリアの位置とサイズを設定
+Private Sub runProc2()
+    myXbisExitFlag = False
+
+'//グラフオブジェクトのチャートエリアの位置を設定
+    Call PfixSetChartAreaPlace(myXbisExitFlag, _
+            myXobjChrtObjct, myXdouTopPoint, myXdouLftPoint)
+    If myXbisExitFlag = True Then GoTo ExitPath
+
+'//グラフオブジェクトのチャートエリアのサイズを設定
+    Call PfixSetChartAreaSize(myXbisExitFlag, _
+            myXobjChrtObjct, myXdouHghtPoint, myXdouWdthPoint)
+    If myXbisExitFlag = True Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_エクセルシートの指定セル範囲の位置情報とサイズ情報を取得する
+Private Sub PfixGetRangePlaceSize( _
+            myXdouRngTop As Double, myXdouRngLft As Double, _
+            myXdouRngHght As Double, myXdouRngWdth As Double, _
+            ByVal myXobjSheet As Object, _
+            ByVal myXlonTopRow As Long, ByVal myXlonLftCol As Long, _
+            ByVal myXlonBttmRow As Long, ByVal myXlonRghtCol As Long)
+    myXdouRngTop = Empty: myXdouRngLft = Empty
+    myXdouRngHght = Empty: myXdouRngWdth = Empty
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+    If myXlonBttmRow <= 0 Then myXlonBttmRow = myXlonTopRow
+    If myXlonRghtCol <= 0 Then myXlonRghtCol = myXlonLftCol
+  Dim myXobjStrtRng As Object, myXobjLastRng As Object, myXobjRng As Object
+    On Error GoTo ExitPath
+    Set myXobjStrtRng = myXobjSheet.Cells(myXlonTopRow, myXlonLftCol)
+    Set myXobjLastRng = myXobjSheet.Cells(myXlonBttmRow, myXlonRghtCol)
+    On Error GoTo 0
+    Set myXobjRng = myXobjSheet.Range(myXobjStrtRng, myXobjLastRng)
+    myXdouRngTop = myXobjRng.Top
+    myXdouRngLft = myXobjRng.Left
+    myXdouRngHght = myXobjRng.Height
+    myXdouRngWdth = myXobjRng.Width
+    Set myXobjStrtRng = Nothing: Set myXobjLastRng = Nothing: Set myXobjRng = Nothing
+ExitPath:
+End Sub
+
+ '定型Ｐ_グラフオブジェクトのチャートエリアの位置を設定する
+Private Sub PfixSetChartAreaPlace( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouChrtAreaTop As Double, ByVal myXdouChrtAreaLft As Double)
+'myXdouChrtAreaTop : x [point]
+'myXdouChrtAreaLft : x [point]
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+  Dim myXdouTmpTop As Double: myXdouTmpTop = myXobjChrtObjct.Chart.ChartArea.Top
+    On Error GoTo 0
+    If myXdouChrtAreaTop < 0 Or myXdouChrtAreaLft < 0 Then GoTo ExitPath
+    With myXobjChrtObjct.Chart.ChartArea
+        .Top = myXdouChrtAreaTop
+        .Left = myXdouChrtAreaLft
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフオブジェクトのチャートエリアのサイズを設定する
+Private Sub PfixSetChartAreaSize( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtObjct As Object, _
+            ByVal myXdouChrtAreaHght As Double, ByVal myXdouChrtAreaWdth As Double)
+'myXdouChrtAreaHght : x [point]
+'myXdouChrtAreaWdth : x [point]
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+  Dim myXdouTmpHght As Double: myXdouTmpHght = myXobjChrtObjct.Chart.ChartArea.Height
+    On Error GoTo 0
+    If myXdouChrtAreaHght < 0 Or myXdouChrtAreaWdth < 0 Then GoTo ExitPath
+    With myXobjChrtObjct.Chart.ChartArea
+        .Height = myXdouChrtAreaHght
+        .Width = myXdouChrtAreaWdth
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_グラフのチャートエリアの外形サイズを設定する
+'Private Sub instCChrtPlaceSizeChrtArea()
+'  Dim myXbisCmpltFlag As Boolean
+''//クラス内変数への入力
+'  Dim myXbisSetByShtRng As Boolean
+'    myXbisSetByShtRng = True
+'  Dim myXobjSheet As Object, myXobjChrtObjct As Object
+'    Set myXobjSheet = ActiveSheet
+'    Set myXobjChrtObjct = myXobjSheet.ChartObjects(1)
+'  Dim myXlonTopRow As Long, myXlonBttmRow As Long, _
+'        myXlonLftCol As Long, myXlonRghtCol As Long
+'    myXlonTopRow = 2
+'    myXlonBttmRow = 20
+'    myXlonLftCol = 2
+'    myXlonRghtCol = 5
+'  Dim myXdouTopPoint As Double, myXdouLftPoint As Double, _
+'        myXdouHghtPoint As Double, myXdouWdthPoint As Double
+'    myXdouTopPoint = 10
+'    myXdouLftPoint = 10
+'    myXdouHghtPoint = 500
+'    myXdouWdthPoint = 500
+''//CChrtPlaceSizeChrtAreaクラスモジュールのインスタンス生成
+'  Dim myXinsChrtPlaceSizeChrtArea As CChrtPlaceSizeChrtArea
+'    Set myXinsChrtPlaceSizeChrtArea = New CChrtPlaceSizeChrtArea
+'    With myXinsChrtPlaceSizeChrtArea
+'    '//クラス内変数への入力
+'        .letSetByShtRng = myXbisSetByShtRng
+'        Set .setSheet = myXobjSheet
+'        Set .setChrtObjct = myXobjChrtObjct
+'        .letTopBttmLftRghtShtRng(1) = myXlonTopRow
+'        .letTopBttmLftRghtShtRng(2) = myXlonBttmRow
+'        .letTopBttmLftRghtShtRng(3) = myXlonLftCol
+'        .letTopBttmLftRghtShtRng(4) = myXlonRghtCol
+'        .letTopLftHghtWdthPoint(1) = myXdouTopPoint
+'        .letTopLftHghtWdthPoint(2) = myXdouLftPoint
+'        .letTopLftHghtWdthPoint(3) = myXdouHghtPoint
+'        .letTopLftHghtWdthPoint(4) = myXdouWdthPoint
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        myXbisCmpltFlag = .fncbisCmpltFlag
+'    End With
+'    Set myXinsChrtPlaceSizeChrtArea = Nothing
+'ExitPath:
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
