@@ -1,1 +1,220 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>macro sample</div>
+      <pre>
+'Includes PincSetChartTitle
+'Includes PfixSetChartTitleVisibleText
+'Includes PfixSetChartTitleVisibleFormula
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_グラフのタイトルを設定する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CChrtTtl"
+  
+'//PropertyGet_出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//PropertySetLet_入力データ
+  Private myXobjChrt As Object
+  
+  Private myXbisChrtTtlSet As Boolean, myXbisChrtTtlVsbl As Boolean, _
+            myXstrChrtTtl As String
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getCmpltFlag() As Boolean
+    getCmpltFlag = myXbisCmpltFlag
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Set setChrt(ByVal RHS As Object)
+    Set myXobjChrt = RHS
+End Property
+
+Public Property Let letChrtTtl(ByVal k As Long, ByVal RHS As Variant)
+    Select Case k
+        Case 1: myXbisChrtTtlSet = CBool(RHS)
+        Case 2: myXbisChrtTtlVsbl = CBool(RHS)
+        Case 3: myXstrChrtTtl = CStr(RHS)
+    End Select
+'myXbisTtlSet = False : 設定処理しない
+'myXbisTtlVsbl = True  : タイトル表示
+'myXbisTtlVsbl = False : タイトル非表示
+'myXstrTtl = "X" : 文字列を設定
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXobjChrt Is Nothing Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicF_
+Public Function fncbisCmpltFlag() As Boolean
+    fncbisCmpltFlag = Empty
+    Call ctrProc
+    fncbisCmpltFlag = myXbisCmpltFlag
+End Function
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//グラフのタイトルを設定
+    Call incPfixSetChartTitle(myXbisExitFlag, _
+            myXobjChrt, myXstrChrtTtl, myXbisChrtTtlSet, myXbisChrtTtlVsbl)
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_グラフのタイトルを設定する
+Private Sub PincSetChartTitle( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrChrtTtlTxt As String, _
+            Optional ByVal coXbisTtlSet As Boolean = True, _
+            Optional ByVal coXbisTtlVsbl As Boolean = True)
+'Includes PfixSetChartTitleVisibleFormula
+'Includes PfixSetChartTitleVisibleText
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrChrtTtlTxt = "X" : 文字列を設定
+    myXbisExitFlag = False
+    If Left(myXstrChrtTtlTxt, 1) = "=" Then
+        Call PfixSetChartTitleVisibleFormula(myXbisExitFlag, _
+                myXobjChrt, myXstrChrtTtlTxt, coXbisTtlSet, coXbisTtlVsbl)
+    Else
+        Call PfixSetChartTitleVisibleText(myXbisExitFlag, _
+                myXobjChrt, myXstrChrtTtlTxt, coXbisTtlSet, coXbisTtlVsbl)
+    End If
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのタイトルの文字列を設定する
+Private Sub PfixSetChartTitleVisibleText( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrChrtTtl As String, _
+            Optional ByVal coXbisTtlSet As Boolean = True, _
+            Optional ByVal coXbisTtlVsbl As Boolean = True)
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrChrtTtlTxt = "X" : 文字列を設定
+    myXbisExitFlag = False
+    If coXbisTtlSet = False Then Exit Sub
+    On Error GoTo ExitPath
+    myXobjChrt.HasTitle = coXbisTtlVsbl
+    On Error GoTo 0
+    If coXbisTtlVsbl = False Then Exit Sub
+    myXobjChrt.ChartTitle.Text = myXstrChrtTtl
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのタイトルの参照式を設定する
+Private Sub PfixSetChartTitleVisibleFormula( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrChrtTtl As String, _
+            Optional ByVal coXbisTtlSet As Boolean = True, _
+            Optional ByVal coXbisTtlVsbl As Boolean = True)
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrChrtTtlTxt = "X" : 文字列を設定
+    myXbisExitFlag = False
+    If coXbisTtlSet = False Then Exit Sub
+    On Error GoTo ExitPath
+    myXobjChrt.HasTitle = coXbisTtlVsbl
+    On Error GoTo 0
+    If coXbisTtlVsbl = False Then Exit Sub
+    If Application.ReferenceStyle = xlA1 Then
+        myXobjChrt.ChartTitle.Formula = myXstrChrtTtl
+    Else
+        myXobjChrt.ChartTitle.FormulaR1C1 = myXstrChrtTtl
+    End If
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_グラフのタイトルを設定する
+'Private Sub instCChrtTtl()
+'  Dim myXbisCmpltFlag As Boolean
+''//クラス内変数への入力
+'  Dim myXobjChrt As Object
+'  Dim myXbisChrtTtlSet As Boolean, myXbisChrtTtlVsbl As Boolean, _
+'        myXstrChrtTtl As String
+'    'myXbisTtlSet = False : 設定処理しない
+'    'myXbisTtlVsbl = True  : タイトル表示
+'    'myXbisTtlVsbl = False : タイトル非表示
+'    'myXstrTtl = "X" : 文字列を設定
+''//グラフのタイトルを設定
+'    myXbisChrtTtlSet = True
+'    myXbisChrtTtlVsbl = True
+'    myXstrChrtTtl = "=Sheet1!R2C2"
+''//CChrtTtlクラスモジュールのインスタンス生成
+'  Dim myXinsChrtTtl As CChrtTtl: Set myXinsChrtTtl = New CChrtTtl
+'    With myXinsChrtTtl
+'    '//クラス内変数への入力
+'        Set .setChrt = myXobjChrt
+'        .letChrtTtl(1) = myXbisChrtTtlSet
+'        .letChrtTtl(2) = myXbisChrtTtlVsbl
+'        .letChrtTtl(3) = myXstrChrtTtl
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        myXbisCmpltFlag = .fncbisCmpltFlag
+'    End With
+'    Set myXinsChrtTtl = Nothing
+'ExitPath:
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
