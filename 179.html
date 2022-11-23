@@ -15,14 +15,14 @@
 'Includes PincSetChartTitleCenter
 'Includes PfixSetChartStandardAxisTitle
 'Includes PincSetChartAxisTitleCenter
-'Includes PfncdouSetChartTargetTitleCenter
+'Includes PfixSetChartTargetTitleCenter
 'Includes PfixSetChartStandardAxesScale
 
 Option Explicit
 Option Base 1
 
 '◆ClassProc名_グラフを標準グラフに設定する
-'Rev.001
+'Rev.002
   
 '//モジュールメモリ
   Private Const meMstrMdlName As String = "CStndrdChrt"
@@ -62,7 +62,7 @@ End Sub
 Public Property Let letMsgBoxON(ByVal RHS As Boolean)
     myXbisMsgBoxON = RHS
 'myXbisMsgBxON = False : 標準設定実行有無のMsgBoxを表示しない
-'myXbisMsgBxON = True  : 標準設定実行有無のMsgBoxを表示しする
+'myXbisMsgBxON = True  : 標準設定実行有無のMsgBoxを表示する
 End Property
 
 Public Property Let letMnrGrdLnsShw(ByVal k As Long, ByVal RHS As Boolean)
@@ -122,32 +122,32 @@ Private Sub ctrProc()
         If myXlonMsgBox = vbCancel Then Exit Sub
     End If
 
-'//定型Ｐ_グラフを標準フォーマットに調整する
+'//グラフを標準フォーマットに調整
     Call PfixSetStandardChartFormat(myXbisExitFlag, _
             myXobjChrt, myXbisXMnrGrdLnsShw, myXbisYMnrGrdLnsShw)
     If myXbisExitFlag = True Then GoTo ExitPath
 
-'//定型Ｐ_グラフの凡例を標準フォーマットで設定する
+'//グラフの凡例を標準フォーマットで設定
     Call PfixSetChartStandardLegend(myXbisExitFlag, myXobjChrt)
     If myXbisExitFlag = True Then GoTo ExitPath
 
-'//定型Ｐ_グラフのタイトルを標準フォーマットで設定する
-    Call PfixSetChartStandardTitle(myXbisExitFlag, myXobjChrt)
-    If myXbisExitFlag = True Then GoTo ExitPath
+''//グラフのタイトルを標準フォーマットで設定
+'    Call PfixSetChartStandardTitle(myXbisExitFlag, myXobjChrt)
+'    If myXbisExitFlag = True Then GoTo ExitPath
+    
+''//グラフのタイトルの位置をグラフの中心に設定
+'    Call PincSetChartTitleCenter(myXbisExitFlag, myXobjChrt, myXbisTtlPltAreaCntr)
+'    If myXbisExitFlag = True Then GoTo ExitPath
 
-'//定型Ｐ_グラフのタイトルの位置をグラフの中心に設定する
-    Call PincSetChartTitleCenter(myXbisExitFlag, myXobjChrt, myXbisTtlPltAreaCntr)
-    If myXbisExitFlag = True Then GoTo ExitPath
-
-'//定型Ｐ_グラフのX/Y軸のタイトルを標準フォーマットで設定する
+'//グラフのX/Y軸のタイトルを標準フォーマットで設定
     Call PfixSetChartStandardAxisTitle(myXbisExitFlag, myXobjChrt)
     If myXbisExitFlag = True Then GoTo ExitPath
 
-'//定型Ｐ_グラフのX/Y軸のタイトルの位置をグラフの中心に設定する
+'//グラフのX/Y軸のタイトルの位置をグラフの中心に設定
     Call PincSetChartAxisTitleCenter(myXbisExitFlag, myXobjChrt, myXbisAxsTtlPltAreaCntr)
     If myXbisExitFlag = True Then GoTo ExitPath
 
-'//定型Ｐ_グラフの数値軸を標準フォーマットで設定する
+'//グラフの数値軸を標準フォーマットで設定
     Call PfixSetChartStandardAxesScale(myXbisExitFlag, myXobjChrt)
     If myXbisExitFlag = True Then GoTo ExitPath
     
@@ -166,55 +166,55 @@ Private Sub PfixSetStandardChartFormat(myXbisExitFlag As Boolean, _
 'myXbisMnrGrdLnsShw = True  : 補助目盛線を表示する
 'myXbisMnrGrdLnsShw = False : 補助目盛線を表示しない
     myXbisExitFlag = False
-    On Error GoTo ExitPath
-  Dim myXstrTmp As String: myXstrTmp = myXobjChrt.Name
-    On Error GoTo 0
-  Dim myXobjTrgt As Object
+    If myXobjChrt Is Nothing Then GoTo ExitPath
+  Dim myXobjPltArea As Object
+  Dim myXobjAxsX1 As Object, myXobjAxsY1 As Object, myXobjAxsY2 As Object
     On Error Resume Next
+    myXobjChrt.HasLegend = False
+    myXobjChrt.HasTitle = False
+    myXobjChrt.Axes(xlCategory, xlPrimary).HasTitle = False
+    myXobjChrt.Axes(xlValue, xlPrimary).HasTitle = False
+    myXobjChrt.Axes(xlValue, xlSecondary).HasTitle = False
 '//プロットエリアの枠線を設定
-    Set myXobjTrgt = Nothing
-    Set myXobjTrgt = myXobjChrt.PlotArea
-    If Not myXobjTrgt Is Nothing Then _
-        Call PsubSetStandardChartFormatForPlotArea(myXobjTrgt)
+    Set myXobjPltArea = myXobjChrt.PlotArea
+    Call PsubSetStandardChartFormatForPlotArea(myXobjPltArea)
 '//X軸主軸の枠線を設定
-    Set myXobjTrgt = Nothing
-    Set myXobjTrgt = myXobjChrt.Axes(xlCategory, xlPrimary)
-    If Not myXobjTrgt Is Nothing Then _
-        Call PsubSetStandardChartFormatForAxes(myXobjTrgt)
+    Set myXobjAxsX1 = myXobjChrt.Axes(xlCategory, xlPrimary)
+    Call PsubSetStandardChartFormatForAxes(myXobjAxsX1)
+'//X軸の目盛線を設定
+    Call PsubSetStandardChartFormatForAxesGridlines(myXobjAxsX1)
 '//Y軸主軸の枠線を設定
-    Set myXobjTrgt = Nothing
-    Set myXobjTrgt = myXobjChrt.Axes(xlValue, xlPrimary)
-    If Not myXobjTrgt Is Nothing Then _
-        Call PsubSetStandardChartFormatForAxes(myXobjTrgt)
+    Set myXobjAxsY1 = myXobjChrt.Axes(xlValue, xlPrimary)
+    Call PsubSetStandardChartFormatForAxes(myXobjAxsY1)
+'//Y軸の目盛線を設定
+    Call PsubSetStandardChartFormatForAxesGridlines(myXobjAxsY1)
 '//Y軸第2軸の枠線を設定
-    Set myXobjTrgt = Nothing
-    Set myXobjTrgt = myXobjChrt.Axes(xlValue, xlSecondary)
-    If Not myXobjTrgt Is Nothing Then _
-        Call PsubSetStandardChartFormatForAxes(myXobjTrgt)
-    On Error GoTo 0
+    Set myXobjAxsY2 = myXobjChrt.Axes(xlValue, xlSecondary)
+    Call PsubSetStandardChartFormatForAxes(myXobjAxsY2)
 '//X/Y軸のメモリ線を表示
-    With myXobjChrt
-    '//X軸主軸
-        If coXbisXMnrGrdLnsShw = False Then
-            Call .SetElement(msoElementPrimaryCategoryGridLinesMajor)
-        Else
-            Call .SetElement(msoElementPrimaryCategoryGridLinesMajor)
-            Call .SetElement(msoElementPrimaryCategoryGridLinesMinorMajor)
-        End If
-    '//Y軸主軸
-        If coXbisYMnrGrdLnsShw = False Then
-            Call .SetElement(msoElementPrimaryValueGridLinesMajor)
-        Else
-            Call .SetElement(msoElementPrimaryValueGridLinesMajor)
-            Call .SetElement(msoElementPrimaryValueGridLinesMinorMajor)
-        End If
-    End With
-    Set myXobjTrgt = Nothing
+'//X軸主軸
+    If coXbisXMnrGrdLnsShw = False Then
+        Call myXobjChrt.SetElement(msoElementPrimaryCategoryGridLinesMajor)
+    Else
+        Call myXobjChrt.SetElement(msoElementPrimaryCategoryGridLinesMajor)
+        Call myXobjChrt.SetElement(msoElementPrimaryCategoryGridLinesMinorMajor)
+    End If
+'//Y軸主軸
+    If coXbisYMnrGrdLnsShw = False Then
+        Call myXobjChrt.SetElement(msoElementPrimaryValueGridLinesMajor)
+    Else
+        Call myXobjChrt.SetElement(msoElementPrimaryValueGridLinesMajor)
+        Call myXobjChrt.SetElement(msoElementPrimaryValueGridLinesMinorMajor)
+    End If
+    On Error GoTo 0
+    Set myXobjPltArea = Nothing
+    Set myXobjAxsX1 = Nothing: Set myXobjAxsY1 = Nothing: Set myXobjAxsY2 = Nothing
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
 End Sub
 Private Sub PsubSetStandardChartFormatForPlotArea(ByVal myXobjTrgt As Object)
+    If myXobjTrgt Is Nothing Then Exit Sub
     With myXobjTrgt
     '//枠線
         .Format.Line.Visible = True
@@ -222,17 +222,33 @@ Private Sub PsubSetStandardChartFormatForPlotArea(ByVal myXobjTrgt As Object)
     End With
 End Sub
 Private Sub PsubSetStandardChartFormatForAxes(ByVal myXobjTrgt As Object)
+    If myXobjTrgt Is Nothing Then Exit Sub
     With myXobjTrgt
     '//枠線
         .Format.Line.Visible = True
         .Format.Line.ForeColor.ObjectThemeColor = msoThemeColorText1
     '//目盛
         .MajorTickMark = xlInside
-    If myXobjTrgt.AxisGroup = xlPrimary Then
-        .TickLabelPosition = xlLow
-    ElseIf myXobjTrgt.AxisGroup = xlSecondary Then
-        .TickLabelPosition = xlHigh
-    End If
+        If myXobjTrgt.AxisGroup = xlPrimary Then
+            .TickLabelPosition = xlLow
+        ElseIf myXobjTrgt.AxisGroup = xlSecondary Then
+            .TickLabelPosition = xlHigh
+        End If
+    End With
+End Sub
+Private Sub PsubSetStandardChartFormatForAxesGridlines(ByVal myXobjTrgt As Object)
+    If myXobjTrgt Is Nothing Then Exit Sub
+    With myXobjTrgt.MajorGridlines.Format.Line
+    '//目盛線
+        .Visible = msoTrue
+        .ForeColor.ObjectThemeColor = msoThemeColorBackground1
+        .ForeColor.Brightness = -0.15
+    End With
+    With myXobjTrgt.MinorGridlines.Format.Line
+    '//補助目盛線
+        .Visible = msoTrue
+        .ForeColor.ObjectThemeColor = msoThemeColorBackground1
+        .ForeColor.Brightness = -0.15
     End With
 End Sub
 
@@ -240,9 +256,8 @@ End Sub
 Private Sub PfixSetChartStandardLegend(myXbisExitFlag As Boolean, _
             ByVal myXobjChrt As Object)
     myXbisExitFlag = False
-    On Error GoTo ExitPath
+    If myXobjChrt Is Nothing Then GoTo ExitPath
     If myXobjChrt.HasLegend = False Then myXobjChrt.HasLegend = True
-    On Error GoTo 0
     With myXobjChrt.Legend
     '//凡例の文字
         .Font.Name = "Meiryo UI"
@@ -268,9 +283,8 @@ End Sub
 Private Sub PfixSetChartStandardTitle(myXbisExitFlag As Boolean, _
             ByVal myXobjChrt As Object)
     myXbisExitFlag = False
-    On Error GoTo ExitPath
+    If myXobjChrt Is Nothing Then GoTo ExitPath
     If myXobjChrt.HasTitle = False Then myXobjChrt.HasTitle = True
-    On Error GoTo 0
     With myXobjChrt.ChartTitle
     '//タイトルの文字
         .Font.Name = "Meiryo UI"
@@ -283,10 +297,13 @@ Private Sub PfixSetChartStandardTitle(myXbisExitFlag As Boolean, _
         .Format.Fill.Visible = True
         .Format.Fill.Solid
         .Format.Fill.ForeColor.ObjectThemeColor = msoThemeColorBackground1
+    '//タイトルの下線
+        .Format.TextFrame2.TextRange.Font.UnderlineStyle = msoUnderlineSingleLine
     '//タイトルの枠線
-        .Format.Line.Visible = True
-        .Format.Line.ForeColor.ObjectThemeColor = msoThemeColorText1
-        .Format.Line.Weight = 0.75
+        .Format.Line.Visible = False
+'        .Format.Line.Visible = True
+'        .Format.Line.ForeColor.ObjectThemeColor = msoThemeColorText1
+'        .Format.Line.Weight = 0.75
     End With
     Exit Sub
 ExitPath:
@@ -297,66 +314,63 @@ End Sub
 Private Sub PincSetChartTitleCenter(myXbisExitFlag As Boolean, _
             ByVal myXobjChrt As Object, _
             Optional ByVal coXbisPltAreaCntr As Boolean = False)
-'Includes PfncdouSetChartTargetTitleCenter
+'Includes PfixSetChartTargetTitleCenter
 'coXbisPltAreaCntr = True  : チャートエリア中心
 'coXbisPltAreaCntr = False : プロットエリア中心
     myXbisExitFlag = False
-  Dim myXobjChrtTtl As Object
-    On Error GoTo ExitPath
+    If myXobjChrt Is Nothing Then GoTo ExitPath
     If myXobjChrt.HasTitle = False Then myXobjChrt.HasTitle = True
+  Dim myXobjChrtTtl As Object
     Set myXobjChrtTtl = myXobjChrt.ChartTitle
-    On Error GoTo 0
   Dim myXdouSetTtlTop As Double, myXdouSetTtlLft As Double
   Dim myXlonTtlPstn As Long: myXlonTtlPstn = 1
-    Call PfncdouSetChartTargetTitleCenter( _
+    Call PfixSetChartTargetTitleCenter( _
             myXdouSetTtlTop, myXdouSetTtlLft, _
             myXobjChrt, myXobjChrtTtl, myXlonTtlPstn, coXbisPltAreaCntr)
-    myXobjChrt.ChartTitle.Top = myXdouSetTtlTop
-    myXobjChrt.ChartTitle.Left = myXdouSetTtlLft
+    If myXdouSetTtlTop <> 0 Or myXdouSetTtlLft <> 0 Then
+        myXobjChrt.ChartTitle.Top = myXdouSetTtlTop
+        myXobjChrt.ChartTitle.Left = myXdouSetTtlLft
+    End If
     Set myXobjChrtTtl = Nothing
+    Exit Sub
 ExitPath:
+    myXbisExitFlag = True
 End Sub
 
  '定型Ｐ_グラフのX/Y軸のタイトルを標準フォーマットで設定する
 Private Sub PfixSetChartStandardAxisTitle(myXbisExitFlag As Boolean, _
             ByVal myXobjChrt As Object)
     myXbisExitFlag = False
+    If myXobjChrt Is Nothing Then GoTo ExitPath
   Dim myXobjChrtAxsX1 As Object, myXobjChrtAxsY1 As Object, myXobjChrtAxsY2 As Object
-  Dim myXobjAxsTtl As Object
+  Dim myXobjAxsTtlX1 As Object, myXobjAxsTtlY1 As Object, myXobjAxsTtlY2 As Object
     On Error Resume Next
-    Set myXobjChrtAxsX1 = myXobjChrt.Axes(xlCategory, xlPrimary)
-    Set myXobjChrtAxsY1 = myXobjChrt.Axes(xlValue, xlPrimary)
-    Set myXobjChrtAxsY2 = myXobjChrt.Axes(xlValue, xlSecondary)
-    On Error GoTo 0
 '//X軸主軸
-    Set myXobjAxsTtl = Nothing
-    If Not myXobjChrtAxsX1 Is Nothing Then
-        If myXobjChrtAxsX1.HasTitle = False Then myXobjChrtAxsX1.HasTitle = True
-        Set myXobjAxsTtl = myXobjChrtAxsX1.AxisTitle
-        Call PsubSetChartStandardAxisTitle(myXobjAxsTtl)
-    End If
+    Set myXobjChrtAxsX1 = myXobjChrt.Axes(xlCategory, xlPrimary)
+    If myXobjChrtAxsX1.HasTitle = False Then myXobjChrtAxsX1.HasTitle = True
+    Set myXobjAxsTtlX1 = myXobjChrtAxsX1.AxisTitle
+    Call PsubSetChartStandardAxisTitle(myXobjAxsTtlX1)
 '//Y軸主軸
-    Set myXobjAxsTtl = Nothing
-    If Not myXobjChrtAxsY1 Is Nothing Then
-        If myXobjChrtAxsY1.HasTitle = False Then myXobjChrtAxsY1.HasTitle = True
-        Set myXobjAxsTtl = myXobjChrtAxsY1.AxisTitle
-        Call PsubSetChartStandardAxisTitle(myXobjAxsTtl)
-    End If
+    Set myXobjChrtAxsY1 = myXobjChrt.Axes(xlValue, xlPrimary)
+    If myXobjChrtAxsY1.HasTitle = False Then myXobjChrtAxsY1.HasTitle = True
+    Set myXobjAxsTtlY1 = myXobjChrtAxsY1.AxisTitle
+    Call PsubSetChartStandardAxisTitle(myXobjAxsTtlY1)
 '//Y軸第2軸
-    Set myXobjAxsTtl = Nothing
-    If Not myXobjChrtAxsY2 Is Nothing Then
-        If myXobjChrtAxsY2.HasTitle = False Then myXobjChrtAxsY2.HasTitle = True
-        Set myXobjAxsTtl = myXobjChrtAxsY2.AxisTitle
-        Call PsubSetChartStandardAxisTitle(myXobjAxsTtl)
-    End If
+    Set myXobjChrtAxsY2 = myXobjChrt.Axes(xlValue, xlSecondary)
+    If myXobjChrtAxsY2.HasTitle = False Then myXobjChrtAxsY2.HasTitle = True
+    Set myXobjAxsTtlY2 = myXobjChrtAxsY2.AxisTitle
+    Call PsubSetChartStandardAxisTitle(myXobjAxsTtlY2)
+    On Error GoTo 0
     Set myXobjChrtAxsX1 = Nothing
     Set myXobjChrtAxsY1 = Nothing: Set myXobjChrtAxsY2 = Nothing
-    Set myXobjAxsTtl = Nothing
+    Set myXobjAxsTtlX1 = Nothing
+    Set myXobjAxsTtlY1 = Nothing: Set myXobjAxsTtlY2 = Nothing
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
 End Sub
 Private Sub PsubSetChartStandardAxisTitle(ByVal myXobjAxsTtl As Object)
+    If myXobjAxsTtl Is Nothing Then Exit Sub
     With myXobjAxsTtl
     '//タイトルの文字
         .Font.Name = "Meiryo UI"
@@ -366,66 +380,67 @@ Private Sub PsubSetChartStandardAxisTitle(ByVal myXobjAxsTtl As Object)
 End Sub
 
  '定型Ｐ_グラフのX/Y軸のタイトルの位置をグラフの中心に設定する
-Private Sub PincSetChartAxisTitleCenter( _
-            myXbisExitFlag As Boolean, _
+Private Sub PincSetChartAxisTitleCenter(myXbisExitFlag As Boolean, _
             ByVal myXobjChrt As Object, _
             Optional ByVal coXbisPltAreaCntr As Boolean = False)
-'Includes PfncdouSetChartTargetTitleCenter
+'Includes PfixSetChartTargetTitleCenter
 'coXbisPltAreaCntr = True  : チャートエリア中心
 'coXbisPltAreaCntr = False : プロットエリア中心
     myXbisExitFlag = False
+    If myXobjChrt Is Nothing Then GoTo ExitPath
   Dim myXobjChrtAxsX1 As Object, myXobjChrtAxsY1 As Object, myXobjChrtAxsY2 As Object
-    On Error Resume Next
-    Set myXobjChrtAxsX1 = myXobjChrt.Axes(xlCategory, xlPrimary)
-    Set myXobjChrtAxsY1 = myXobjChrt.Axes(xlValue, xlPrimary)
-    Set myXobjChrtAxsY2 = myXobjChrt.Axes(xlValue, xlSecondary)
-    On Error GoTo 0
+  Dim myXobjAxsTtlX1 As Object, myXobjAxsTtlY1 As Object, myXobjAxsTtlY2 As Object
   Dim myXdouSetTtlTop As Double, myXdouSetTtlLft As Double
-  Dim myXobjAxsTtl As Object, myXlonTtlPstn As Long
+  Dim myXlonTtlPstn As Long
+    On Error Resume Next
 '//X軸主軸
-    Set myXobjAxsTtl = Nothing
-    If Not myXobjChrtAxsX1 Is Nothing Then
-        If myXobjChrtAxsX1.HasTitle = False Then myXobjChrtAxsX1.HasTitle = True
-        Set myXobjAxsTtl = myXobjChrtAxsX1.AxisTitle
-        myXlonTtlPstn = 2
-        Call PfncdouSetChartTargetTitleCenter( _
-                myXdouSetTtlTop, myXdouSetTtlLft, _
-                myXobjChrt, myXobjAxsTtl, myXlonTtlPstn, coXbisPltAreaCntr)
-        myXobjAxsTtl.Top = myXdouSetTtlTop
-        myXobjAxsTtl.Left = myXdouSetTtlLft
+    Set myXobjChrtAxsX1 = myXobjChrt.Axes(xlCategory, xlPrimary)
+    If myXobjChrtAxsX1.HasTitle = False Then myXobjChrtAxsX1.HasTitle = True
+    Set myXobjAxsTtlX1 = myXobjChrtAxsX1.AxisTitle
+    myXlonTtlPstn = 2
+    Call PfixSetChartTargetTitleCenter( _
+            myXdouSetTtlTop, myXdouSetTtlLft, _
+            myXobjChrt, myXobjAxsTtlX1, myXlonTtlPstn, coXbisPltAreaCntr)
+    If myXdouSetTtlTop <> 0 Or myXdouSetTtlLft <> 0 Then
+        myXobjAxsTtlX1.Top = myXdouSetTtlTop
+        myXobjAxsTtlX1.Left = myXdouSetTtlLft
     End If
 '//Y軸主軸
-    Set myXobjAxsTtl = Nothing
-    If Not myXobjChrtAxsY1 Is Nothing Then
-        If myXobjChrtAxsY1.HasTitle = False Then myXobjChrtAxsY1.HasTitle = True
-        Set myXobjAxsTtl = myXobjChrtAxsY1.AxisTitle
-        myXlonTtlPstn = 3
-        Call PfncdouSetChartTargetTitleCenter( _
-                myXdouSetTtlTop, myXdouSetTtlLft, _
-                myXobjChrt, myXobjAxsTtl, myXlonTtlPstn, coXbisPltAreaCntr)
-        myXobjAxsTtl.Top = myXdouSetTtlTop
-        myXobjAxsTtl.Left = myXdouSetTtlLft
+    Set myXobjChrtAxsY1 = myXobjChrt.Axes(xlValue, xlPrimary)
+    If myXobjChrtAxsY1.HasTitle = False Then myXobjChrtAxsY1.HasTitle = True
+    Set myXobjAxsTtlY1 = myXobjChrtAxsY1.AxisTitle
+    myXlonTtlPstn = 3
+    Call PfixSetChartTargetTitleCenter( _
+            myXdouSetTtlTop, myXdouSetTtlLft, _
+            myXobjChrt, myXobjAxsTtlY1, myXlonTtlPstn, coXbisPltAreaCntr)
+    If myXdouSetTtlTop <> 0 Or myXdouSetTtlLft <> 0 Then
+        myXobjAxsTtlY1.Top = myXdouSetTtlTop
+        myXobjAxsTtlY1.Left = myXdouSetTtlLft
     End If
 '//Y軸第2軸
-    Set myXobjAxsTtl = Nothing
-    If Not myXobjChrtAxsY2 Is Nothing Then
-        If myXobjChrtAxsY2.HasTitle = False Then myXobjChrtAxsY2.HasTitle = True
-        Set myXobjAxsTtl = myXobjChrtAxsY2.AxisTitle
-        myXlonTtlPstn = 4
-        Call PfncdouSetChartTargetTitleCenter( _
-                myXdouSetTtlTop, myXdouSetTtlLft, _
-                myXobjChrt, myXobjAxsTtl, myXlonTtlPstn, coXbisPltAreaCntr)
-        myXobjAxsTtl.Top = myXdouSetTtlTop
-        myXobjAxsTtl.Left = myXdouSetTtlLft
+    Set myXobjChrtAxsY2 = myXobjChrt.Axes(xlValue, xlSecondary)
+    If myXobjChrtAxsY2.HasTitle = False Then myXobjChrtAxsY2.HasTitle = True
+    Set myXobjAxsTtlY2 = myXobjChrtAxsY2.AxisTitle
+    myXlonTtlPstn = 4
+    Call PfixSetChartTargetTitleCenter( _
+            myXdouSetTtlTop, myXdouSetTtlLft, _
+            myXobjChrt, myXobjAxsTtlY2, myXlonTtlPstn, coXbisPltAreaCntr)
+    If myXdouSetTtlTop <> 0 Or myXdouSetTtlLft <> 0 Then
+        myXobjAxsTtlY2.Top = myXdouSetTtlTop
+        myXobjAxsTtlY2.Left = myXdouSetTtlLft
     End If
+    On Error GoTo 0
     Set myXobjChrtAxsX1 = Nothing
     Set myXobjChrtAxsY1 = Nothing: Set myXobjChrtAxsY2 = Nothing
-    Set myXobjAxsTtl = Nothing
+    Set myXobjAxsTtlX1 = Nothing
+    Set myXobjAxsTtlY1 = Nothing: Set myXobjAxsTtlY2 = Nothing
+    Exit Sub
 ExitPath:
+    myXbisExitFlag = True
 End Sub
 
  '定型Ｐ_指定タイトル位置がグラフの中心となる設定位置を取得する
-Private Sub PfncdouSetChartTargetTitleCenter( _
+Private Sub PfixSetChartTargetTitleCenter( _
             myXdouSetTtlTop As Double, myXdouSetTtlLft As Double, _
             ByVal myXobjChrt As Object, ByVal myXobjOrgTtl As Object, _
             ByVal myXlonTtlPstn As Long, _
@@ -437,91 +452,86 @@ Private Sub PfncdouSetChartTargetTitleCenter( _
 'coXbisPltAreaCntr = True  : チャートエリア中心
 'coXbisPltAreaCntr = False : プロットエリア中心
     myXdouSetTtlTop = Empty: myXdouSetTtlLft = Empty
+    If myXobjChrt Is Nothing Then Exit Sub
+    If myXobjOrgTtl Is Nothing Then Exit Sub
   Dim myXdouOrgTtlHght As Double, myXdouOrgTtlWdth As Double, _
         myXdouChrtAreaHght As Double, myXdouChrtAreaWdth As Double, _
         myXdouPltAreaTop As Double, myXdouPltAreaHght As Double, _
         myXdouPltAreaLft As Double, myXdouPltAreaWdth As Double
   Dim myXdouCal As Double
     On Error GoTo ExitPath
-  Dim myXstrTmp As String: myXstrTmp = myXobjOrgTtl.Text
-    On Error GoTo 0
-    If myXlonTtlPstn = 3 Or myXlonTtlPstn = 4 Then GoTo JumpPath
-'//タイトル位置が上側と下側の場合の処理
-    With myXobjChrt
+    If myXlonTtlPstn = 1 Or myXlonTtlPstn = 2 Then
+    '//タイトル位置が上側と下側の場合の処理
     '//タイトルのサイズ情報を取得
         myXdouOrgTtlWdth = myXobjOrgTtl.Width
     '//チャートエリアの位置サイズ情報を取得
-        myXdouChrtAreaHght = .ChartArea.Height
-        myXdouChrtAreaWdth = .ChartArea.Width
+        myXdouChrtAreaHght = myXobjChrt.ChartArea.Height
+        myXdouChrtAreaWdth = myXobjChrt.ChartArea.Width
     '//プロットエリアの位置サイズ情報を取得
-        myXdouPltAreaLft = .PlotArea.Left
-        myXdouPltAreaWdth = .PlotArea.Width
-    End With
-'//タイトル位置を設定
-    Select Case myXlonTtlPstn
-        Case 1: myXdouSetTtlTop = 0
-        Case 2: myXdouSetTtlTop = myXdouChrtAreaHght
-    End Select
-    If coXbisPltAreaCntr = False Then
-        myXdouCal = myXdouChrtAreaWdth / 2
-        myXdouCal = myXdouCal - myXdouOrgTtlWdth / 2
-    Else
-        myXdouCal = myXdouPltAreaWdth / 2
-        myXdouCal = myXdouPltAreaLft + myXdouCal
-        myXdouCal = myXdouCal - myXdouOrgTtlWdth / 2
-    End If
-    myXdouSetTtlLft = myXdouCal
-    GoTo ExitPath
-JumpPath:
-'//タイトル位置が左側と右側の場合の処理
-    With myXobjChrt
+        myXdouPltAreaLft = myXobjChrt.PlotArea.Left
+        myXdouPltAreaWdth = myXobjChrt.PlotArea.Width
+    '//タイトル位置を設定
+        Select Case myXlonTtlPstn
+            Case 1: myXdouSetTtlTop = 0
+            Case 2: myXdouSetTtlTop = myXdouChrtAreaHght
+        End Select
+        If coXbisPltAreaCntr = False Then
+            myXdouCal = myXdouChrtAreaWdth / 2
+            myXdouCal = myXdouCal - myXdouOrgTtlWdth / 2
+        Else
+            myXdouCal = myXdouPltAreaWdth / 2
+            myXdouCal = myXdouPltAreaLft + myXdouCal
+            myXdouCal = myXdouCal - myXdouOrgTtlWdth / 2
+        End If
+        myXdouSetTtlLft = myXdouCal
+    ElseIf myXlonTtlPstn = 3 Or myXlonTtlPstn = 4 Then
+    '//タイトル位置が左側と右側の場合の処理
     '//タイトルのサイズ情報を取得
         myXdouOrgTtlHght = myXobjOrgTtl.Height
     '//チャートエリアの位置サイズ情報を取得
-        myXdouChrtAreaHght = .ChartArea.Height
-        myXdouChrtAreaWdth = .ChartArea.Width
+        myXdouChrtAreaHght = myXobjChrt.ChartArea.Height
+        myXdouChrtAreaWdth = myXobjChrt.ChartArea.Width
     '//プロットエリアの位置サイズ情報を取得
-        myXdouPltAreaTop = .PlotArea.Top
-        myXdouPltAreaHght = .PlotArea.Height
-    End With
-'//タイトル位置を設定
-    If coXbisPltAreaCntr = False Then
-        myXdouCal = myXdouChrtAreaHght / 2
-        myXdouCal = myXdouCal - myXdouOrgTtlHght / 2
-    Else
-        myXdouCal = myXdouPltAreaHght / 2
-        myXdouCal = myXdouPltAreaTop + myXdouCal
-        myXdouCal = myXdouCal - myXdouOrgTtlHght / 2
+        myXdouPltAreaTop = myXobjChrt.PlotArea.Top
+        myXdouPltAreaHght = myXobjChrt.PlotArea.Height
+    '//タイトル位置を設定
+        If coXbisPltAreaCntr = False Then
+            myXdouCal = myXdouChrtAreaHght / 2
+            myXdouCal = myXdouCal - myXdouOrgTtlHght / 2
+        Else
+            myXdouCal = myXdouPltAreaHght / 2
+            myXdouCal = myXdouPltAreaTop + myXdouCal
+            myXdouCal = myXdouCal - myXdouOrgTtlHght / 2
+        End If
+        myXdouSetTtlTop = myXdouCal
+        Select Case myXlonTtlPstn
+            Case 3: myXdouSetTtlLft = 0
+            Case 4: myXdouSetTtlLft = myXdouChrtAreaWdth
+        End Select
     End If
-    myXdouSetTtlTop = myXdouCal
-    Select Case myXlonTtlPstn
-        Case 3: myXdouSetTtlLft = 0
-        Case 4: myXdouSetTtlLft = myXdouChrtAreaWdth
-    End Select
+    On Error GoTo 0
+    Exit Sub
 ExitPath:
+    myXdouSetTtlTop = Empty: myXdouSetTtlLft = Empty
 End Sub
 
  '定型Ｐ_グラフの数値軸を標準フォーマットで設定する
 Private Sub PfixSetChartStandardAxesScale(myXbisExitFlag As Boolean, _
             ByVal myXobjChrt As Object)
     myXbisExitFlag = False
+    If myXobjChrt Is Nothing Then GoTo ExitPath
   Dim myXobjChrtAxsX1 As Object, myXobjChrtAxsY1 As Object, myXobjChrtAxsY2 As Object
     On Error Resume Next
-    With myXobjChrt
-        Set myXobjChrtAxsX1 = .Axes(xlCategory, xlPrimary)
-        Set myXobjChrtAxsY1 = .Axes(xlValue, xlPrimary)
-        Set myXobjChrtAxsY2 = .Axes(xlValue, xlSecondary)
-    End With
-    On Error GoTo 0
 '//X軸主軸
-    If Not myXobjChrtAxsX1 Is Nothing Then _
-        Call PsubSetChartStandardAxesScale(myXobjChrtAxsX1)
+    Set myXobjChrtAxsX1 = myXobjChrt.Axes(xlCategory, xlPrimary)
+    Call PsubSetChartStandardAxesScale(myXobjChrtAxsX1)
 '//Y軸主軸
-    If Not myXobjChrtAxsY1 Is Nothing Then _
-        Call PsubSetChartStandardAxesScale(myXobjChrtAxsY1)
+    Set myXobjChrtAxsY1 = myXobjChrt.Axes(xlValue, xlPrimary)
+    Call PsubSetChartStandardAxesScale(myXobjChrtAxsY1)
 '//Y軸第2軸
-    If Not myXobjChrtAxsY2 Is Nothing Then _
-        Call PsubSetChartStandardAxesScale(myXobjChrtAxsY2)
+    Set myXobjChrtAxsY2 = myXobjChrt.Axes(xlValue, xlSecondary)
+    Call PsubSetChartStandardAxesScale(myXobjChrtAxsY2)
+    On Error GoTo 0
     Set myXobjChrtAxsX1 = Nothing: Set myXobjChrtAxsY1 = Nothing
     Set myXobjChrtAxsY2 = Nothing
     Exit Sub
@@ -529,6 +539,7 @@ ExitPath:
     myXbisExitFlag = True
 End Sub
 Private Sub PsubSetChartStandardAxesScale(ByVal myXobjChrtAxs As Object)
+    If myXobjChrtAxs Is Nothing Then Exit Sub
     With myXobjChrtAxs
     '//軸の文字
         .TickLabels.Font.Name = "Meiryo UI"
@@ -552,11 +563,17 @@ End Sub
 '  Dim myXbisCmpltFlag As Boolean
 ''//クラス内変数への入力
 '  Dim myXbisMsgBoxON As Boolean
+'    'myXbisMsgBxON = False : 標準設定実行有無のMsgBoxを表示しない
+'    'myXbisMsgBxON = True  : 標準設定実行有無のMsgBoxを表示しする
 '    myXbisMsgBoxON = False
 '  Dim myXbisXMnrGrdLnsShw As Boolean, myXbisYMnrGrdLnsShw As Boolean
+'    'myXbisMnrGrdLnsShw = True  : 補助目盛線を表示する
+'    'myXbisMnrGrdLnsShw = False : 補助目盛線を表示しない
 '    myXbisXMnrGrdLnsShw = False
 '    myXbisYMnrGrdLnsShw = False
 '  Dim myXbisTtlPltAreaCntr As Boolean, myXbisAxsTtlPltAreaCntr As Boolean
+'    'myXbisTtlPltAreaCntr = True  : チャートエリア中心
+'    'myXbisTtlPltAreaCntr = False : プロットエリア中心
 '    myXbisTtlPltAreaCntr = False
 '    myXbisAxsTtlPltAreaCntr = False
 '  Dim myXobjChrt As Object
@@ -575,9 +592,10 @@ End Sub
 '        myXbisCmpltFlag = .fncbisCmpltFlag
 '    End With
 '    Set myXinsStndrdChrt = Nothing
-'ExitPath:
 'End Sub
 
       <br></pre>
     </body>
   </html>
+
+.html
