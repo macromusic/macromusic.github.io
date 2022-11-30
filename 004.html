@@ -614,6 +614,7 @@ Private Sub PfixCopyInsertRow( _
         ByVal myXlonInsrtBgnRow As Long, ByVal myXlonInsrtCnt As Long)
     myXbisExitFlag = False
     If myXobjSheet Is Nothing Then GoTo ExitPath
+    myXobjSheet.Activate
     If myXlonCpyBgnRow <= 0 Or myXlonCpyRowCnt <= 0 Then GoTo ExitPath
     If myXlonInsrtBgnRow <= 0 Or myXlonInsrtCnt <= 0 Then GoTo ExitPath
   Dim myXlonCpyEndRow As Long, myXstrCpyRowRng As String
