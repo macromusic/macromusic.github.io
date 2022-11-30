@@ -60,8 +60,26 @@ Private Sub PfixSplitString( _
     myZvarTmp = Empty
 End Sub
 
- '定型Ｐ_異なる指定文字で挟まれた文字列を取得する
-Private Sub PfixExtractSandwichedStringByCharacters( _
+ '定型Ｆ_異なる指定文字で挟まれた文字列を取得する
+Private Function PfncstrExtractSandwichedStringByCharacters( _
+            ByVal myXstrOrgStr As String, _
+            ByVal myXstrPreChr As String, ByVal myXstrPstChr As String) As String
+'myXstrPreChr : 前方の指定文字(1文字のみ)
+'myXstrPstChr : 後方の指定文字(1文字のみ)
+    PfncstrExtractSandwichedStringByCharacters = Empty
+    If myXstrOrgStr = "" Then Exit Function
+    If Len(myXstrPreChr) <> 1 Or Len(myXstrPstChr) <> 1 Then Exit Function
+  Dim myXlonBgn As Long, myXlonEnd As Long, myXlonLen As Long, myXstrSndwchd As String
+    myXlonBgn = InStr(myXstrOrgStr, myXstrPreChr) + 1
+    myXlonEnd = InStrRev(myXstrOrgStr, myXstrPstChr) - 1
+    myXlonLen = myXlonEnd - myXlonBgn + 1
+    If myXlonBgn <= 0 Or myXlonEnd <= 0 Or myXlonLen < 0 Then Exit Function
+    myXstrSndwchd = Mid(myXstrOrgStr, myXlonBgn, myXlonLen)
+    PfncstrExtractSandwichedStringByCharacters = myXstrSndwchd
+End Function
+
+ '定型Ｐ_異なる指定文字で挟まれた文字列配列を取得する
+Private Sub PfixExtractSandwichedStringsByCharacters( _
             myXlonStrCnt As Long, myZstrSndwchd() As String, _
             ByVal myXstrOrgStr As String, _
             ByVal myXstrPreChr As String, ByVal myXstrPstChr As String)
@@ -102,8 +120,24 @@ Private Sub PfixExtractSandwichedStringByCharacters( _
     Erase myZlonPstn1: Erase myZlonPstn2: Erase myZbisChck
 End Sub
 
- '定型Ｐ_指定文字で挟まれた文字列を取得する
-Private Sub PfixExtractSandwichedString( _
+ '定型Ｆ_指定文字で挟まれた文字列を取得する
+Private Function PfncstrExtractSandwichedString( _
+            ByVal myXstrOrgStr As String, ByVal myXstrChr As String) As String
+'myXstrChr : 指定文字(1文字のみ)
+    PfncstrExtractSandwichedString = Empty
+    If myXstrOrgStr = "" Then Exit Function
+    If Len(myXstrChr) <> 1 Then Exit Function
+  Dim myXlonBgn As Long, myXlonEnd As Long, myXlonLen As Long, myXstrSndwchd As String
+    myXlonBgn = InStr(myXstrOrgStr, myXstrChr) + 1
+    myXlonEnd = InStrRev(myXstrOrgStr, myXstrChr) - 1
+    myXlonLen = myXlonEnd - myXlonBgn + 1
+    If myXlonBgn <= 0 Or myXlonEnd <= 0 Or myXlonLen < 0 Then Exit Function
+    myXstrSndwchd = Mid(myXstrOrgStr, myXlonBgn, myXlonLen)
+    PfncstrExtractSandwichedString = myXstrSndwchd
+End Function
+
+ '定型Ｐ_指定文字で挟まれた文字列配列を取得する
+Private Sub PfixExtractSandwichedStrings( _
             myXlonStrCnt As Long, myZstrSndwchd() As String, _
             ByVal myXstrOrgStr As String, ByVal myXstrChr As String)
 'myZstrSndwchd(i) : 取得文字列
@@ -242,19 +276,21 @@ End Function
  '定型Ｐ_数値の整数部と小数部の値と桁数を取得する
 Private Sub PfixChangeModuleConstValue( _
             myXlonIntgrPrt As Long, myXdouDcmlPrt As Double, _
-            myXlonIntgrDgt As Long, myXlonDcmlDgt As Long, myXlonMinDcmlDgt As Long, _
+            myXlonIntgrDgt As Long, myXlonDcmlDgt As Long, _
+            myXlonMinDcmlDgt As Long, myXlonMaxDcmlDgt As Long, _
             ByVal myXdouNumVal As Double)
-'Chr(46) : ピリオド(.)
     myXlonIntgrPrt = Empty: myXdouDcmlPrt = Empty
-    myXlonIntgrDgt = Empty: myXlonDcmlDgt = Empty: myXlonMinDcmlDgt = Empty
-  Dim myXlonSgn As Long, myXlonPnt As Long, myXdouTmp As Double, myXstrTmp As String
+    myXlonIntgrDgt = Empty: myXlonDcmlDgt = Empty
+    myXlonMinDcmlDgt = Empty: myXlonMaxDcmlDgt = Empty
+  Dim myXlonSgn As Long, myXlonPnt As Long
+  Dim myXstrTmp As String, myXdouTmp As Double, myXlonTmp As Long
 '//数値の符号を取得
     myXlonSgn = Sgn(myXdouNumVal)
 '//数値の整数部を取得
     myXlonIntgrPrt = Fix(myXdouNumVal)
 '//数値の小数点位置を取得
     myXstrTmp = CStr(myXdouNumVal)
-    myXlonPnt = InStr(myXstrTmp, Chr(46))
+    myXlonPnt = InStr(myXstrTmp, ".")
 '//数値の小数部を取得
     myXstrTmp = CStr(myXdouNumVal)
     myXstrTmp = Mid(myXstrTmp, myXlonPnt)
@@ -270,44 +306,66 @@ Private Sub PfixChangeModuleConstValue( _
     myXstrTmp = CStr(myXdouTmp)
     myXlonDcmlDgt = Len(myXstrTmp) - 2
 '//数値の小数値の最小桁数を取得
+    myXlonMinDcmlDgt = myXlonDcmlDgt
+'//数値の小数値の最大桁数を取得
     If Abs(myXdouNumVal) >= 1 Then
-        myXlonMinDcmlDgt = 0
+        myXlonMaxDcmlDgt = 0
     Else
         myXdouTmp = Abs(myXdouDcmlPrt) * (10 ^ myXlonDcmlDgt)
         myXdouTmp = Int(myXdouTmp)
         myXstrTmp = CStr(myXdouTmp)
-        myXlonMinDcmlDgt = myXlonDcmlDgt - Len(myXstrTmp) + 1
+        myXlonMaxDcmlDgt = myXlonDcmlDgt - Len(myXstrTmp) + 1
     End If
 End Sub
 
  '定型Ｆ_数値の小数値の最小桁数を取得する
 Private Function PfnclonGetMinimumDecimalDigit(ByVal myXdouNumVal As Double) As Long
-'Chr(46) : ピリオド(.)
     PfnclonGetMinimumDecimalDigit = Empty
   Dim myXlonMinDcmlDgt As Long
     If Abs(myXdouNumVal) >= 1 Then
         myXlonMinDcmlDgt = 0
         GoTo JumpPath
     End If
-  Dim myXstrDcmlPrt As String, myXlonDcmlDgt As Long
-  Dim myXlonPnt As Long, myXdouTmp As Double, myXstrTmp As String
+  Dim myXstrTmp As String, myXlonPnt As Long, myXstrDcmlPrt As String
 '//数値の小数点位置を取得
     myXstrTmp = CStr(myXdouNumVal)
-    myXlonPnt = InStr(myXstrTmp, Chr(46))
+    myXlonPnt = InStr(myXstrTmp, ".")
+'//数値の小数部を取得
+    myXstrTmp = CStr(myXdouNumVal)
+    myXstrDcmlPrt = Mid(myXstrTmp, myXlonPnt + 1)
+'//数値の小数部の桁数を取得
+    myXlonMinDcmlDgt = Len(myXstrDcmlPrt)
+JumpPath:
+    PfnclonGetMinimumDecimalDigit = myXlonMinDcmlDgt
+End Function
+
+ '定型Ｆ_数値の小数値の最大桁数を取得する
+Private Function PfnclonGetMaximumDecimalDigit(ByVal myXdouNumVal As Double) As Long
+    PfnclonGetMaximumDecimalDigit = Empty
+  Dim myXlonMaxDcmlDgt As Long
+    If Abs(myXdouNumVal) >= 1 Then
+        myXlonMaxDcmlDgt = 0
+        GoTo JumpPath
+    End If
+  Dim myXlonPnt As Long, myXstrTmp As String, myXdouTmp As Double
+  Dim myXstrDcmlPrt As String, myXlonDcmlDgt As Long
+'//数値の小数点位置を取得
+    myXstrTmp = CStr(myXdouNumVal)
+    myXlonPnt = InStr(myXstrTmp, ".")
 '//数値の小数部を取得
     myXstrTmp = CStr(myXdouNumVal)
     myXstrTmp = Mid(myXstrTmp, myXlonPnt)
     myXstrDcmlPrt = "0" & myXstrTmp
 '//数値の小数部の桁数を取得
     myXlonDcmlDgt = Len(myXstrDcmlPrt) - 2
-'//数値の小数値の最小桁数を取得
+'//数値の小数値の最大桁数を取得
     myXdouTmp = CDbl(myXstrDcmlPrt)
     myXdouTmp = Abs(myXdouTmp) * (10 ^ myXlonDcmlDgt)
     myXdouTmp = Int(myXdouTmp)
     myXstrTmp = CStr(myXdouTmp)
-    myXlonMinDcmlDgt = myXlonDcmlDgt - Len(myXstrTmp) + 1
+    myXlonMaxDcmlDgt = myXlonDcmlDgt - Len(myXstrTmp) + 1
 JumpPath:
-    PfnclonGetMinimumDecimalDigit = myXlonMinDcmlDgt
+    PfnclonGetMaximumDecimalDigit = myXlonMaxDcmlDgt
 End Function
 
  '定型Ｆ_ワークシート関数のATAN2で計算した結果を取得する
