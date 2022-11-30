@@ -212,7 +212,6 @@ Private Function PfncstrChartObjectAutoNaming( _
         Optional ByVal coXstrBaseName As String = "Graph") As String
     PfncstrChartObjectAutoNaming = Empty
     If myXobjSheet Is Nothing Then Exit Function
-    If myXobjSheet.ChartObjects.Count <= 0 Then Exit Function
   Dim myXstrTmpName As String, n As Long: n = 0
     If myXstrChrtObjName = "" Then
         n = n + 1: myXstrTmpName = coXstrBaseName & n
@@ -223,6 +222,7 @@ Private Function PfncstrChartObjectAutoNaming( _
   Dim myXstrChck As String
     On Error Resume Next
     With myXobjSheet
+        If .ChartObjects.Count = 0 Then Exit Function
         myXstrChck = .ChartObjects(myXstrTmpName).Name
         If myXstrChck = myXstrTmpName Then myXbisExistFlag = True
         Do While myXbisExistFlag = True
@@ -1452,27 +1452,99 @@ Private Sub PfixGetObjectFormula( _
 ExitPath:
 End Sub
 
- '定型Ｐ_指定オブジェクトに設定されている参照式を変更する
-Private Sub PfixChangeObjectFormula( _
+ '定型Ｐ_指定オブジェクトに設定されている参照式をR1C1形式で変更する
+Private Sub PfixChangeObjectFormulaR1C1( _
             myXbisExitFlag As Boolean, _
             ByVal myXobjOrg As Object, _
-            ByVal myXstrOrgAdrs As String, ByVal myXstrNewAdrs As String)
+            ByVal myXstrOrgAdrsR1C1 As String, ByVal myXstrNewAdrsR1C1 As String)
     myXbisExitFlag = False
-    If myXobjOrg Is Nothing Then Exit Function
-    If myXstrOrgAdrs = "" Or myXstrNewAdrs = "" Then GoTo ExitPath
+    If myXobjOrg Is Nothing Then Exit Sub
+    If myXstrOrgAdrsR1C1 = "" Or myXstrNewAdrsR1C1 = "" Then GoTo ExitPath
   Dim myXstrOrgFrml As String, myXstrNewFrml As String
     On Error GoTo ExitPath
-    myXstrOrgFrml = myXobjOrg.Formula
+    myXstrOrgFrml = myXobjOrg.FormulaR1C1
 '    Debug.Print "系列参照式: " & myXstrOrgFrml
-    If InStr(myXstrOrgFrml, myXstrOrgAdrs) <= 0 Then GoTo ExitPath
-    myXstrNewFrml = Replace(myXstrOrgFrml, myXstrOrgAdrs, myXstrNewAdrs)
+    If InStr(myXstrOrgFrml, myXstrOrgAdrsR1C1) <= 0 Then GoTo ExitPath
+    myXstrNewFrml = Replace(myXstrOrgFrml, myXstrOrgAdrsR1C1, myXstrNewAdrsR1C1)
 '    Debug.Print "系列参照式: " & myXstrNewFrml
     If Application.ReferenceStyle = xlA1 Then
+        Application.ReferenceStyle = xlR1C1
         myXobjOrg.Formula = myXstrNewFrml
+        Application.ReferenceStyle = xlA1
     Else
         myXobjOrg.FormulaR1C1 = myXstrNewFrml
     End If
     On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_指定オブジェクトに設定されている参照式をA1形式で変更する
+Private Sub PfixChangeObjectFormulaA1( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjOrg As Object, _
+            ByVal myXstrOrgAdrsA1 As String, ByVal myXstrNewAdrsA1 As String)
+    myXbisExitFlag = False
+    If myXobjOrg Is Nothing Then Exit Sub
+    If myXstrOrgAdrsA1 = "" Or myXstrNewAdrsA1 = "" Then GoTo ExitPath
+  Dim myXstrOrgFrml As String, myXstrNewFrml As String
+    On Error GoTo ExitPath
+    myXstrOrgFrml = myXobjOrg.Formula
+'    Debug.Print "系列参照式: " & myXstrOrgFrml
+    If InStr(myXstrOrgFrml, myXstrOrgAdrsA1) <= 0 Then GoTo ExitPath
+    myXstrNewFrml = Replace(myXstrOrgFrml, myXstrOrgAdrsA1, myXstrNewAdrsA1)
+'    Debug.Print "系列参照式: " & myXstrNewFrml
+    If Application.ReferenceStyle = xlA1 Then
+        myXobjOrg.Formula = myXstrNewFrml
+    Else
+        Application.ReferenceStyle = xlA1
+        myXobjOrg.FormulaR1C1 = myXstrNewFrml
+        Application.ReferenceStyle = xlR1C1
+    End If
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_指定グラフに設定されている参照式をR1C1形式で変更する
+Private Sub PincChangeChartFormulaR1C1( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, _
+            ByVal myXstrOrgAdrsR1C1 As String, ByVal myXstrNewAdrsR1C1 As String)
+'Includes PfixChangeObjectFormulaR1C1
+    myXbisExitFlag = False
+    If myXobjChrt Is Nothing Then Exit Sub
+    If myXstrOrgAdrsR1C1 = "" Or myXstrNewAdrsR1C1 = "" Then GoTo ExitPath
+  Dim myXobjSrsClctn As Object
+    For Each myXobjSrsClctn In myXobjChrt.SeriesCollection
+        Call PfixChangeObjectFormulaR1C1( _
+                myXbisExitFlag, _
+                myXobjSrsClctn, myXstrOrgAdrsR1C1, myXstrNewAdrsR1C1)
+    Next myXobjSrsClctn
+    Set myXobjSrsClctn = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_指定グラフに設定されている参照式をA1形式で変更する
+Private Sub PincChangeChartFormulaA1( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, _
+            ByVal myXstrOrgAdrsA1 As String, ByVal myXstrNewAdrsA1 As String)
+'Includes PfixChangeObjectFormulaA1
+    myXbisExitFlag = False
+    If myXobjChrt Is Nothing Then Exit Sub
+    If myXstrOrgAdrsA1 = "" Or myXstrNewAdrsA1 = "" Then GoTo ExitPath
+  Dim myXobjSrsClctn As Object
+    For Each myXobjSrsClctn In myXobjChrt.SeriesCollection
+        Call PfixChangeObjectFormulaA1( _
+                myXbisExitFlag, _
+                myXobjSrsClctn, myXstrOrgAdrsA1, myXstrNewAdrsA1)
+    Next myXobjSrsClctn
+    Set myXobjSrsClctn = Nothing
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
