@@ -572,68 +572,115 @@ ErrPath:
     Resume
 End Sub
 
- '定型Ｐ_オリジナル行をコピーしてデータ数分貼り付けする
+ '定型Ｐ_オリジナル行をコピーして貼り付ける
 Private Sub PfixCopyPasteRow( _
         myXbisExitFlag As Boolean, _
         ByVal myXobjSheet As Object, _
         ByVal myXlonCpyBgnRow As Long, ByVal myXlonCpyRowCnt As Long, _
-        ByVal myXlonPstBgnRow As Long, ByVal myXlonPstCnt As Long)
+        ByVal myXlonPstBgnRow As Long)
+    myXbisExitFlag = False
+    If Not myXobjSheet Is ActiveSheet Then GoTo ExitPath
+    If myXlonCpyBgnRow <= 0 Then GoTo ExitPath
+    If myXlonCpyRowCnt <= 0 Then GoTo ExitPath
+    If myXlonPstBgnRow <= 0 Then GoTo ExitPath
+    If myXlonPstBgnRow <= myXlonCpyBgnRow + myXlonCpyRowCnt - 1 Then GoTo ExitPath
+  Dim myXlonCpyEndRow As Long, myXstrCpyRowAdrs As String
+    myXlonCpyEndRow = myXlonCpyBgnRow + myXlonCpyRowCnt - 1
+    myXstrCpyRowAdrs = myXlonCpyBgnRow & ":" & myXlonCpyEndRow
+  Dim myXobjCpyRows As Object, myXobjPstRows As Object
+    On Error GoTo ExitPath
+    Set myXobjCpyRows = myXobjSheet.Rows(myXstrCpyRowAdrs)
+    myXobjCpyRows.Copy
+    Set myXobjPstRows = myXobjSheet.Rows(myXlonPstBgnRow)
+    myXobjPstRows.PasteSpecial xlAll
+    myXobjPstRows.Select: ActiveSheet.Paste
+    On Error GoTo 0
+    Application.CutCopyMode = False
+    Set myXobjCpyRows = Nothing: Set myXobjPstRows = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_オリジナル行をコピーしてデータ数分貼り付ける
+Private Sub PincCopyPasteRows( _
+        myXbisExitFlag As Boolean, _
+        ByVal myXobjSheet As Object, _
+        ByVal myXlonCpyBgnRow As Long, ByVal myXlonCpyRowCnt As Long, _
+        ByVal myXlonPstBgnRow As Long, ByVal myXlonDataCnt As Long)
+'Includes PfixCopyPasteRow
     myXbisExitFlag = False
     If myXobjSheet Is Nothing Then GoTo ExitPath
-    myXobjSheet.Activate
-    If myXlonCpyBgnRow <= 0 Or myXlonCpyRowCnt <= 0 Then GoTo ExitPath
-    If myXlonPstBgnRow <= 0 Or myXlonPstCnt <= 0 Then GoTo ExitPath
-  Dim myXlonCpyEndRow As Long, myXstrCpyRowRng As String
-    myXlonCpyEndRow = myXlonCpyBgnRow + myXlonCpyRowCnt - 1
-    myXstrCpyRowRng = myXlonCpyBgnRow & ":" & myXlonCpyEndRow
-  Dim myXobjCpyRow As Object
-    On Error GoTo ExitPath
-    Set myXobjCpyRow = myXobjSheet.Rows(myXstrCpyRowRng)
-    On Error GoTo 0
-  Dim myXobjPstRow As Object, myXlonPstRowPstn As Long, i As Long
-    For i = 1 To myXlonPstCnt
-        Set myXobjCpyRow = myXobjSheet.Rows(myXstrCpyRowRng)
-        myXobjCpyRow.Copy
-        myXlonPstRowPstn = myXlonPstBgnRow + (i - 1) * myXlonCpyRowCnt
-        Set myXobjPstRow = myXobjSheet.Rows(myXlonPstRowPstn)
-        myXobjPstRow.PasteSpecial xlAll
-        myXobjPstRow.Select: ActiveSheet.Paste
+    If Not myXobjSheet Is ActiveSheet Then myXobjSheet.Activate
+    If myXlonCpyBgnRow <= 0 Then GoTo ExitPath
+    If myXlonCpyRowCnt <= 0 Then GoTo ExitPath
+    If myXlonPstBgnRow <= 0 Then GoTo ExitPath
+    If myXlonPstBgnRow <= myXlonCpyBgnRow + myXlonCpyRowCnt - 1 Then GoTo ExitPath
+    If myXlonDataCnt <= 0 Then GoTo ExitPath
+  Dim myXlonPstRow As Long, i As Long
+    For i = 1 To myXlonDataCnt
+        myXlonPstRow = myXlonPstBgnRow + (i - 1) * myXlonCpyRowCnt
+        Call PfixCopyPasteRow( _
+                myXbisExitFlag, _
+                myXobjSheet, myXlonCpyBgnRow, myXlonCpyRowCnt, myXlonPstRow)
+        If myXbisExitFlag = True Then GoTo ExitPath
     Next i
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_オリジナル行をコピーして挿入する
+Private Sub PfixCopyInsertRow( _
+        myXbisExitFlag As Boolean, _
+        ByVal myXobjSheet As Object, _
+        ByVal myXlonCpyBgnRow As Long, ByVal myXlonCpyRowCnt As Long, _
+        ByVal myXlonInsrtBgnRow As Long)
+    myXbisExitFlag = False
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+    If myXlonCpyBgnRow <= 0 Then GoTo ExitPath
+    If myXlonCpyRowCnt <= 0 Then GoTo ExitPath
+    If myXlonInsrtBgnRow <= 0 Then GoTo ExitPath
+    If myXlonInsrtBgnRow <= myXlonCpyBgnRow + myXlonCpyRowCnt - 1 Then GoTo ExitPath
+  Dim myXlonCpyEndRow As Long, myXstrCpyRowAdrs As String
+    myXlonCpyEndRow = myXlonCpyBgnRow + myXlonCpyRowCnt - 1
+    myXstrCpyRowAdrs = myXlonCpyBgnRow & ":" & myXlonCpyEndRow
+  Dim myXobjCpyRows As Object, myXobjInsrtRows As Object
+    On Error GoTo ExitPath
+    Set myXobjCpyRows = myXobjSheet.Rows(myXstrCpyRowAdrs)
+    myXobjCpyRows.Copy
+    Set myXobjInsrtRows = myXobjSheet.Rows(myXlonInsrtBgnRow)
+    myXobjInsrtRows.Insert Shift:=xlDown
+    On Error GoTo 0
     Application.CutCopyMode = False
-    Set myXobjCpyRow = Nothing: Set myXobjPstRow = Nothing
+    Set myXobjCpyRows = Nothing: Set myXobjInsrtRows = Nothing
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
 End Sub
 
  '定型Ｐ_オリジナル行をコピーしてデータ数分挿入する
-Private Sub PfixCopyInsertRow( _
+Private Sub PincCopyInsertRows( _
         myXbisExitFlag As Boolean, _
         ByVal myXobjSheet As Object, _
         ByVal myXlonCpyBgnRow As Long, ByVal myXlonCpyRowCnt As Long, _
-        ByVal myXlonInsrtBgnRow As Long, ByVal myXlonInsrtCnt As Long)
+        ByVal myXlonInsrtBgnRow As Long, ByVal myXlonDataCnt As Long)
+'Includes PfixCopyInsertRow
     myXbisExitFlag = False
     If myXobjSheet Is Nothing Then GoTo ExitPath
-    myXobjSheet.Activate
-    If myXlonCpyBgnRow <= 0 Or myXlonCpyRowCnt <= 0 Then GoTo ExitPath
-    If myXlonInsrtBgnRow <= 0 Or myXlonInsrtCnt <= 0 Then GoTo ExitPath
-  Dim myXlonCpyEndRow As Long, myXstrCpyRowRng As String
-    myXlonCpyEndRow = myXlonCpyBgnRow + myXlonCpyRowCnt - 1
-    myXstrCpyRowRng = myXlonCpyBgnRow & ":" & myXlonCpyEndRow
-  Dim myXobjCpyRow As Object
-    On Error GoTo ExitPath
-    Set myXobjCpyRow = myXobjSheet.Rows(myXstrCpyRowRng)
-    On Error GoTo 0
-  Dim myXobjInsrtRow As Object, myXlonInsrtRowPstn As Long, i As Long
-    For i = 1 To myXlonInsrtCnt
-        Set myXobjCpyRow = myXobjSheet.Rows(myXstrCpyRowRng)
-        myXobjCpyRow.Copy
-        myXlonInsrtRowPstn = myXlonInsrtBgnRow + (i - 1) * myXlonCpyRowCnt
-        Set myXobjInsrtRow = myXobjSheet.Rows(myXlonInsrtRowPstn)
-        myXobjInsrtRow.Insert Shift:=xlDown
+    If myXlonCpyBgnRow <= 0 Then GoTo ExitPath
+    If myXlonCpyRowCnt <= 0 Then GoTo ExitPath
+    If myXlonInsrtBgnRow <= 0 Then GoTo ExitPath
+    If myXlonInsrtBgnRow <= myXlonCpyBgnRow + myXlonCpyRowCnt - 1 Then GoTo ExitPath
+    If myXlonDataCnt <= 0 Then GoTo ExitPath
+  Dim myXlonInsrtRow As Long, i As Long
+    For i = 1 To myXlonDataCnt
+        myXlonInsrtRow = myXlonInsrtBgnRow + (i - 1) * myXlonCpyRowCnt
+        Call PfixCopyInsertRow( _
+                myXbisExitFlag, _
+                myXobjSheet, myXlonCpyBgnRow, myXlonCpyRowCnt, myXlonInsrtRow)
+        If myXbisExitFlag = True Then GoTo ExitPath
     Next i
-    Application.CutCopyMode = False
-    Set myXobjCpyRow = Nothing: Set myXobjInsrtRow = Nothing
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
@@ -649,7 +696,6 @@ Public Sub PfixCalculateFullBySendKeys()
 'Ctrl+Alt+F9 : ^%{F9}
     Call SendKeys("^%{F9}", True)
 End Sub
-
       <br></pre>
     </body>
   </html>
