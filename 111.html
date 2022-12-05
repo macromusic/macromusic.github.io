@@ -89,6 +89,7 @@ Private Sub ctrProc()
     If coXlonCpyBgnRow <= 0 Then GoTo ExitPath
     If coXlonCpyRowCnt <= 0 Then GoTo ExitPath
     If coXlonPstBgnRow <= 0 Then GoTo ExitPath
+    If coXlonPstBgnRow <= coXlonCpyBgnRow + coXlonCpyRowCnt - 1 Then GoTo ExitPath
     If coXlonXvalRow <= 0 Then GoTo ExitPath
     If coXlonYvalRow <= 0 Then GoTo ExitPath
     If coXlonXttlRow <= 0 Then GoTo ExitPath
@@ -102,6 +103,8 @@ Private Sub ctrProc()
     
     Set myXobjSheet = ActiveSheet
     myXlonChrtObjCntOrg = myXobjSheet.ChartObjects.Count
+        
+    myXlonOfstRow = coXlonPstBgnRow - coXlonCpyBgnRow - coXlonCpyRowCnt
     
     For i = 1 To coXlonDataCnt
     
@@ -118,8 +121,6 @@ Private Sub ctrProc()
         myXlonChrtObjCnt = myXobjSheet.ChartObjects.Count
         If myXlonChrtObjCnt = myXlonChrtObjCntOrg Then GoTo NextPath
         Set myXobjChrt = myXobjSheet.ChartObjects(myXlonChrtObjCnt).Chart
-        
-        myXlonOfstRow = coXlonPstBgnRow - coXlonCpyBgnRow - 1
         
     '//グラフのX軸データの参照式を変更
         myXstrOrgAdrsR1C1 = "R" & coXlonXvalRow
@@ -212,6 +213,7 @@ Private Sub PfixCopyPasteRow( _
     If myXlonCpyBgnRow <= 0 Then GoTo ExitPath
     If myXlonCpyRowCnt <= 0 Then GoTo ExitPath
     If myXlonPstBgnRow <= 0 Then GoTo ExitPath
+    If myXlonPstBgnRow <= myXlonCpyBgnRow + myXlonCpyRowCnt - 1 Then GoTo ExitPath
   Dim myXlonCpyEndRow As Long, myXstrCpyRowAdrs As String
     myXlonCpyEndRow = myXlonCpyBgnRow + myXlonCpyRowCnt - 1
     myXstrCpyRowAdrs = myXlonCpyBgnRow & ":" & myXlonCpyEndRow
