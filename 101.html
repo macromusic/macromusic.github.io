@@ -9,349 +9,552 @@
     <body>
       <div>macro sample</div>
       <pre>
-'Includes PfixClearAllCommentOnSheet
-'Includes PincCopyAllCellValueToCommentOnSheet
-'Includes PfixAddCommentAndWriteText
-'Includes PincCopyAllCommentTextToCellOnSheet
-'Includes PfncstrCommentText
-'Includes PfixWriteCellValue
+'Includes CSlctFilePath
+'Includes CRdTxtNoOpn
+'Includes CRdTxtOpn
+'Includes CVrblToSht
+'Includes PfixChangeModuleConstValue
+'Includes x
 
 Option Explicit
 Option Base 1
 
-'◆ClassProc名_コメントを処理する
-'Rev.001
+'◆ModuleProc名_CSVファイルを選択して開閉してデータ処理して貼り付ける
+'Rev.002
   
 '//モジュールメモリ
-  Private Const meMstrMdlName As String = "CCmntCtrl"
+  Private Const meMstrMdlName As String = "xRefSlctCsvRdToSht"
+  Private Const meMlonExeNum As Long = 0
   
-'//PropertyGet_出力制御信号
+'//モジュール内定数
+  
+'//出力制御信号
   Private myXbisCmpltFlag As Boolean
   
-'//PropertySetLet_入力データ
-  Private myXobjSheet As Object
+'//出力データ
+  
+'//入力制御信号
+  
+'//入力データ
   
 '//モジュール内変数_制御信号
   Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonFDType As Long
+    'myXlonFDType = msoFileDialogFilePicker : ファイルを選択
+    'myXlonFDType = msoFileDialogOpen       : ファイルを開く
+    'myXlonFDType = msoFileDialogSaveAs     : ファイルを保存
+  Private myXstrDfltFldrPath As String
+    'myXstrDfltFldrPath = ""  : デフォルトパス指定無し
+    'myXstrDfltFldrPath = "C" : Cドライブをデフォルトパスに指定
+    'myXstrDfltFldrPath = "1" : このブックの親フォルダをデフォルトパスに指定
+    'myXstrDfltFldrPath = "2" : アクティブブックの親フォルダをデフォルトパスに指定
+    'myXstrDfltFldrPath = "*" : デフォルトパスを指定
+  Private myXstrDfltFilePath As String
+    'myXstrDfltFilePath = ""  : デフォルトパス指定無し
+    'myXstrDfltFilePath = "1" : このブックをデフォルトパスに指定
+    'myXstrDfltFilePath = "2" : アクティブブックをデフォルトパスに指定
+    'myXstrDfltFilePath = "*" : デフォルトパスを指定
+  Private myXstrFltrExtsn As String
+  Private myZstrAddFltr() As String
+    'myZstrAddFltr(i, 1) : ファイルの候補を指定する文字列(ファイル)
+    'myZstrAddFltr(i, 2) : ファイルの候補を指定する文字列(フィルタ文字列)
+  Private myXbisFltrClr As Boolean
+    'myXbisFltrClr = False : ファイルフィルタを初期化せずに追加する
+    'myXbisFltrClr = True  : ファイルフィルタを初期化する
+  Private myXlonFltrIndx As Long
+    'myXlonFltrIndx = 1～ : ファイルフィルタの初期選択
+  Private myXlonIniView As Long
+    'myXlonIniView = msoFileDialogViewDetails    : ファイルを詳細情報と共に一覧表示
+    'myXlonIniView = msoFileDialogViewLargeIcons : ファイルを大きいアイコンで表示
+    'myXlonIniView = msoFileDialogViewList       : ファイルを詳細情報なしで一覧表示
+    'myXlonIniView = msoFileDialogViewPreview    : ファイルの一覧を表示し、選択したファイルをプレビュー ウィンドウ枠に表示
+    'myXlonIniView = msoFileDialogViewProperties : ファイルの一覧を表示し、選択したファイルのプロパティをウィンドウ枠に表示
+    'myXlonIniView = msoFileDialogViewSmallIcons : ファイルを小さいアイコンで表示
+    'myXlonIniView = msoFileDialogViewThumbnail  : ファイルを縮小表示
+    'myXlonIniView = msoFileDialogViewTiles      : ファイルをアイコンで並べて表示
+    'myXlonIniView = msoFileDialogViewWebView    : ファイルを Web 表示
+  Private myXbisMultSlct As Boolean
+    'myXbisMultSlct = False : 複数のファイルを選択不可能
+    'myXbisMultSlct = True  : 複数のファイルを選択可能
+  Private myXlonFileCnt As Long, myZstrFilePath() As String
+    'myZstrFilePath(i) : ファイルパス
+
+  Private myXstrOrgFilePath As String
+  Private myXlonBgn As Long, myXlonEnd As Long, _
+            myXbisSpltOptn As Boolean, myXstrInSpltChr As String
+    'myXbisSpltOptn = True  : 文字列を分割処理する
+    'myXbisSpltOptn = False : 文字列を分割処理しない
+  Private myXstrDirPath As String, myXstrFileName As String, _
+            myXstrBaseName As String, myXstrExtsn As String
+  Private myXlonTxtRowCnt As Long, myXlonTxtColCnt As Long, myZstrTxtData() As String
+    'myZstrTxtData(i, j) : テキストファイル内容
+
+  Private myXbisInptBxOFF As Boolean
+    'myXbisInptBxOFF = False : 指定位置が無い場合にInputBoxで範囲指定する
+    'myXbisInptBxOFF = True  : 指定位置が無い場合にInputBoxで範囲指定しない
+  Private myXbisEachWrtON As Boolean
+    'myXbisEachWrtON = False : 配列変数内データを一度に書き出しする
+    'myXbisEachWrtON = True  : 配列変数内データを1データづつ書き出しする
+  Private myZvarPstVrbl As Variant, myXobjPstFrstCell As Object
 
 'iniP_モジュール内変数を初期化する
 Private Sub initializeModuleVariables()
     myXbisExitFlag = False
+    
+    myXlonFDType = Empty: myXstrDfltFldrPath = Empty: myXstrDfltFilePath = Empty
+    myXstrFltrExtsn = Empty
+    Erase myZstrAddFltr: myXbisFltrClr = False: myXlonFltrIndx = Empty
+    myXlonIniView = Empty: myXbisMultSlct = False
+    myXlonFileCnt = Empty: Erase myZstrFilePath
+    myXstrOrgFilePath = Empty
+    myXlonBgn = Empty: myXlonEnd = Empty
+    myXbisSpltOptn = False: myXstrInSpltChr = Empty
+    myXstrDirPath = Empty: myXstrFileName = Empty
+    myXstrBaseName = Empty: myXstrExtsn = Empty
+    myXlonTxtRowCnt = Empty: myXlonTxtColCnt = Empty: Erase myZstrTxtData
+    myXbisInptBxOFF = False: myXbisEachWrtON = False
+    myZvarPstVrbl = Empty: Set myXobjPstFrstCell = Nothing
 End Sub
 
 '-----------------------------------------------------------------------------------------------
 
-Public Property Get getCmpltFlag() As Boolean
-    getCmpltFlag = myXbisCmpltFlag
-End Property
+'PublicP_モジュールメモリのリセット
+Public Sub resetConstant()
+  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
+  Dim myZvarM(1, 2) As Variant
+    myZvarM(1, 1) = "meMlonExeNum": myZvarM(1, 2) = 0
+    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+End Sub
+
+'PublicP_
+Public Sub exeProc()
+    
+'//処理実行
+    Call callxRefSlctCsvRdToSht
+    
+'//処理結果表示
+    Select Case myXbisCmpltFlag
+        Case True: MsgBox "実行完了"
+        Case Else: MsgBox "異常あり", vbExclamation
+    End Select
+    
+End Sub
+
+'PublicP_
+Public Sub callProc(myXbisCmpltFlagOUT As Boolean)
+    
+'//出力変数を初期化
+    myXbisCmpltFlagOUT = False
+    
+'//処理実行
+    Call ctrProc
+    If myXbisCmpltFlag = False Then Exit Sub
+    
+'//出力変数に格納
+    myXbisCmpltFlagOUT = myXbisCmpltFlag
+
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call remProc: If myXbisExitFlag = True Then GoTo ExitPath
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables1
+    Call setControlVariables2
+    Call setControlVariables3
+    
+'//S:ファイルを選択してそのパスを取得
+    Call snsProc1
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//S:テキストファイルの内容を取得
+    Call snsProc2
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+'//P:データを取得
+    Call prsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+    
+'//Run:変数情報をエクセルシートに書き出す
+    Call runProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "6"     'PassFlag
+    
+    Call checkOutputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+    myXbisCmpltFlag = True
+ExitPath:
+    If coXbisTestMode = False Then Call recProc
+    Call initializeModuleVariables
+End Sub
 
 'iniP_出力変数を初期化する
 Private Sub initializeOutputVariables()
     myXbisCmpltFlag = False
 End Sub
 
-'-----------------------------------------------------------------------------------------------
-
-Public Property Set setSheet(ByVal RHS As Object)
-    Set myXobjSheet = RHS
-End Property
+'RemP_モジュールメモリに保存した変数を取り出す
+Private Sub remProc()
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
 
 'checkP_入力変数内容を確認する
 Private Sub checkInputVariables()
     myXbisExitFlag = False
     
-    If myXobjSheet Is Nothing Then GoTo ExitPath
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables1()
+    
+    myXlonFDType = msoFileDialogFilePicker
+    'myXlonFDType = msoFileDialogFilePicker : ファイルを選択
+    'myXlonFDType = msoFileDialogOpen       : ファイルを開く
+    'myXlonFDType = msoFileDialogSaveAs     : ファイルを保存
+    
+    myXstrDfltFldrPath = "1"
+    'myXstrDfltFldrPath = ""  : デフォルトパス指定無し
+    'myXstrDfltFldrPath = "C" : Cドライブをデフォルトパスに指定
+    'myXstrDfltFldrPath = "1" : このブックの親フォルダをデフォルトパスに指定
+    'myXstrDfltFldrPath = "2" : アクティブブックの親フォルダをデフォルトパスに指定
+    'myXstrDfltFldrPath = "*" : デフォルトパスを指定
+    
+    myXstrDfltFilePath = "1"
+    'myXstrDfltFilePath = ""  : デフォルトパス指定無し
+    'myXstrDfltFilePath = "1" : このブックをデフォルトパスに指定
+    'myXstrDfltFilePath = "2" : アクティブブックをデフォルトパスに指定
+    'myXstrDfltFilePath = "*" : デフォルトパスを指定
+    
+'    myXstrFltrExtsn = "xl"
+'
+'    ReDim myZstrAddFltr(1, 2) As String
+'    myZstrAddFltr(1, 1) = "PDFファイル"
+'    myZstrAddFltr(1, 2) = "*.pdf"
+    'myZstrAddFltr(i, 1) : ファイルの候補を指定する文字列(ファイル)
+    'myZstrAddFltr(i, 2) : ファイルの候補を指定する文字列(フィルタ文字列)
+    
+    myXbisFltrClr = False
+    'myXbisFltrClr = False : ファイルフィルタを初期化せずに追加する
+    'myXbisFltrClr = True  : ファイルフィルタを初期化する
+    
+    myXlonFltrIndx = 1
+    'myXlonFltrIndx = 1～ : ファイルフィルタの初期選択
+    
+    myXlonIniView = msoFileDialogViewList
+    'myXlonIniView = msoFileDialogViewDetails    : ファイルを詳細情報と共に一覧表示
+    'myXlonIniView = msoFileDialogViewLargeIcons : ファイルを大きいアイコンで表示
+    'myXlonIniView = msoFileDialogViewList       : ファイルを詳細情報なしで一覧表示
+    'myXlonIniView = msoFileDialogViewPreview    : ファイルの一覧を表示し、選択したファイルをプレビュー ウィンドウ枠に表示
+    'myXlonIniView = msoFileDialogViewProperties : ファイルの一覧を表示し、選択したファイルのプロパティをウィンドウ枠に表示
+    'myXlonIniView = msoFileDialogViewSmallIcons : ファイルを小さいアイコンで表示
+    'myXlonIniView = msoFileDialogViewThumbnail  : ファイルを縮小表示
+    'myXlonIniView = msoFileDialogViewTiles      : ファイルをアイコンで並べて表示
+    'myXlonIniView = msoFileDialogViewWebView    : ファイルを Web 表示
+    
+    myXbisMultSlct = False
+    'myXbisMultSlct = False : 複数のファイルを選択不可能
+    'myXbisMultSlct = True  : 複数のファイルを選択可能
+    
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables2()
+    
+    myXlonBgn = 1
+    myXlonEnd = 0
+    
+    myXbisSpltOptn = True
+    myXstrInSpltChr = ""
+    'myXbisSpltOptn = True  : 文字列を分割処理する
+    'myXbisSpltOptn = False : 文字列を分割処理しない
+    
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables3()
+    
+    myXbisInptBxOFF = False
+    'myXbisInptBxOFF = False : 指定位置が無い場合にInputBoxで範囲指定する
+    'myXbisInptBxOFF = True  : 指定位置が無い場合にInputBoxで範囲指定しない
+    
+    myXbisEachWrtON = False
+    'myXbisEachWrtON = False : 配列変数内データを一度に書き出しする
+    'myXbisEachWrtON = True  : 配列変数内データを1データづつ書き出しする
+
+End Sub
+
+'SnsP_ファイルを選択してそのパスを取得
+Private Sub snsProc1()
+    myXbisExitFlag = False
+
+    Call instCSlctFilePath
+    If myXlonFileCnt <= 0 Then GoTo ExitPath
+    
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    myXstrOrgFilePath = myZstrFilePath(L)
     
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
 End Sub
 
-'-----------------------------------------------------------------------------------------------
-
-'PublicP_シート上の全コメントを消去する
-Public Sub exeProcClearComment()
+'SnsP_テキストファイルの内容を取得
+Private Sub snsProc2()
+    myXbisExitFlag = False
     
-'//処理実行
-    Call ctrProcClearComment
+    Call instCRdTxtNoOpn
+    If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then
+        Call instCRdTxtOpn
+        If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then GoTo ExitPath
+    End If
     
-End Sub
-
-'CtrlP_
-Private Sub ctrProcClearComment()
-    Call initializeOutputVariables
-    Call initializeModuleVariables
-    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
-
-'//シート上の全コメントを消去
-    Call PfixClearAllCommentOnSheet(myXbisExitFlag, myXobjSheet)
-    If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
-    
-    myXbisCmpltFlag = True
+    Exit Sub
 ExitPath:
-    Call initializeModuleVariables
+    myXbisExitFlag = True
 End Sub
 
-'-----------------------------------------------------------------------------------------------
-
-'PublicP_シート上の全セル内容をコメントに転記する
-Public Sub exeProcCellToComment()
+'PrcsP_データを取得
+Private Sub prsProc()
+    myXbisExitFlag = False
     
-'//処理実行
-    Call ctrProcCellToComment
-    
-End Sub
-
-'CtrlP_
-Private Sub ctrProcCellToComment()
-    Call initializeOutputVariables
-    Call initializeModuleVariables
-    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
-
-'//シート上の全セル内容をコメントに転記
-    Call PincCopyAllCellValueToCommentOnSheet(myXbisExitFlag, myXobjSheet)
-    If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
-    
-    myXbisCmpltFlag = True
+    Exit Sub
 ExitPath:
-    Call initializeModuleVariables
+    myXbisExitFlag = True
 End Sub
 
-'-----------------------------------------------------------------------------------------------
-
-'PublicP_シート上の全コメント内容をセルに転記する
-Public Sub exeProcCommentToCell()
+'RunP_変数情報をエクセルシートに書き出す
+Private Sub runProc()
+    myXbisExitFlag = False
     
-'//処理実行
-    Call ctrProcCommentToCell
+    myZvarPstVrbl = myZstrTxtData
     
-End Sub
-
-'CtrlP_
-Private Sub ctrProcCommentToCell()
-    Call initializeOutputVariables
-    Call initializeModuleVariables
-    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
-
-'//シート上の全コメント内容をセルに転記
-    Call PincCopyAllCommentTextToCellOnSheet(myXbisExitFlag, myXobjSheet)
+    Call instCVrblToSht
     If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
     
-    myXbisCmpltFlag = True
+    Exit Sub
 ExitPath:
-    Call initializeModuleVariables
+    myXbisExitFlag = True
+End Sub
+
+'checkP_出力変数内容を確認する
+Private Sub checkOutputVariables()
+    myXbisExitFlag = False
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RecP_使用した変数をモジュールメモリに保存する
+Private Sub recProc()
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    
+  Dim myZvarM(1, 2) As Variant
+    myZvarM(1, 1) = "meMlonExeNum"
+    myZvarM(1, 2) = meMlonExeNum + 1
+
+  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
+    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+    
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
 End Sub
 
 '===============================================================================================
 
- '定型Ｐ_シート上の全コメントを消去する
-Private Sub PfixClearAllCommentOnSheet(myXbisExitFlag As Boolean, _
-            ByVal myXobjSheet As Object)
-    myXbisExitFlag = False
-    If myXobjSheet Is Nothing Then GoTo ExitPath
-  Dim myXobjDataRng As Object, myXobjTmpRng As Object
-    With myXobjSheet
-        Set myXobjDataRng = .Range(.Cells(1, 1), .Cells.SpecialCells(xlCellTypeLastCell))
+'◆ClassProc名_ファイルを選択してそのパスを取得する
+Private Sub instCSlctFilePath()
+  Dim Lc As Long
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim k As Long
+  Dim myXinsFilePath As CSlctFilePath: Set myXinsFilePath = New CSlctFilePath
+    With myXinsFilePath
+    '//クラス内変数への入力
+        .letFDType = myXlonFDType
+        .letDfltFldrPath = myXstrDfltFldrPath
+        .letDfltFilePath = myXstrDfltFilePath
+        .letExtsn = myXstrFltrExtsn
+        .letAddFltr = myZstrAddFltr
+        .letFltrClr = myXbisFltrClr
+        .letFltrIndx = myXlonFltrIndx
+        .letIniView = myXlonIniView
+        .letMultSlct = myXbisMultSlct
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXlonFileCnt = .getFileCnt
+        If myXlonFileCnt <= 0 Then Exit Sub
+        k = myXlonFileCnt + Lo - 1
+        ReDim myZstrFilePath(k) As String
+        Lc = .getOptnBase
+        For k = 1 To myXlonFileCnt
+            myZstrFilePath(k + Lo - 1) = .getFilePathAry(k + Lc - 1)
+        Next k
     End With
-    If myXobjDataRng Is Nothing Then GoTo ExitPath
-    On Error Resume Next
-    For Each myXobjTmpRng In myXobjDataRng
-        myXobjTmpRng.ClearComments
-    Next
+    Set myXinsFilePath = Nothing
+End Sub
+
+'◆ClassProc名_ファイルを開かずにテキストファイルの内容を取得する
+Private Sub instCRdTxtNoOpn()
+  Dim Lc As Long
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+  Dim myXinsRdTxtNoOpn As CRdTxtNoOpn: Set myXinsRdTxtNoOpn = New CRdTxtNoOpn
+    With myXinsRdTxtNoOpn
+    '//クラス内変数への入力
+        .letFilePath = myXstrOrgFilePath
+        .letRdBgnEnd(1) = myXlonBgn
+        .letRdBgnEnd(2) = myXlonEnd
+        .letSpltOptn = myXbisSpltOptn
+        .letSpltChr = myXstrInSpltChr
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXstrDirPath = .getDirPath
+        myXstrFileName = .getFileName
+        myXstrBaseName = .getBaseName
+        myXstrExtsn = .getExtsn
+        myXlonTxtRowCnt = .getTxtRowCnt
+        myXlonTxtColCnt = .getTxtColCnt
+        If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then GoTo JumpPath
+        i = myXlonTxtRowCnt + Lo - 1: j = myXlonTxtColCnt + Lo - 1
+        ReDim myZstrTxtData(i, j) As String
+        Lc = .getOptnBase
+        For i = 1 To myXlonTxtRowCnt
+            For j = 1 To myXlonTxtColCnt
+                myZstrTxtData(i + Lo - 1, j + Lo - 1) = .getTxtDataAry(i + Lc - 1, j + Lc - 1)
+            Next j
+        Next i
+    End With
+JumpPath:
+    Set myXinsRdTxtNoOpn = Nothing
+End Sub
+
+'◆ClassProc名_ファイルを開いてテキストファイルの内容を取得する
+Private Sub instCRdTxtOpn()
+  Dim Lc As Long
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+  Dim myXinsRdTxtOpn As CRdTxtOpn: Set myXinsRdTxtOpn = New CRdTxtOpn
+    With myXinsRdTxtOpn
+    '//クラス内変数への入力
+    '//テキストファイルパスを指定
+        .letFilePath = myXstrOrgFilePath
+        .letRdBgnEnd(1) = myXlonBgn
+        .letRdBgnEnd(2) = myXlonEnd
+        .letSpltOptn = myXbisSpltOptn
+        .letSpltChr = myXstrInSpltChr
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXstrDirPath = .getDirPath
+        myXstrFileName = .getFileName
+        myXstrBaseName = .getBaseName
+        myXstrExtsn = .getExtsn
+        myXlonTxtRowCnt = .getTxtRowCnt
+        myXlonTxtColCnt = .getTxtColCnt
+        If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then GoTo JumpPath
+        i = myXlonTxtRowCnt + Lo - 1: j = myXlonTxtColCnt + Lo - 1
+        ReDim myZstrTxtData(i, j) As String
+        Lc = .getOptnBase
+        For i = 1 To myXlonTxtRowCnt
+            For j = 1 To myXlonTxtColCnt
+                myZstrTxtData(i + Lo - 1, j + Lo - 1) = .getTxtDataAry(i + Lc - 1, j + Lc - 1)
+            Next j
+        Next i
+    End With
+JumpPath:
+    Set myXinsRdTxtOpn = Nothing
+End Sub
+
+'◆ClassProc名_変数情報をエクセルシートに書き出す
+Private Sub instCVrblToSht()
+  Dim myXinsVrblToSht As CVrblToSht: Set myXinsVrblToSht = New CVrblToSht
+    With myXinsVrblToSht
+    '//クラス内変数への入力
+        .letVrbl = myZvarPstVrbl
+        Set .setPstFrstCell = myXobjPstFrstCell
+        .letInptBxOFF = myXbisInptBxOFF
+        .letEachWrtON = myXbisEachWrtON
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXbisExitFlag = Not .getCmpltFlag
+    End With
+    Set myXinsVrblToSht = Nothing
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_モジュール内定数の値を変更する
+Private Sub PfixChangeModuleConstValue(myXbisExitFlag As Boolean, _
+            ByVal myXstrMdlName As String, ByRef myZvarM() As Variant)
+    myXbisExitFlag = False
+    If myXstrMdlName = "" Then GoTo ExitPath
+  Dim L As Long, myXvarTmp As Variant
+    On Error GoTo ExitPath
+    L = LBound(myZvarM, 1): myXvarTmp = myZvarM(L, L)
     On Error GoTo 0
-    Set myXobjDataRng = Nothing: Set myXobjTmpRng = Nothing
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
-End Sub
-
- '定型Ｐ_シート上の全セル内容をコメントに転記する
-Private Sub PincCopyAllCellValueToCommentOnSheet(myXbisExitFlag As Boolean, _
-            ByVal myXobjSheet As Object)
-'Includes PfixAddCommentAndWriteText
-    myXbisExitFlag = False
-    If myXobjSheet Is Nothing Then GoTo ExitPath
-'//シート上のデータ記載全範囲をオブジェクト配列に取込む
-  Dim myXobjDataRng As Object
-    With myXobjSheet
-        Set myXobjDataRng = .Range(.Cells(1, 1), .Cells.SpecialCells(xlCellTypeLastCell))
-    End With
-    If myXobjDataRng Is Nothing Then GoTo ExitPath
-'//セルのコメント内容を取得してセルに指定文字列を記入
-  Dim myXobjTmpRng As Object
-    For Each myXobjTmpRng In myXobjDataRng
-      Dim myXvarRngVal As Variant: myXvarRngVal = myXobjTmpRng.Value
-        If myXvarRngVal = "" Then GoTo NextPath
-        Call PfixAddCommentAndWriteText(myXbisExitFlag, myXobjTmpRng, myXvarRngVal, False)
-NextPath:
-    Next
-    Set myXobjDataRng = Nothing: Set myXobjTmpRng = Nothing
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
-End Sub
-
- '定型Ｐ_コメントを追加してコメントに指定文字列を記入する
-Private Sub PfixAddCommentAndWriteText(myXbisExitFlag As Boolean, _
-            ByVal myXobjRng As Object, ByVal myXvarInput As Variant, _
-            Optional ByVal coXbisAppend As Boolean = False)
-'coXbisAppend = False : コメントの内容を上書きする
-'coXbisAppend = True  : コメントの元内容に追加する
-    myXbisExitFlag = False
-    If myXobjRng Is Nothing Then GoTo ExitPath
-    If myXvarInput = "" Then GoTo ExitPath
-'//コメント有無確認
-  Dim myXbisCmntExist As Boolean
-    Select Case TypeName(myXobjRng.Comment)
-        Case "Comment": myXbisCmntExist = True
-        Case "Nothing": myXbisCmntExist = False
-        Case Else: myXbisCmntExist = False
-    End Select
-'//コメント入力文字の設定
-  Dim myXstrCmntTxt As String
-    If myXbisCmntExist = True And coXbisAppend = True Then
-        myXstrCmntTxt = CStr(myXobjRng.Comment.Text & myXvarInput)
-    Else
-        myXstrCmntTxt = CStr(myXvarInput)
-    End If
-'//コメント追加と設定
-    If myXbisCmntExist = True Then myXobjRng.ClearComments
-    Call myXobjRng.AddComment.Text(myXstrCmntTxt)
-    With myXobjRng.Comment.Shape.TextFrame
-        .HorizontalAlignment = xlLeft
-        .VerticalAlignment = xlTop
-        .AutoSize = True
-        With .Characters.Font
-            .Name = "ＭＳ Ｐゴシック"
-            .FontStyle = "標準"
-            .Size = 11
-            .ColorIndex = 1
-        End With
-    End With
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
-End Sub
-
- '定型Ｐ_シート上の全コメント内容をセルに転記する
-Private Sub PincCopyAllCommentTextToCellOnSheet(myXbisExitFlag As Boolean, _
-            ByVal myXobjSheet As Object)
-'Includes PfncstrCommentText
-'Includes PfixWriteCellValue
-    myXbisExitFlag = False
-    If myXobjSheet Is Nothing Then GoTo ExitPath
-'//シート上のデータ記載全範囲をオブジェクト配列に取込む
-  Dim myXobjDataRng As Object
-    With myXobjSheet
-        Set myXobjDataRng = .Range(.Cells(1, 1), .Cells.SpecialCells(xlCellTypeLastCell))
-    End With
-    If myXobjDataRng Is Nothing Then GoTo ExitPath
-'//セルのコメント内容を取得してセルに指定文字列を記入
-  Dim myXobjTmpRng As Object, myXvarCmntTxt As Variant
-    For Each myXobjTmpRng In myXobjDataRng
-        myXvarCmntTxt = PfncstrCommentText(myXobjTmpRng)
-        If myXvarCmntTxt = "" Then GoTo NextPath
-        Call PfixWriteCellValue(myXbisExitFlag, myXobjTmpRng, myXvarCmntTxt, False)
-NextPath:
-    Next
-    Set myXobjDataRng = Nothing: Set myXobjTmpRng = Nothing
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
-End Sub
-
- '定型Ｆ_セルのコメント内容を取得する
-Private Function PfncstrCommentText(ByVal myXobjRng As Object) As String
-    PfncstrCommentText = Empty
-    If myXobjRng Is Nothing Then Exit Function
-'//コメント有無確認
-  Dim myXbisCmntExist As Boolean
-    Select Case TypeName(myXobjRng.Comment)
-        Case "Comment": myXbisCmntExist = True
-        Case "Nothing": myXbisCmntExist = False
-        Case Else: myXbisCmntExist = False
-    End Select
-    If myXbisCmntExist = False Then Exit Function
-'//コメント内容取得
-  Dim myXstrTmpCmnt As String: myXstrTmpCmnt = Empty
-    On Error Resume Next
-    myXstrTmpCmnt = myXobjRng.Comment.Text
-    On Error GoTo 0
-    PfncstrCommentText = myXstrTmpCmnt
-End Function
-
- '定型Ｐ_セルに指定文字列を記入する
-Private Sub PfixWriteCellValue(myXbisExitFlag As Boolean, _
-            ByVal myXobjRng As Object, ByVal myXvarInput As Variant, _
-            Optional ByVal coXbisAppend As Boolean = False)
-'coXbisAppend = False : セルの値を上書きする
-'coXbisAppend = True  : セルの元値に追加する
-    myXbisExitFlag = False
-    If myXobjRng Is Nothing Then GoTo ExitPath
-  Dim myXvarRngVal As Variant
-    Select Case coXbisAppend
-        Case True: myXvarRngVal = myXobjRng.Value & myXvarInput
-        Case Else: myXvarRngVal = myXvarInput
-    End Select
-    myXobjRng.Value = myXvarRngVal
+  Dim myXlonDclrLines As Long, myXobjCdMdl As Object
+    Set myXobjCdMdl = ThisWorkbook.VBProject.VBComponents(myXstrMdlName).CodeModule
+    myXlonDclrLines = myXobjCdMdl.CountOfDeclarationLines
+    If myXlonDclrLines <= 0 Then GoTo ExitPath
+  Dim i As Long, n As Long
+  Dim myXstrTmp As String, myXstrSrch As String, myXstrOrg As String, myXstrRplc As String
+Application.DisplayAlerts = False
+    For i = 1 To myXlonDclrLines
+        myXstrTmp = myXobjCdMdl.Lines(i, 1)
+        For n = LBound(myZvarM, 1) To UBound(myZvarM, 1)
+            myXstrSrch = "Const" & Space(1) & myZvarM(n, L) & Space(1) & "As" & Space(1)
+            If InStr(myXstrTmp, myXstrSrch) > 0 Then
+                myXstrOrg = Left(myXstrTmp, InStr(myXstrTmp, "=" & Space(1)) + 1)
+                myXstrRplc = myXstrOrg & myZvarM(n, L + 1)
+                Call myXobjCdMdl.ReplaceLine(i, myXstrRplc)
+            End If
+        Next n
+    Next i
+Application.DisplayAlerts = True
+    Set myXobjCdMdl = Nothing
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
 End Sub
 
 'DummyＰ_
-Private Sub CsubDummy()
+Private Sub MsubDummy()
 End Sub
 
 '===============================================================================================
-
-''◆ClassProc名_コメントを処理する
-'Private Sub instClearComment()
-''//シート上の全コメントを消去する
+'◆ModuleProc名_CSVファイルを選択して開閉してデータ処理して貼り付ける
+Private Sub callxRefSlctCsvRdToSht()
 '  Dim myXbisCmpltFlag As Boolean
-'  Dim myXinsCmntCtrl As CCmntCtrl: Set myXinsCmntCtrl = New CCmntCtrl
-'    With myXinsCmntCtrl
-'        Set .setSheet = ActiveSheet
-'        .exeProcClearComment
-'        myXbisCmpltFlag = .getCmpltFlag
-'    End With
-'    Set myXinsCmntCtrl = Nothing
-''    Debug.Print "完了: " & myXbisCmpltFlag
-'End Sub
+    Call xRefSlctCsvRdToSht.callProc(myXbisCmpltFlag)
+End Sub
 '
-''◆ClassProc名_コメントを処理する
-'Private Sub instCellToComment()
-''//シート上の全セル内容をコメントに転記する
-'  Dim myXbisCmpltFlag As Boolean
-'  Dim myXinsCmntCtrl As CCmntCtrl: Set myXinsCmntCtrl = New CCmntCtrl
-'    With myXinsCmntCtrl
-'        Set .setSheet = ActiveSheet
-'        .exeProcCellToComment
-'        myXbisCmpltFlag = .getCmpltFlag
-'    End With
-'    Set myXinsCmntCtrl = Nothing
-''    Debug.Print "完了: " & myXbisCmpltFlag
-'End Sub
+'  Public Const coXbisTestMode As Boolean = True
+'  Public Const coXbisTestMode As Boolean = False
 '
-''◆ClassProc名_コメントを処理する
-'Private Sub instCommentToCell()
-''//シート上の全コメント内容をセルに転記する
-'  Dim myXbisCmpltFlag As Boolean
-'  Dim myXinsCmntCtrl As CCmntCtrl: Set myXinsCmntCtrl = New CCmntCtrl
-'    With myXinsCmntCtrl
-'        Set .setSheet = ActiveSheet
-'        .exeProcCommentToCell
-'        myXbisCmpltFlag = .getCmpltFlag
-'    End With
-'    Set myXinsCmntCtrl = Nothing
-''    Debug.Print "完了: " & myXbisCmpltFlag
-'End Sub
+Private Sub resetConstantInxRefSlctCsvRdToSht()
+'//xRefSlctCsvRdToShtモジュールのモジュールメモリのリセット処理
+    Call xRefSlctCsvRdToSht.resetConstant
+End Sub
 
       <br></pre>
     </body>
