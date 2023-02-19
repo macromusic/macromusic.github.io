@@ -9,149 +9,64 @@
     <body>
       <div>macro sample</div>
       <pre>
-'Includes CSlctFilePath
-'Includes CRdTxtNoOpn
-'Includes CRdTxtOpn
-'Includes CVrblToSht
-'Includes PfixChangeModuleConstValue
 'Includes x
 
 Option Explicit
 Option Base 1
 
-'◆ModuleProc名_CSVファイルを選択して開閉してデータ処理して貼り付ける
-'Rev.002
-  
+'◆ModuleProc名_
+'Rev.001
+
 '//モジュールメモリ
-  Private Const meMstrMdlName As String = "xRefSlctCsvRdToSht"
-  Private Const meMlonExeNum As Long = 0
-  
+  Private Const meMstrMdlName As String = "xRefMdl"
+
 '//モジュール内定数
-  
+
 '//出力制御信号
   Private myXbisCmpltFlag As Boolean
-  
+
 '//出力データ
-  
+  Private myZdouFltrAnglGo() As Double, myZdouFltrAnglBk() As Double    'フィルタ後Angle
+  Private myZdouFltrVop1Go() As Double, myZdouFltrVop1Bk() As Double    'フィルタ後Vout1[%VDD]
+  Private myZdouFltrVop2Go() As Double, myZdouFltrVop2Bk() As Double    'フィルタ後Vout2[%VDD]
+  Private myZdouFltrDnlAnglGo() As Double, myZdouFltrDnlAnglBk() As Double  'フィルタ後DNL用Angle
+  Private myZdouFltrDnlVop1Go() As Double, myZdouFltrDnlVop1Bk() As Double  'フィルタ後DNL用Vout1[%VDD]
+  Private myZdouFltrDnlVop2Go() As Double, myZdouFltrDnlVop2Bk() As Double  'フィルタ後DNL用Vout2[%VDD]
+
 '//入力制御信号
-  
+
 '//入力データ
-  
+  Private myZdouAnglGo() As Double, myZdouAnglBk() As Double            'Angle
+  Private myZdouVop1Go() As Double, myZdouVop1Bk() As Double            'Vout1[%VDD]
+  Private myZdouVop2Go() As Double, myZdouVop2Bk() As Double            'Vout2[%VDD]
+
 '//モジュール内変数_制御信号
   Private myXbisExitFlag As Boolean
-  
+
 '//モジュール内変数_データ
-  Private myXlonFDType As Long
-    'myXlonFDType = msoFileDialogFilePicker : ファイルを選択
-    'myXlonFDType = msoFileDialogOpen       : ファイルを開く
-    'myXlonFDType = msoFileDialogSaveAs     : ファイルを保存
-  Private myXstrDfltFldrPath As String
-    'myXstrDfltFldrPath = ""  : デフォルトパス指定無し
-    'myXstrDfltFldrPath = "C" : Cドライブをデフォルトパスに指定
-    'myXstrDfltFldrPath = "1" : このブックの親フォルダをデフォルトパスに指定
-    'myXstrDfltFldrPath = "2" : アクティブブックの親フォルダをデフォルトパスに指定
-    'myXstrDfltFldrPath = "*" : デフォルトパスを指定
-  Private myXstrDfltFilePath As String
-    'myXstrDfltFilePath = ""  : デフォルトパス指定無し
-    'myXstrDfltFilePath = "1" : このブックをデフォルトパスに指定
-    'myXstrDfltFilePath = "2" : アクティブブックをデフォルトパスに指定
-    'myXstrDfltFilePath = "*" : デフォルトパスを指定
-  Private myXstrFltrExtsn As String
-  Private myZstrAddFltr() As String
-    'myZstrAddFltr(i, 1) : ファイルの候補を指定する文字列(ファイル)
-    'myZstrAddFltr(i, 2) : ファイルの候補を指定する文字列(フィルタ文字列)
-  Private myXbisFltrClr As Boolean
-    'myXbisFltrClr = False : ファイルフィルタを初期化せずに追加する
-    'myXbisFltrClr = True  : ファイルフィルタを初期化する
-  Private myXlonFltrIndx As Long
-    'myXlonFltrIndx = 1～ : ファイルフィルタの初期選択
-  Private myXlonIniView As Long
-    'myXlonIniView = msoFileDialogViewDetails    : ファイルを詳細情報と共に一覧表示
-    'myXlonIniView = msoFileDialogViewLargeIcons : ファイルを大きいアイコンで表示
-    'myXlonIniView = msoFileDialogViewList       : ファイルを詳細情報なしで一覧表示
-    'myXlonIniView = msoFileDialogViewPreview    : ファイルの一覧を表示し、選択したファイルをプレビュー ウィンドウ枠に表示
-    'myXlonIniView = msoFileDialogViewProperties : ファイルの一覧を表示し、選択したファイルのプロパティをウィンドウ枠に表示
-    'myXlonIniView = msoFileDialogViewSmallIcons : ファイルを小さいアイコンで表示
-    'myXlonIniView = msoFileDialogViewThumbnail  : ファイルを縮小表示
-    'myXlonIniView = msoFileDialogViewTiles      : ファイルをアイコンで並べて表示
-    'myXlonIniView = msoFileDialogViewWebView    : ファイルを Web 表示
-  Private myXbisMultSlct As Boolean
-    'myXbisMultSlct = False : 複数のファイルを選択不可能
-    'myXbisMultSlct = True  : 複数のファイルを選択可能
-  Private myXlonFileCnt As Long, myZstrFilePath() As String
-    'myZstrFilePath(i) : ファイルパス
-
-  Private myXstrOrgFilePath As String
-  Private myXlonBgn As Long, myXlonEnd As Long, _
-            myXbisSpltOptn As Boolean, myXstrInSpltChr As String
-    'myXbisSpltOptn = True  : 文字列を分割処理する
-    'myXbisSpltOptn = False : 文字列を分割処理しない
-  Private myXstrDirPath As String, myXstrFileName As String, _
-            myXstrBaseName As String, myXstrExtsn As String
-  Private myXlonTxtRowCnt As Long, myXlonTxtColCnt As Long, myZstrTxtData() As String
-    'myZstrTxtData(i, j) : テキストファイル内容
-
-  Private myXbisInptBxOFF As Boolean
-    'myXbisInptBxOFF = False : 指定位置が無い場合にInputBoxで範囲指定する
-    'myXbisInptBxOFF = True  : 指定位置が無い場合にInputBoxで範囲指定しない
-  Private myXbisEachWrtON As Boolean
-    'myXbisEachWrtON = False : 配列変数内データを一度に書き出しする
-    'myXbisEachWrtON = True  : 配列変数内データを1データづつ書き出しする
-  Private myZvarPstVrbl As Variant, myXobjPstFrstCell As Object
+  Private myXlonCalRowCnt As Long, myXlonCalColCnt As Long, myZdouCalData() As Double
+  Private myZdouTmpData() As Double
 
 'iniP_モジュール内変数を初期化する
 Private Sub initializeModuleVariables()
     myXbisExitFlag = False
-    
-    myXlonFDType = Empty: myXstrDfltFldrPath = Empty: myXstrDfltFilePath = Empty
-    myXstrFltrExtsn = Empty
-    Erase myZstrAddFltr: myXbisFltrClr = False: myXlonFltrIndx = Empty
-    myXlonIniView = Empty: myXbisMultSlct = False
-    myXlonFileCnt = Empty: Erase myZstrFilePath
-    myXstrOrgFilePath = Empty
-    myXlonBgn = Empty: myXlonEnd = Empty
-    myXbisSpltOptn = False: myXstrInSpltChr = Empty
-    myXstrDirPath = Empty: myXstrFileName = Empty
-    myXstrBaseName = Empty: myXstrExtsn = Empty
-    myXlonTxtRowCnt = Empty: myXlonTxtColCnt = Empty: Erase myZstrTxtData
-    myXbisInptBxOFF = False: myXbisEachWrtON = False
-    myZvarPstVrbl = Empty: Set myXobjPstFrstCell = Nothing
+
+    Erase myZdouOrgData
+    myXlonCalRowCnt = Empty: myXlonCalColCnt = Empty: Erase myZdouCalData
 End Sub
 
 '-----------------------------------------------------------------------------------------------
 
-'PublicP_モジュールメモリのリセット
-Public Sub resetConstant()
-  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
-  Dim myZvarM(1, 2) As Variant
-    myZvarM(1, 1) = "meMlonExeNum": myZvarM(1, 2) = 0
-    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
-End Sub
-
-'PublicP_
-Public Sub exeProc()
-    
-'//処理実行
-    Call callxRefSlctCsvRdToSht
-    
-'//処理結果表示
-    Select Case myXbisCmpltFlag
-        Case True: MsgBox "実行完了"
-        Case Else: MsgBox "異常あり", vbExclamation
-    End Select
-    
-End Sub
-
 'PublicP_
 Public Sub callProc(myXbisCmpltFlagOUT As Boolean)
-    
+
 '//出力変数を初期化
     myXbisCmpltFlagOUT = False
-    
+
 '//処理実行
     Call ctrProc
     If myXbisCmpltFlag = False Then Exit Sub
-    
+
 '//出力変数に格納
     myXbisCmpltFlagOUT = myXbisCmpltFlag
 
@@ -161,39 +76,27 @@ End Sub
 Private Sub ctrProc()
     Call initializeOutputVariables
     Call initializeModuleVariables
-    Call remProc: If myXbisExitFlag = True Then GoTo ExitPath
-    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
-    
+
 '//C:制御用変数を設定
-    Call setControlVariables1
-    Call setControlVariables2
-    Call setControlVariables3
-    
-'//S:ファイルを選択してそのパスを取得
-    Call snsProc1
+    Call setControlVariables
+
+'//S:
+    Call snsProc
     If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
-    
-'//S:テキストファイルの内容を取得
-    Call snsProc2
-    If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
-    
-'//P:データを取得
+
+'//P:
     Call prsProc
     If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
-    
-'//Run:変数情報をエクセルシートに書き出す
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+
+'//Run:
     Call runProc
     If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "6"     'PassFlag
-    
-    Call checkOutputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+
     myXbisCmpltFlag = True
 ExitPath:
-    If coXbisTestMode = False Then Call recProc
     Call initializeModuleVariables
 End Sub
 
@@ -202,128 +105,88 @@ Private Sub initializeOutputVariables()
     myXbisCmpltFlag = False
 End Sub
 
-'RemP_モジュールメモリに保存した変数を取り出す
-Private Sub remProc()
-    myXbisExitFlag = False
-    On Error GoTo ExitPath
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
     
-    On Error GoTo 0
+    myXbinOutlierFltrOptn
+    myXlonOutCnt
+    myXlonMvAvrgCnt
+    myXdouDcmtAngl
+    myXlonDnlMvAvrgCnt
+    myXdouDnlDcmtAngl
+
+End Sub
+
+'SnsP_
+Private Sub snsProc()
+    myXbisExitFlag = False
+
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
 End Sub
 
-'checkP_入力変数内容を確認する
-Private Sub checkInputVariables()
+'PrcsP_
+Private Sub prsProc()
     myXbisExitFlag = False
     
+    Call MsubProcGo1
+    Call MsubProcGo2
+    Call MsubProcGo3
+    Call MsubProcGo4
+    
+    Call MsubProcBk1
+    Call MsubProcBk2
+    Call MsubProcBk3
+    Call MsubProcBk4
+
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
 End Sub
 
-'SetP_制御用変数を設定する
-Private Sub setControlVariables1()
-    
-    myXlonFDType = msoFileDialogFilePicker
-    'myXlonFDType = msoFileDialogFilePicker : ファイルを選択
-    'myXlonFDType = msoFileDialogOpen       : ファイルを開く
-    'myXlonFDType = msoFileDialogSaveAs     : ファイルを保存
-    
-    myXstrDfltFldrPath = "1"
-    'myXstrDfltFldrPath = ""  : デフォルトパス指定無し
-    'myXstrDfltFldrPath = "C" : Cドライブをデフォルトパスに指定
-    'myXstrDfltFldrPath = "1" : このブックの親フォルダをデフォルトパスに指定
-    'myXstrDfltFldrPath = "2" : アクティブブックの親フォルダをデフォルトパスに指定
-    'myXstrDfltFldrPath = "*" : デフォルトパスを指定
-    
-    myXstrDfltFilePath = "1"
-    'myXstrDfltFilePath = ""  : デフォルトパス指定無し
-    'myXstrDfltFilePath = "1" : このブックをデフォルトパスに指定
-    'myXstrDfltFilePath = "2" : アクティブブックをデフォルトパスに指定
-    'myXstrDfltFilePath = "*" : デフォルトパスを指定
-    
-'    myXstrFltrExtsn = "xl"
-'
-'    ReDim myZstrAddFltr(1, 2) As String
-'    myZstrAddFltr(1, 1) = "PDFファイル"
-'    myZstrAddFltr(1, 2) = "*.pdf"
-    'myZstrAddFltr(i, 1) : ファイルの候補を指定する文字列(ファイル)
-    'myZstrAddFltr(i, 2) : ファイルの候補を指定する文字列(フィルタ文字列)
-    
-    myXbisFltrClr = False
-    'myXbisFltrClr = False : ファイルフィルタを初期化せずに追加する
-    'myXbisFltrClr = True  : ファイルフィルタを初期化する
-    
-    myXlonFltrIndx = 1
-    'myXlonFltrIndx = 1～ : ファイルフィルタの初期選択
-    
-    myXlonIniView = msoFileDialogViewList
-    'myXlonIniView = msoFileDialogViewDetails    : ファイルを詳細情報と共に一覧表示
-    'myXlonIniView = msoFileDialogViewLargeIcons : ファイルを大きいアイコンで表示
-    'myXlonIniView = msoFileDialogViewList       : ファイルを詳細情報なしで一覧表示
-    'myXlonIniView = msoFileDialogViewPreview    : ファイルの一覧を表示し、選択したファイルをプレビュー ウィンドウ枠に表示
-    'myXlonIniView = msoFileDialogViewProperties : ファイルの一覧を表示し、選択したファイルのプロパティをウィンドウ枠に表示
-    'myXlonIniView = msoFileDialogViewSmallIcons : ファイルを小さいアイコンで表示
-    'myXlonIniView = msoFileDialogViewThumbnail  : ファイルを縮小表示
-    'myXlonIniView = msoFileDialogViewTiles      : ファイルをアイコンで並べて表示
-    'myXlonIniView = msoFileDialogViewWebView    : ファイルを Web 表示
-    
-    myXbisMultSlct = False
-    'myXbisMultSlct = False : 複数のファイルを選択不可能
-    'myXbisMultSlct = True  : 複数のファイルを選択可能
-    
-End Sub
-
-'SetP_制御用変数を設定する
-Private Sub setControlVariables2()
-    
-    myXlonBgn = 1
-    myXlonEnd = 0
-    
-    myXbisSpltOptn = True
-    myXstrInSpltChr = ""
-    'myXbisSpltOptn = True  : 文字列を分割処理する
-    'myXbisSpltOptn = False : 文字列を分割処理しない
-    
-End Sub
-
-'SetP_制御用変数を設定する
-Private Sub setControlVariables3()
-    
-    myXbisInptBxOFF = False
-    'myXbisInptBxOFF = False : 指定位置が無い場合にInputBoxで範囲指定する
-    'myXbisInptBxOFF = True  : 指定位置が無い場合にInputBoxで範囲指定しない
-    
-    myXbisEachWrtON = False
-    'myXbisEachWrtON = False : 配列変数内データを一度に書き出しする
-    'myXbisEachWrtON = True  : 配列変数内データを1データづつ書き出しする
-
-End Sub
-
-'SnsP_ファイルを選択してそのパスを取得
-Private Sub snsProc1()
+'RunP_
+Private Sub runProc()
     myXbisExitFlag = False
 
-    Call instCSlctFilePath
-    If myXlonFileCnt <= 0 Then GoTo ExitPath
-    
-  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
-    myXstrOrgFilePath = myZstrFilePath(L)
-    
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
 End Sub
 
-'SnsP_テキストファイルの内容を取得
-Private Sub snsProc2()
+'===============================================================================================
+
+'モジュール内Ｐ_
+Private Sub MsubProcGo1()
     myXbisExitFlag = False
     
-    Call instCRdTxtNoOpn
-    If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then
-        Call instCRdTxtOpn
-        If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then GoTo ExitPath
+'//Vop1Goの処理
+    Erase myZdouCalData: Erase myZdouTmpData
+    If myXbinOutlierFltrOptn = True Then
+        myZdouCalData() = myZdouVop1Go()
+        Call COutlierFltr
+        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+        myZdouTmpData() = myZdouCalData()
+    Else
+        myZdouTmpData() = myZdouVop1Go()
+    End If
+    
+    If myXlonMvAvrgCnt > 0 Then
+        Call CMvAvrg
+        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+        myZdouFltrVop1Go() = myZdouCalData()
+    Else
+        myZdouFltrVop1Go() = myZdouCalData()
+    End If
+
+    Erase myZdouCalData
+    If myXlonDnlMvAvrgCnt > 0 Then
+        myZdouCalData() = myZdouTmpData()
+        Call CMvAvrg
+        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+        myZdouFltrDnlVop1Go() = myZdouCalData()
+    Else
+        myZdouFltrDnlVop1Go() = myZdouCalData()
     End If
     
     Exit Sub
@@ -331,51 +194,141 @@ ExitPath:
     myXbisExitFlag = True
 End Sub
 
-'PrcsP_データを取得
-Private Sub prsProc()
+'モジュール内Ｐ_
+Private Sub MsubProcGo2()
     myXbisExitFlag = False
+
+    If myXlonOutCnt = 1 Then Exit Sub
+    
+'//Vop2Goの処理
+    Erase myZdouCalData: Erase myZdouTmpData
+    If myXbinOutlierFltrOptn = True Then
+        myZdouCalData() = myZdouVop2Go()
+        Call COutlierFltr
+        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+        myZdouTmpData() = myZdouCalData()
+    Else
+        myZdouTmpData() = myZdouVop2Go()
+    End If
+    
+    If myXlonMvAvrgCnt > 0 Then
+        Call CMvAvrg
+        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+        myZdouFltrVop2Go() = myZdouCalData()
+    Else
+        myZdouFltrVop2Go() = myZdouCalData()
+    End If
+
+    Erase myZdouCalData
+    If myXlonDnlMvAvrgCnt > 0 Then
+        myZdouCalData() = myZdouTmpData()
+        Call CMvAvrg
+        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+        myZdouFltrDnlVop2Go() = myZdouCalData()
+    Else
+        myZdouFltrDnlVop2Go() = myZdouCalData()
+    End If
+
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'モジュール内Ｐ_
+Private Sub MsubProcGo3()
+    myXbisExitFlag = False
+
+    If myXdouDcmtAngl <= 0 Then Exit Sub
+    
+'//2個の2次元数値配列を1個の2次元配列に左右で結合
+    Call PfixArrayColumnCombineNumeric( _
+            myXlonCalRowCnt, myXlonCalColCnt, myZdouCalData, _
+            myZdouAnglGo, myZdouFltrVop1Go)
+    If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+    
+    If myXlonOutCnt = 2 Then
+        Erase myZdouTmpData
+        myZdouTmpData() = myZdouCalData()
+        Call PfixArrayColumnCombineNumeric( _
+                myXlonCalRowCnt, myXlonCalColCnt, myZdouCalData, _
+                myZdouTmpData, myZdouFltrVop2Go)
+        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+    End If
+
+'//VopGoの処理
+    Call CNumDcmtFltr
+    If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+    
+'//2次元数値配列を指定列で2個の配列に分割
+  Dim myXlonSpltCol As Long, myXlonLftColCnt As Long, myXlonRghtColCnt As Long
+    myXlonSpltCol = 1
+    Erase myZdouTmpData
+    Call PfixArrayColumnSplitNumeric( _
+            myXlonLftColCnt, myZdouFltrAnglGo, myXlonRghtColCnt, myZdouTmpData, _
+            myZdouCalData, myXlonSpltCol)
+    If myXlonLftColCnt <= 0 Or myXlonRghtColCnt <= 0 Then GoTo ExitPath
+
+    If myXlonOutCnt = 1 Then
+        Erase myZdouFltrVop1Go
+        myZdouFltrVop1Go() = myZdouTmpData()
+    ElseIf myXlonOutCnt = 2 Then
+        myXlonSpltCol = 1
+        Call PfixArrayColumnSplitNumeric( _
+                myXlonLftColCnt, myZdouFltrVop1Go, myXlonRghtColCnt, myZdouFltrVop2Go, _
+                myZdouTmpData, myXlonSpltCol)
+        If myXlonLftColCnt <= 0 Or myXlonRghtColCnt <= 0 Then GoTo ExitPath
+    End If
     
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
 End Sub
 
-'RunP_変数情報をエクセルシートに書き出す
-Private Sub runProc()
+'モジュール内Ｐ_
+Private Sub MsubProcGo4()
     myXbisExitFlag = False
-    
-    myZvarPstVrbl = myZstrTxtData
-    
-    Call instCVrblToSht
-    If myXbisExitFlag = True Then GoTo ExitPath
-    
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
-End Sub
 
-'checkP_出力変数内容を確認する
-Private Sub checkOutputVariables()
-    myXbisExitFlag = False
+    If myXdouDnlDcmtAngl <= 0 Then Exit Sub
     
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
-End Sub
+'//2個の2次元数値配列を1個の2次元配列に左右で結合
+    Call PfixArrayColumnCombineNumeric( _
+            myXlonCalRowCnt, myXlonCalColCnt, myZdouCalData, _
+            myZdouAnglGo, myZdouFltrDnlVop1Go)
+    If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+    
+    If myXlonOutCnt = 2 Then
+        Erase myZdouTmpData
+        myZdouTmpData() = myZdouCalData()
+        Call PfixArrayColumnCombineNumeric( _
+                myXlonCalRowCnt, myXlonCalColCnt, myZdouCalData, _
+                myZdouTmpData, myZdouFltrDnlVop2Go)
+        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+    End If
 
-'RecP_使用した変数をモジュールメモリに保存する
-Private Sub recProc()
-    myXbisExitFlag = False
-    On Error GoTo ExitPath
+'//VopGoの処理
+    Call CNumDcmtFltr
+    If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
     
-  Dim myZvarM(1, 2) As Variant
-    myZvarM(1, 1) = "meMlonExeNum"
-    myZvarM(1, 2) = meMlonExeNum + 1
+'//2次元数値配列を指定列で2個の配列に分割
+  Dim myXlonSpltCol As Long, myXlonLftColCnt As Long, myXlonRghtColCnt As Long
+    myXlonSpltCol = 1
+    Erase myZdouTmpData
+    Call PfixArrayColumnSplitNumeric( _
+            myXlonLftColCnt, myZdouFltrDnlAnglGo, myXlonRghtColCnt, myZdouTmpData, _
+            myZdouCalData, myXlonSpltCol)
+    If myXlonLftColCnt <= 0 Or myXlonRghtColCnt <= 0 Then GoTo ExitPath
 
-  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
-    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+    If myXlonOutCnt = 1 Then
+        Erase myZdouFltrDnlVop1Go
+        myZdouFltrDnlVop1Go() = myZdouTmpData()
+    ElseIf myXlonOutCnt = 2 Then
+        myXlonSpltCol = 1
+        Call PfixArrayColumnSplitNumeric( _
+                myXlonLftColCnt, myZdouFltrDnlVop1Go, myXlonRghtColCnt, myZdouFltrDnlVop2Go, _
+                myZdouTmpData, myXlonSpltCol)
+        If myXlonLftColCnt <= 0 Or myXlonRghtColCnt <= 0 Then GoTo ExitPath
+    End If
     
-    On Error GoTo 0
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
@@ -383,158 +336,82 @@ End Sub
 
 '===============================================================================================
 
-'◆ClassProc名_ファイルを選択してそのパスを取得する
-Private Sub instCSlctFilePath()
-  Dim Lc As Long
-  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
-  Dim k As Long
-  Dim myXinsFilePath As CSlctFilePath: Set myXinsFilePath = New CSlctFilePath
-    With myXinsFilePath
-    '//クラス内変数への入力
-        .letFDType = myXlonFDType
-        .letDfltFldrPath = myXstrDfltFldrPath
-        .letDfltFilePath = myXstrDfltFilePath
-        .letExtsn = myXstrFltrExtsn
-        .letAddFltr = myZstrAddFltr
-        .letFltrClr = myXbisFltrClr
-        .letFltrIndx = myXlonFltrIndx
-        .letIniView = myXlonIniView
-        .letMultSlct = myXbisMultSlct
-    '//クラス内プロシージャの実行とクラス内変数からの出力
-        .exeProc
-        myXlonFileCnt = .getFileCnt
-        If myXlonFileCnt <= 0 Then Exit Sub
-        k = myXlonFileCnt + Lo - 1
-        ReDim myZstrFilePath(k) As String
-        Lc = .getOptnBase
-        For k = 1 To myXlonFileCnt
-            myZstrFilePath(k + Lo - 1) = .getFilePathAry(k + Lc - 1)
-        Next k
-    End With
-    Set myXinsFilePath = Nothing
-End Sub
-
-'◆ClassProc名_ファイルを開かずにテキストファイルの内容を取得する
-Private Sub instCRdTxtNoOpn()
-  Dim Lc As Long
-  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
-  Dim i As Long, j As Long
-  Dim myXinsRdTxtNoOpn As CRdTxtNoOpn: Set myXinsRdTxtNoOpn = New CRdTxtNoOpn
-    With myXinsRdTxtNoOpn
-    '//クラス内変数への入力
-        .letFilePath = myXstrOrgFilePath
-        .letRdBgnEnd(1) = myXlonBgn
-        .letRdBgnEnd(2) = myXlonEnd
-        .letSpltOptn = myXbisSpltOptn
-        .letSpltChr = myXstrInSpltChr
-    '//クラス内プロシージャの実行とクラス内変数からの出力
-        .exeProc
-        myXstrDirPath = .getDirPath
-        myXstrFileName = .getFileName
-        myXstrBaseName = .getBaseName
-        myXstrExtsn = .getExtsn
-        myXlonTxtRowCnt = .getTxtRowCnt
-        myXlonTxtColCnt = .getTxtColCnt
-        If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then GoTo JumpPath
-        i = myXlonTxtRowCnt + Lo - 1: j = myXlonTxtColCnt + Lo - 1
-        ReDim myZstrTxtData(i, j) As String
-        Lc = .getOptnBase
-        For i = 1 To myXlonTxtRowCnt
-            For j = 1 To myXlonTxtColCnt
-                myZstrTxtData(i + Lo - 1, j + Lo - 1) = .getTxtDataAry(i + Lc - 1, j + Lc - 1)
-            Next j
-        Next i
-    End With
-JumpPath:
-    Set myXinsRdTxtNoOpn = Nothing
-End Sub
-
-'◆ClassProc名_ファイルを開いてテキストファイルの内容を取得する
-Private Sub instCRdTxtOpn()
-  Dim Lc As Long
-  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
-  Dim i As Long, j As Long
-  Dim myXinsRdTxtOpn As CRdTxtOpn: Set myXinsRdTxtOpn = New CRdTxtOpn
-    With myXinsRdTxtOpn
-    '//クラス内変数への入力
-    '//テキストファイルパスを指定
-        .letFilePath = myXstrOrgFilePath
-        .letRdBgnEnd(1) = myXlonBgn
-        .letRdBgnEnd(2) = myXlonEnd
-        .letSpltOptn = myXbisSpltOptn
-        .letSpltChr = myXstrInSpltChr
-    '//クラス内プロシージャの実行とクラス内変数からの出力
-        .exeProc
-        myXstrDirPath = .getDirPath
-        myXstrFileName = .getFileName
-        myXstrBaseName = .getBaseName
-        myXstrExtsn = .getExtsn
-        myXlonTxtRowCnt = .getTxtRowCnt
-        myXlonTxtColCnt = .getTxtColCnt
-        If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then GoTo JumpPath
-        i = myXlonTxtRowCnt + Lo - 1: j = myXlonTxtColCnt + Lo - 1
-        ReDim myZstrTxtData(i, j) As String
-        Lc = .getOptnBase
-        For i = 1 To myXlonTxtRowCnt
-            For j = 1 To myXlonTxtColCnt
-                myZstrTxtData(i + Lo - 1, j + Lo - 1) = .getTxtDataAry(i + Lc - 1, j + Lc - 1)
-            Next j
-        Next i
-    End With
-JumpPath:
-    Set myXinsRdTxtOpn = Nothing
-End Sub
-
-'◆ClassProc名_変数情報をエクセルシートに書き出す
-Private Sub instCVrblToSht()
-  Dim myXinsVrblToSht As CVrblToSht: Set myXinsVrblToSht = New CVrblToSht
-    With myXinsVrblToSht
-    '//クラス内変数への入力
-        .letVrbl = myZvarPstVrbl
-        Set .setPstFrstCell = myXobjPstFrstCell
-        .letInptBxOFF = myXbisInptBxOFF
-        .letEachWrtON = myXbisEachWrtON
-    '//クラス内プロシージャの実行とクラス内変数からの出力
-        .exeProc
-        myXbisExitFlag = Not .getCmpltFlag
-    End With
-    Set myXinsVrblToSht = Nothing
-End Sub
-
-'===============================================================================================
-
- '定型Ｐ_モジュール内定数の値を変更する
-Private Sub PfixChangeModuleConstValue(myXbisExitFlag As Boolean, _
-            ByVal myXstrMdlName As String, ByRef myZvarM() As Variant)
-    myXbisExitFlag = False
-    If myXstrMdlName = "" Then GoTo ExitPath
-  Dim L As Long, myXvarTmp As Variant
+ '定型Ｐ_2個の2次元数値配列を1個の2次元配列に左右で結合する
+Private Sub PfixArrayColumnCombineNumeric( _
+            myXlonNewRowCnt As Long, myXlonNewColCnt As Long, _
+            myZdouNewData() As Double, _
+            ByRef myZdouLftOrg() As Double, ByRef myZdouRghtOrg() As Double)
+'myZdouNewData(i, j) : 結合後のデータ配列
+'myZdouLftOrg(i, j)  : 結合前の前半部の元データ配列
+'myZdouRghtOrg(i, j) : 結合前の後半部の元データ配列
+    myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZdouNewData
+  Dim myXdouTmp As Double, Li As Long
     On Error GoTo ExitPath
-    L = LBound(myZvarM, 1): myXvarTmp = myZvarM(L, L)
+    Li = LBound(myZdouUpOrg, 2)
+    myXdouTmp = myZdouLftOrg(Li, Li): myXdouTmp = myZdouRghtOrg(Li, Li)
     On Error GoTo 0
-  Dim myXlonDclrLines As Long, myXobjCdMdl As Object
-    Set myXobjCdMdl = ThisWorkbook.VBProject.VBComponents(myXstrMdlName).CodeModule
-    myXlonDclrLines = myXobjCdMdl.CountOfDeclarationLines
-    If myXlonDclrLines <= 0 Then GoTo ExitPath
-  Dim i As Long, n As Long
-  Dim myXstrTmp As String, myXstrSrch As String, myXstrOrg As String, myXstrRplc As String
-Application.DisplayAlerts = False
-    For i = 1 To myXlonDclrLines
-        myXstrTmp = myXobjCdMdl.Lines(i, 1)
-        For n = LBound(myZvarM, 1) To UBound(myZvarM, 1)
-            myXstrSrch = "Const" & Space(1) & myZvarM(n, L) & Space(1) & "As" & Space(1)
-            If InStr(myXstrTmp, myXstrSrch) > 0 Then
-                myXstrOrg = Left(myXstrTmp, InStr(myXstrTmp, "=" & Space(1)) + 1)
-                myXstrRplc = myXstrOrg & myZvarM(n, L + 1)
-                Call myXobjCdMdl.ReplaceLine(i, myXstrRplc)
-            End If
-        Next n
-    Next i
-Application.DisplayAlerts = True
-    Set myXobjCdMdl = Nothing
-    Exit Sub
+  Dim myXlonLftCnt As Long, myXlonRghtCnt As Long
+    myXlonLftCnt = UBound(myZdouLftOrg, 2) - LBound(myZdouLftOrg, 2) + 1
+    myXlonRghtCnt = UBound(myZdouRghtOrg, 2) - LBound(myZdouRghtOrg, 2) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    If UBound(myZdouLftOrg, 1) <> UBound(myZdouRghtOrg, 1) Then Exit Sub
+    myXlonNewRowCnt = UBound(myZdouLftOrg, 1) - LBound(myZdouLftOrg, 1) + 1
+    myXlonNewColCnt = myXlonLftCnt + myXlonRghtCnt
+    i = myXlonNewRowCnt + Lo - 1: j = myXlonNewColCnt + Lo - 1
+    ReDim myZdouNewData(i, j) As Double
+    For j = LBound(myZdouLftOrg, 2) To UBound(myZdouLftOrg, 2)
+        n = n + 1
+        For i = LBound(myZdouLftOrg, 1) To UBound(myZdouLftOrg, 1)
+            myZdouNewData(i, n) = myZdouLftOrg(i, j)
+        Next i
+    Next j
+    For j = LBound(myZdouRghtOrg, 2) To UBound(myZdouRghtOrg, 2)
+        n = n + 1
+        For i = LBound(myZdouRghtOrg, 1) To UBound(myZdouRghtOrg, 1)
+            myZdouNewData(i, n) = myZdouRghtOrg(i, j)
+        Next i
+    Next j
 ExitPath:
-    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_2次元数値配列を指定列で2個の配列に分割する
+Private Sub PfixArrayColumnSplitNumeric( _
+            myXlonLftColCnt As Long, myZdouLft() As Double, _
+            myXlonRghtColCnt As Long, myZdouRght() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonSpltCol As Long)
+'myZdouLft(i, j)  : 分割後の左側データ配列
+'myZdouRght(i, j) : 分割後の右側データ配列
+'myZdouOrgData(i, j) : 元データ配列
+'myXlonSpltCol : 分割する列番号を指定(指定列を含む右側を分割)
+    myXlonLftColCnt = Empty: Erase myZdouLft
+    myXlonRghtColCnt = Empty: Erase myZdouRght
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 2): myXdouTmp = myZdouOrgData(Li, Li)
+    On Error GoTo 0
+    If myXlonSpltCol < LBound(myZdouOrgData, 2) + 1 _
+        Or myXlonSpltCol > UBound(myZdouOrgData, 2) Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, m As Long, n As Long: m = Lo - 1: n = Lo - 1
+    myXlonLftColCnt = myXlonSpltCol - LBound(myZdouOrgData, 2)
+    myXlonRghtColCnt = UBound(myZdouOrgData, 2) - myXlonSpltCol + 1
+    i = UBound(myZdouOrgData, 1)
+    j = myXlonLftColCnt + Lo - 1: ReDim myZdouLft(i, j) As Double
+    j = myXlonRghtColCnt + Lo - 1: ReDim myZdouRght(i, j) As Double
+    For j = LBound(myZdouOrgData, 2) To myXlonSpltCol - 1
+        m = m + 1
+        For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+            myZdouLft(i, m) = myZdouOrgData(i, j)
+        Next i
+    Next j
+    For j = myXlonSpltCol To UBound(myZdouOrgData, 2)
+        n = n + 1
+        For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+            myZdouRght(i, n) = myZdouOrgData(i, j)
+        Next i
+    Next j
+ExitPath:
 End Sub
 
 'DummyＰ_
@@ -542,18 +419,31 @@ Private Sub MsubDummy()
 End Sub
 
 '===============================================================================================
-'◆ModuleProc名_CSVファイルを選択して開閉してデータ処理して貼り付ける
-Private Sub callxRefSlctCsvRdToSht()
-'  Dim myXbisCmpltFlag As Boolean
-    Call xRefSlctCsvRdToSht.callProc(myXbisCmpltFlag)
+
+'◆ModuleProc名_
+Private Sub callxRefMdl()
+  Dim myXbisCompFlag As Boolean
+    Call xRefMdl.callProc( _
+            myXbisCompFlag, myXbisFlag, myXvarField, myXobjObject, _
+            myXbisFlagIN, myXvarFieldIN, myXobjObjectIN)
+'    Call variablesOfxRefMdl(myXlonDataCnt, myXvarField)     'Debug.Print
 End Sub
-'
-'  Public Const coXbisTestMode As Boolean = True
-'  Public Const coXbisTestMode As Boolean = False
-'
-Private Sub resetConstantInxRefSlctCsvRdToSht()
-'//xRefSlctCsvRdToShtモジュールのモジュールメモリのリセット処理
-    Call xRefSlctCsvRdToSht.resetConstant
+Private Sub variablesOfxRefMdl( _
+            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+'//xRefMdl内から出力した変数の内容確認
+    Debug.Print "データ: " & myZvarField
+    Debug.Print "データ数: " & myXlonDataCnt
+    If myXlonDataCnt <= 0 Then Exit Sub
+  Dim k As Long
+    For k = LBound(myZvarField) To UBound(myZvarField)
+        Debug.Print "データ" & k & ": " & myZvarField(k)
+    Next k
+  Dim i As Long, j As Long
+    For i = LBound(myZvarField, 1) To UBound(myZvarField, 1)
+        For j = LBound(myZvarField, 2) To UBound(myZvarField, 2)
+            Debug.Print "データ" & i & "," & j & ": " & myZvarField(i, j)
+        Next j
+    Next i
 End Sub
 
       <br></pre>
