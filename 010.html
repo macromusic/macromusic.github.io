@@ -10,6 +10,826 @@
       <div>macro sample</div>
       <pre>
 
+
+ '定型Ｆ_文字列の変換
+Private Function PfncstrStrConv(ByVal myXstrString As String, _
+                Optional ByVal coXstrConvOptn As Long = vbNarrow) As String
+'coXstrConvOptn = vbNarrow     : 半角に変換
+'coXstrConvOptn = vbWide       : 全角に変換
+'coXstrConvOptn = vbUpperCase  : 大文字に変換
+'coXstrConvOptn = vbLowerCase  : 小文字に変換
+'coXstrConvOptn = vbProperCase : 先頭文字の変換
+'coXstrConvOptn = vbHiragana   : ひらがなに変換
+'coXstrConvOptn = vbKatakana   : カタカナに変換
+    PfncstrStrConv = Empty
+    If myXstrString = "" Then Exit Function
+    PfncstrStrConv = StrConv(myXstrString, coXstrConvOptn)
+End Function
+
+ '定型Ｆ_文字列の右からの文字位置を取得する
+Private Function PfnclonPseudoInStrRev( _
+            ByVal myXstrString As String, ByVal myXstrDesChar As String) As Long
+    PfnclonPseudoInStrRev = Empty
+    If myXstrString = "" Or myXstrDesChar = "" Then Exit Function
+  Dim i As Long
+    For i = Len(myXstrString) - Len(myXstrDesChar) + 1 To 1 Step -1
+        If Mid(myXstrString, i, Len(myXstrDesChar)) = myXstrDesChar Then
+            PfnclonPseudoInStrRev = i
+            Exit For
+        End If
+    Next i
+End Function
+
+ '定型Ｐ_指定文字列を指定文字で分割して情報を抽出する
+Private Sub PfixSplitString( _
+            myXlonSpltCnt As Long, myZstrSpltData() As String, _
+            ByVal myXstrOrgData As String, ByVal myXstrSpltChr As String)
+'myZstrSpltData(i) : 分割情報
+    myXlonSpltCnt = Empty: Erase myZstrSpltData
+    If myXstrOrgData = "" Or myXstrSpltChr = "" Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZvarTmp As Variant
+    myZvarTmp = Split(myXstrOrgData, myXstrSpltChr)     '文字列を指定文字で分割
+    myXlonSpltCnt = UBound(myZvarTmp) - LBound(myZvarTmp) + 1
+    If myXlonSpltCnt <= 0 Then Exit Sub
+  Dim i As Long, n As Long: n = L - 1
+    i = myXlonSpltCnt + L - 1: ReDim myZstrSpltData(i) As String
+    For i = LBound(myZvarTmp) To UBound(myZvarTmp)
+        n = n + 1: myZstrSpltData(n) = CStr(myZvarTmp(i))
+    Next i
+    myZvarTmp = Empty
+End Sub
+
+ '定型Ｆ_異なる指定文字で挟まれた文字列を取得する
+Private Function PfncstrExtractSandwichedStringByCharacters( _
+            ByVal myXstrOrgStr As String, _
+            ByVal myXstrPreChr As String, ByVal myXstrPstChr As String) As String
+'myXstrPreChr : 前方の指定文字(1文字のみ)
+'myXstrPstChr : 後方の指定文字(1文字のみ)
+    PfncstrExtractSandwichedStringByCharacters = Empty
+    If myXstrOrgStr = "" Then Exit Function
+    If Len(myXstrPreChr) <> 1 Or Len(myXstrPstChr) <> 1 Then Exit Function
+  Dim myXlonBgn As Long, myXlonEnd As Long, myXlonLen As Long, myXstrSndwchd As String
+    myXlonBgn = InStr(myXstrOrgStr, myXstrPreChr) + 1
+    myXlonEnd = InStrRev(myXstrOrgStr, myXstrPstChr) - 1
+    myXlonLen = myXlonEnd - myXlonBgn + 1
+    If myXlonBgn <= 0 Or myXlonEnd <= 0 Or myXlonLen < 0 Then Exit Function
+    myXstrSndwchd = Mid(myXstrOrgStr, myXlonBgn, myXlonLen)
+    PfncstrExtractSandwichedStringByCharacters = myXstrSndwchd
+End Function
+
+ '定型Ｐ_異なる指定文字で挟まれた文字列配列を取得する
+Private Sub PfixExtractSandwichedStringsByCharacters( _
+            myXlonStrCnt As Long, myZstrSndwchd() As String, _
+            ByVal myXstrOrgStr As String, _
+            ByVal myXstrPreChr As String, ByVal myXstrPstChr As String)
+'myZstrSndwchd(i) : 取得文字列
+'myXstrPreChr : 前方の指定文字(1文字のみ)
+'myXstrPstChr : 後方の指定文字(1文字のみ)
+    myXlonStrCnt = Empty: Erase myZstrSndwchd
+    If myXstrOrgStr = "" Then Exit Sub
+    If Len(myXstrPreChr) <> 1 Or Len(myXstrPstChr) <> 1 Then Exit Sub
+  Dim myZlonPstn1() As Long, myZlonPstn2() As Long, myZbisChck() As Boolean
+  Dim myXstrTmp As String, i As Long, k As Long, m As Long, n As Long: m = 0: n = 0
+    For i = 1 To Len(myXstrOrgStr)
+        myXstrTmp = Empty
+        myXstrTmp = Mid(myXstrOrgStr, i, 1)
+        If myXstrTmp = myXstrPreChr Then
+            m = m + 1
+            ReDim Preserve myZlonPstn1(m) As Long: myZlonPstn1(m) = i
+            ReDim Preserve myZlonPstn2(m) As Long
+            ReDim Preserve myZbisChck(m) As Boolean: myZbisChck(m) = False
+        ElseIf myXstrTmp = myXstrPstChr Then
+            n = n + 1
+            For k = UBound(myZbisChck) To LBound(myZbisChck) Step -1
+                If myZbisChck(k) = False Then
+                    myZlonPstn2(k) = i
+                    myZbisChck(k) = True: Exit For
+                End If
+            Next k
+        End If
+    Next i
+    If m <= 0 Or n <= 0 Then Exit Sub
+    If m <> n Then Exit Sub
+    myXlonStrCnt = UBound(myZlonPstn1): ReDim myZstrSndwchd(myXlonStrCnt) As String
+    For i = LBound(myZlonPstn1) To UBound(myZlonPstn1)
+        m = myZlonPstn1(i) + 1
+        n = myZlonPstn2(i) - myZlonPstn1(i) - 1
+        myZstrSndwchd(i) = Mid(myXstrOrgStr, m, n)
+    Next i
+    Erase myZlonPstn1: Erase myZlonPstn2: Erase myZbisChck
+End Sub
+
+ '定型Ｆ_指定文字で挟まれた文字列を取得する
+Private Function PfncstrExtractSandwichedString( _
+            ByVal myXstrOrgStr As String, ByVal myXstrChr As String) As String
+'myXstrChr : 指定文字(1文字のみ)
+    PfncstrExtractSandwichedString = Empty
+    If myXstrOrgStr = "" Then Exit Function
+    If Len(myXstrChr) <> 1 Then Exit Function
+  Dim myXlonBgn As Long, myXlonEnd As Long, myXlonLen As Long, myXstrSndwchd As String
+    myXlonBgn = InStr(myXstrOrgStr, myXstrChr) + 1
+    myXlonEnd = InStrRev(myXstrOrgStr, myXstrChr) - 1
+    myXlonLen = myXlonEnd - myXlonBgn + 1
+    If myXlonBgn <= 0 Or myXlonEnd <= 0 Or myXlonLen < 0 Then Exit Function
+    myXstrSndwchd = Mid(myXstrOrgStr, myXlonBgn, myXlonLen)
+    PfncstrExtractSandwichedString = myXstrSndwchd
+End Function
+
+ '定型Ｐ_指定文字で挟まれた文字列配列を取得する
+Private Sub PfixExtractSandwichedStrings( _
+            myXlonStrCnt As Long, myZstrSndwchd() As String, _
+            ByVal myXstrOrgStr As String, ByVal myXstrChr As String)
+'myZstrSndwchd(i) : 取得文字列
+'myXstrChr : 指定文字(1文字のみ)
+    myXlonStrCnt = Empty: Erase myZstrSndwchd
+    If myXstrOrgStr = "" Then Exit Sub
+    If Len(myXstrChr) <> 1 Then Exit Sub
+  Dim myZlonPstn1() As Long, myZlonPstn2() As Long, myZbisChck() As Boolean
+  Dim myXstrTmp As String, i As Long, k As Long, m As Long, n As Long: m = 0: n = 0
+  Dim myXlonChrCnt As Long: myXlonChrCnt = 0
+    For i = 1 To Len(myXstrOrgStr)
+        myXstrTmp = Empty
+        myXstrTmp = Mid(myXstrOrgStr, i, 1)
+        If (myXstrTmp = myXstrChr) And (myXlonChrCnt Mod 2 = 0) Then
+            myXlonChrCnt = myXlonChrCnt + 1
+            m = m + 1
+            ReDim Preserve myZlonPstn1(m) As Long: myZlonPstn1(m) = i
+            ReDim Preserve myZlonPstn2(m) As Long
+            ReDim Preserve myZbisChck(m) As Boolean: myZbisChck(m) = False
+        ElseIf (myXstrTmp = myXstrChr) And (myXlonChrCnt Mod 2 = 1) Then
+            myXlonChrCnt = myXlonChrCnt + 1
+            n = n + 1
+            For k = UBound(myZbisChck) To LBound(myZbisChck) Step -1
+                If myZbisChck(k) = False Then
+                    myZlonPstn2(k) = i
+                    myZbisChck(k) = True: Exit For
+                End If
+            Next k
+        End If
+    Next i
+    If m <= 0 Or n <= 0 Then Exit Sub
+    If m <> n Then Exit Sub
+    myXlonStrCnt = UBound(myZlonPstn1): ReDim myZstrSndwchd(myXlonStrCnt) As String
+    For i = LBound(myZlonPstn1) To UBound(myZlonPstn1)
+        m = myZlonPstn1(i) + 1
+        n = myZlonPstn2(i) - myZlonPstn1(i) - 1
+        myZstrSndwchd(i) = Mid(myXstrOrgStr, m, n)
+    Next i
+    Erase myZlonPstn1: Erase myZlonPstn2: Erase myZbisChck
+End Sub
+
+ '定型Ｐ_商と余りを導出する
+Private Sub PfixQuotationRemainder( _
+        myXdouQuot As Double, myXdouRemain As Double, _
+        ByVal myXdouNumer As Double, ByVal myXdouDenom As Double)
+'myXdouQuot   : 商
+'myXdouRemain : 余り
+'myXdouNumer  : 分子
+'myXdouDenom  : 分母
+    myXdouQuot = Empty: myXdouRemain = Empty
+    If myXdouDenom = 0 Then Exit Sub
+    On Error GoTo ErrPath
+    myXdouQuot = myXdouNumer \ myXdouDenom
+    myXdouRemain = myXdouNumer Mod myXdouDenom
+    On Error GoTo 0
+ErrPath:
+    myXdouQuot = Empty: myXdouRemain = Empty
+    myXdouQuot = Int(myXdouNumer / myXdouDenom)
+    If myXdouQuot < 0 Then myXdouQuot = myXdouQuot + 1
+    myXdouRemain = myXdouNumer - myXdouQuot * myXdouDenom
+End Sub
+
+ '定型Ｆ_階乗(n!)を導出する
+Private Function PfnclonFractorial(ByVal n As Long) As Long
+    PfnclonFractorial = Empty
+ Dim myXlonRet As Long
+    If n = 0 Then
+        myXlonRet = 1
+    Else
+        myXlonRet = n * PfnclonFractorial(n - 1)
+    End If
+    PfnclonFractorial = myXlonRet
+End Function
+
+ '定型Ｐ_約数一覧(因数)を導出する
+Private Sub PfixFactors( _
+            myZlonFctrCnt As Long, myZlonFctr() As Long, _
+            ByVal myZlonNum As Long)
+'myZlonFctrs(i) : 約数一覧
+    myZlonFctrCnt = Empty:  Erase myZlonFctr
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = L - 1
+    For i = 1 To myZlonNum
+        If myZlonNum Mod i = 0 Then
+            n = n + 1
+            ReDim Preserve myZlonFctr(n) As Long
+            myZlonFctr(n) = i
+        End If
+    Next i
+    myZlonFctrCnt = n
+End Sub
+
+ '定型Ｐ_公約数一覧を導出する
+Private Sub PfixCommonFactors( _
+            myZlonCmnFctrCnt As Long, myZlonCmnFctr() As Long, _
+            ByVal myZlonNum1 As Long, ByVal myZlonNum2 As Long)
+'myZlonFctrs(i) : 公約数一覧
+    myZlonCmnFctrCnt = Empty:  Erase myZlonCmnFctr
+  Dim myZlonNum As Long
+    If myZlonNum1 <= myZlonNum2 Then
+        myZlonNum = myZlonNum1
+    Else
+        myZlonNum = myZlonNum2
+    End If
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = L - 1
+    For i = 1 To myZlonNum
+        If myZlonNum1 Mod i = 0 And myZlonNum2 Mod i = 0 Then
+            n = n + 1
+            ReDim Preserve myZlonCmnFctr(n) As Long
+            myZlonCmnFctr(n) = i
+        End If
+    Next i
+    myZlonCmnFctrCnt = n
+End Sub
+
+ '定型Ｆ_最大公約数を導出する
+Private Function PfnclonGreatestCommonFactor( _
+            ByVal myZlonNum1 As Long, ByVal myZlonNum2 As Long) As Long
+    PfnclonGreatestCommonFactor = Empty
+  Dim myZlonNum As Long, myZlonCmnFctr() As Long, myXlonRet As Long
+    If myZlonNum1 <= myZlonNum2 Then
+        myZlonNum = myZlonNum1
+    Else
+        myZlonNum = myZlonNum2
+    End If
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = L - 1
+    For i = 1 To myZlonNum
+        If myZlonNum1 Mod i = 0 And myZlonNum2 Mod i = 0 Then
+            n = n + 1
+            ReDim Preserve myZlonCmnFctr(n) As Long
+            myZlonCmnFctr(n) = i
+        End If
+    Next i
+    myXlonRet = WorksheetFunction.Max(myZlonCmnFctr)
+    PfnclonGreatestCommonFactor = myXlonRet
+End Function
+
+ '定型Ｐ_数値の整数部と小数部の値と桁数を取得する
+Private Sub PfixChangeModuleConstValue( _
+            myXlonIntgrPrt As Long, myXdouDcmlPrt As Double, _
+            myXlonIntgrDgt As Long, myXlonDcmlDgt As Long, _
+            myXlonMinDcmlDgt As Long, myXlonMaxDcmlDgt As Long, _
+            ByVal myXdouNumVal As Double)
+    myXlonIntgrPrt = Empty: myXdouDcmlPrt = Empty
+    myXlonIntgrDgt = Empty: myXlonDcmlDgt = Empty
+    myXlonMinDcmlDgt = Empty: myXlonMaxDcmlDgt = Empty
+  Dim myXlonSgn As Long, myXlonPnt As Long
+  Dim myXstrTmp As String, myXdouTmp As Double, myXlonTmp As Long
+'//数値の符号を取得
+    myXlonSgn = Sgn(myXdouNumVal)
+'//数値の整数部を取得
+    myXlonIntgrPrt = Fix(myXdouNumVal)
+'//数値の小数点位置を取得
+    myXstrTmp = CStr(myXdouNumVal)
+    myXlonPnt = InStr(myXstrTmp, ".")
+'//数値の小数部を取得
+    myXstrTmp = CStr(myXdouNumVal)
+    myXstrTmp = Mid(myXstrTmp, myXlonPnt)
+    myXstrTmp = "0" & myXstrTmp
+    myXdouTmp = CDbl(myXstrTmp)
+    myXdouDcmlPrt = myXlonSgn * myXdouTmp
+'//数値の整数部の桁数を取得
+    myXlonTmp = Abs(myXlonIntgrPrt)
+    myXstrTmp = CStr(myXlonTmp)
+    myXlonIntgrDgt = Len(myXstrTmp)
+'//数値の小数部の桁数を取得
+    myXdouTmp = Abs(myXdouDcmlPrt)
+    myXstrTmp = CStr(myXdouTmp)
+    myXlonDcmlDgt = Len(myXstrTmp) - 2
+'//数値の小数値の最小桁数を取得
+    myXlonMinDcmlDgt = myXlonDcmlDgt
+'//数値の小数値の最大桁数を取得
+    If Abs(myXdouNumVal) >= 1 Then
+        myXlonMaxDcmlDgt = 0
+    Else
+        myXdouTmp = Abs(myXdouDcmlPrt) * (10 ^ myXlonDcmlDgt)
+        myXdouTmp = Int(myXdouTmp)
+        myXstrTmp = CStr(myXdouTmp)
+        myXlonMaxDcmlDgt = myXlonDcmlDgt - Len(myXstrTmp) + 1
+    End If
+End Sub
+
+ '定型Ｆ_数値の小数値の最小桁数を取得する
+Private Function PfnclonGetMinimumDecimalDigit(ByVal myXdouNumVal As Double) As Long
+    PfnclonGetMinimumDecimalDigit = Empty
+  Dim myXlonMinDcmlDgt As Long
+    If Abs(myXdouNumVal) >= 1 Then
+        myXlonMinDcmlDgt = 0
+        GoTo JumpPath
+    End If
+  Dim myXstrTmp As String, myXlonPnt As Long, myXstrDcmlPrt As String
+'//数値の小数点位置を取得
+    myXstrTmp = CStr(myXdouNumVal)
+    myXlonPnt = InStr(myXstrTmp, ".")
+'//数値の小数部を取得
+    myXstrTmp = CStr(myXdouNumVal)
+    myXstrDcmlPrt = Mid(myXstrTmp, myXlonPnt + 1)
+'//数値の小数部の桁数を取得
+    myXlonMinDcmlDgt = Len(myXstrDcmlPrt)
+JumpPath:
+    PfnclonGetMinimumDecimalDigit = myXlonMinDcmlDgt
+End Function
+
+ '定型Ｆ_数値の小数値の最大桁数を取得する
+Private Function PfnclonGetMaximumDecimalDigit(ByVal myXdouNumVal As Double) As Long
+    PfnclonGetMaximumDecimalDigit = Empty
+  Dim myXlonMaxDcmlDgt As Long
+    If Abs(myXdouNumVal) >= 1 Then
+        myXlonMaxDcmlDgt = 0
+        GoTo JumpPath
+    End If
+  Dim myXlonPnt As Long, myXstrTmp As String, myXdouTmp As Double
+  Dim myXstrDcmlPrt As String, myXlonDcmlDgt As Long
+'//数値の小数点位置を取得
+    myXstrTmp = CStr(myXdouNumVal)
+    myXlonPnt = InStr(myXstrTmp, ".")
+'//数値の小数部を取得
+    myXstrTmp = CStr(myXdouNumVal)
+    myXstrTmp = Mid(myXstrTmp, myXlonPnt)
+    myXstrDcmlPrt = "0" & myXstrTmp
+'//数値の小数部の桁数を取得
+    myXlonDcmlDgt = Len(myXstrDcmlPrt) - 2
+'//数値の小数値の最大桁数を取得
+    myXdouTmp = CDbl(myXstrDcmlPrt)
+    myXdouTmp = Abs(myXdouTmp) * (10 ^ myXlonDcmlDgt)
+    myXdouTmp = Int(myXdouTmp)
+    myXstrTmp = CStr(myXdouTmp)
+    myXlonMaxDcmlDgt = myXlonDcmlDgt - Len(myXstrTmp) + 1
+JumpPath:
+    PfnclonGetMaximumDecimalDigit = myXlonMaxDcmlDgt
+End Function
+
+ '定型Ｆ_ワークシート関数のATAN2で計算した結果を取得する
+Private Function PfncdouATAN2( _
+            ByVal myXdouXCoord As Double, ByVal myXdouYCoord As String) As Double
+  Const myXdouPI As Double = 3.14159265358979
+'  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
+    PfncdouATAN2 = Empty
+    If myXdouXCoord = 0 And myXdouYCoord = 0 Then Exit Function
+  Dim myXdouTmp As Double
+    If myXdouXCoord > 0 Then
+        myXdouTmp = Atn(myXdouYCoord / myXdouXCoord)
+    ElseIf myXdouYCoord >= 0 And myXdouXCoord < 0 Then
+        myXdouTmp = Atn(myXdouYCoord / myXdouXCoord) + myXdouPI
+    ElseIf myXdouYCoord < 0 And myXdouXCoord < 0 Then
+        myXdouTmp = Atn(myXdouYCoord / myXdouXCoord) - myXdouPI
+    ElseIf myXdouYCoord > 0 And myXdouXCoord = 0 Then
+        myXdouTmp = myXdouPI / 2
+    ElseIf myXdouYCoord < 0 And myXdouXCoord = 0 Then
+        myXdouTmp = -myXdouPI / 2
+    End If
+    PfncdouATAN2 = myXdouTmp
+End Function
+
+ '定型ＷＳＦ_多項近似式の係数を導出
+Public Function SfncdouCoefficientOfPolynomialApproximation( _
+            ByVal myXlonCoefOrdr As Long, _
+            ByVal myZobjRngX As Object, ByVal myZobjRngY As Object, _
+            ByVal myXlonDgrCnt As Long) As Double
+'Includes PfixCoefficientOfPolynomialApproximation
+'myXlonCoefOrdr : 導出したい次数(0 = 定数項)
+'myZobjRngX : X軸のデータ配列範囲
+'myZobjRngY : Y軸のデータ配列範囲
+'myXlonDgrCnt : 多項式の最大次数
+    SfncdouCoefficientOfPolynomialApproximation = Empty
+  Dim myZvarOrgX As Variant, myZvarOrgY As Variant
+    myZvarOrgX = myZobjRngX.Value
+    myZvarOrgY = myZobjRngY.Value
+  Dim myZdouOrgX() As Double, myZdouOrgY() As Double
+  Dim i As Long, j As Long
+    i = UBound(myZvarOrgX, 1): j = UBound(myZvarOrgX, 2)
+    ReDim myZdouOrgX(i, j) As Double: ReDim myZdouOrgY(i, j) As Double
+    For j = LBound(myZvarOrgX, 2) To UBound(myZvarOrgX, 2)
+        For i = LBound(myZvarOrgX, 1) To UBound(myZvarOrgX, 1)
+            myZdouOrgX(i, j) = CDbl(myZvarOrgX(i, j))
+            myZdouOrgY(i, j) = CDbl(myZvarOrgY(i, j))
+        Next i
+    Next j
+  Dim myZdouCoef() As Double, myXdouCnstnt As Double
+    Call PfixCoefficientOfPolynomialApproximation( _
+            myZdouCoef, myXdouCnstnt, _
+            myZdouOrgX, myZdouOrgY, myXlonDgrCnt)
+  Dim L As Long: L = LBound(myZdouCoef, 1)
+  Dim myXdouCoef As Double
+    If myXlonCoefOrdr = 0 Then
+        myXdouCoef = myXdouCnstnt
+    Else
+        myXdouCoef = myZdouCoef(myXlonCoefOrdr, L)
+    End If
+    SfncdouCoefficientOfPolynomialApproximation = myXdouCoef
+    myZvarOrgX = Empty: myZvarOrgY = Empty
+    Erase myZdouOrgX: Erase myZdouOrgY: Erase myZdouCoef
+End Function
+
+ '定型Ｐ_配列計算-多項近似式の係数
+Private Sub PfixCoefficientOfPolynomialApproximation( _
+            myZdouCoef() As Double, myXdouCnstnt As Double, _
+            ByRef myZdouOrgX() As Double, ByRef myZdouOrgY() As Double, _
+            ByVal myXlonDgrCnt As Long)
+'myZdouCoef(i, 1) : 多項近似式のi次の項の係数
+'myXdouCnstnt : 多項近似式の定数項
+'myZdouOrgX(i, 1) : X軸の元データ配列
+'myZdouOrgY(i, 1) : Y軸の元データ配列
+'myXlonDgrCnt : 多項式の最大次数
+    Erase myZdouCoef: myXdouCnstnt = Empty
+    On Error GoTo ExitPath
+  Dim L As Long, myXvarTmp As Variant
+    L = LBound(myZdouOrgX, 1)
+    myXvarTmp = myZdouOrgX(L, L): myXvarTmp = myZdouOrgY(L, L)
+    If UBound(myZdouOrgX, 1) <> UBound(myZdouOrgY, 1) Then Exit Sub
+    On Error GoTo 0
+'Y軸用のデータ配列の設定
+  Dim myZvarYAry As Variant: myZvarYAry = myZdouOrgY
+'X軸用のデータ配列の設定
+  Dim i As Long, j As Long, myZvarXAry As Variant
+    i = UBound(myZdouOrgX, 1): j = myXlonDgrCnt - (1 - L)
+    ReDim myZvarXAry(i, j) As Variant
+    For j = 1 To myXlonDgrCnt
+        For i = LBound(myZdouOrgX, 1) To UBound(myZdouOrgX, 1)
+            myZvarXAry(i, j) = myZdouOrgX(i, L) ^ j
+        Next i
+    Next j
+'多項近似式の係数導出
+  Dim myXvarCalAry As Variant, myXdouCal As Double
+    j = myXlonDgrCnt - (1 - L): ReDim myZdouCoef(j, L) As Double
+    With Application.WorksheetFunction
+        For i = myXlonDgrCnt To 1 Step -1
+            myXvarCalAry = Empty: myXdouCal = Empty
+            myXvarCalAry = .LinEst(myZvarYAry, myZvarXAry, True, False)
+            myXdouCal = .Index(myXvarCalAry, 1, i)
+            myZdouCoef(myXlonDgrCnt - i + L, L) = myXdouCal
+        Next i
+        myXvarCalAry = Empty: myXdouCal = Empty
+        i = myXlonDgrCnt + 1
+        myXvarCalAry = .LinEst(myZvarYAry, myZvarXAry, True, False)
+        myXdouCal = .Index(myXvarCalAry, 1, i)
+        myXdouCnstnt = myXdouCal
+    End With
+    myZvarXAry = Empty: myZvarYAry = Empty: myXvarCalAry = Empty
+ExitPath:
+End Sub
+
+ '定型ＷＳＦ_多項近似式の係数から近似計算結果を導出
+Public Function SfncdouPolynomialApproximationCalculation( _
+            ByVal myZobjRngX As Object, ByVal myZobjCnstntRng As Object, _
+            ParamArray myZvarCoefLoToHiRng() As Variant) As Double
+    SfncdouPolynomialApproximationCalculation = Empty
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myXdouOrgX As Double, myXdouCnstnt As Double
+    myXdouOrgX = CDbl(myZobjRngX.Value)
+    myXdouCnstnt = CDbl(myZobjCnstntRng.Value)
+  Dim myXlonDgrCnt As Long
+    myXlonDgrCnt = UBound(myZvarCoefLoToHiRng) - LBound(myZvarCoefLoToHiRng) + 1
+  Dim myZdouCoef() As Double, i As Long, n As Long: n = L - 1
+    i = myXlonDgrCnt - (1 - L): ReDim myZdouCoef(i) As Double
+    For i = LBound(myZvarCoefLoToHiRng) To UBound(myZvarCoefLoToHiRng)
+        n = n + 1: myZdouCoef(n) = myZvarCoefLoToHiRng(i).Value
+    Next i
+  Dim k As Long, myXdouCalX As Double, myXdouCal As Double
+    myXdouCalX = Empty: myXdouCal = Empty
+    For k = myXlonDgrCnt To 1 Step -1
+        myXdouCalX = myXdouOrgX ^ k
+        myXdouCal = myXdouCal + myZdouCoef(k - (1 - L)) * myXdouCalX
+    Next k
+    SfncdouPolynomialApproximationCalculation = myXdouCal + myXdouCnstnt
+    Erase myZdouCoef
+End Function
+
+ '定型Ｐ_配列計算-多項近似式の係数から近似計算結果を導出
+Private Sub PfixPolynomialApproximationCalculation( _
+            myZdouCalY() As Double, _
+            ByRef myZdouCoef() As Double, ByVal myXdouCnstnt As Double, _
+            ByRef myZdouOrgX() As Double)
+'myZdouCalY(i, 1) : Y軸の計算結果データ配列
+'myZdouCoef(i, 1) : 多項近似式のi次の項の係数
+'myXdouCnstnt : 多項近似式の定数項
+'myZdouOrgX(i, 1) : X軸の元データ配列
+    Erase myZdouCalY
+    On Error GoTo ExitPath
+  Dim L As Long, myXvarTmp As Variant
+    L = LBound(myZdouCoef, 1): myXvarTmp = myZdouCoef(L, L)
+    L = LBound(myZdouOrgX, 1): myXvarTmp = myZdouOrgX(L, L)
+    On Error GoTo 0
+  Dim myXlonDgrCnt As Long
+    myXlonDgrCnt = UBound(myZdouCoef, 1) - LBound(myZdouCoef, 1) + 1
+  Dim i As Long, k As Long, myXdouCalX As Double, myXdouCal As Double
+    i = UBound(myZdouOrgX, 1): ReDim myZdouCalY(i, L) As Double
+    For i = LBound(myZdouOrgX, 1) To UBound(myZdouOrgX, 1)
+        myXdouCalX = Empty: myXdouCal = Empty
+        For k = myXlonDgrCnt To 1 Step -1
+            myXdouCalX = myZvarOrgX(i, L) ^ k
+            myXdouCal = myXdouCal + myZdouCoef(k - (1 - L), L) * myXdouCalX
+        Next k
+        myZdouCalY(i, L) = myXdouCal + myXdouCnstnt
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｆ_文字群から1文字づつランダムに抽出して指定長の文字列を生成する
+Private Function PfncstrRandomString( _
+            ByRef myZstrCharData() As String, ByVal myXlonValLen As Long) As String
+'myZstrCharData(i) : 文字群
+    PfncstrRandomString = Empty
+    If myXlonValLen <= 0 Then Exit Function
+  Dim i As Long
+    For i = LBound(myZstrCharData) To UBound(myZstrCharData)
+        If Len(myZstrCharData(i)) > 1 Then GoTo ErrPath
+    Next i
+  Dim myXlonBgn As Long: myXlonBgn = LBound(myZstrCharData)
+  Dim myXlonEnd As Long: myXlonEnd = UBound(myZstrCharData)
+  Dim myXlonRnd As Long, myXstrRndVal As String: myXstrRndVal = ""
+    Randomize
+    For i = 1 To myXlonValLen
+        myXlonRnd = Int(myXlonBgn + Rnd() * (myXlonEnd - myXlonBgn + 1))
+        myXstrRndVal = myXstrRndVal & myZstrCharData(myXlonRnd)
+    Next i
+    PfncstrRandomString = myXstrRndVal
+    Exit Function
+ErrPath:
+'    MsgBox "配列内の文字群は1文字づつを格納のこと"     　'Debug.Print
+End Function
+
+ '定型Ｆ_指定文字列をランダムに並び替えて文字列を生成する
+Private Function PfncstrRandomStringArrange(ByRef myZstrCharData() As String) As String
+'myZstrCharData(i) : 文字群
+    PfncstrRandomStringArrange = Empty
+  Dim myZbisChckFlag() As Boolean
+    ReDim myZbisChckFlag(UBound(myZstrCharData)) As Boolean
+  Dim myXlonBgn As Long: myXlonBgn = LBound(myZstrCharData)
+  Dim myXlonEnd As Long: myXlonEnd = UBound(myZstrCharData)
+  Dim myXlonRnd As Long, myXstrRndVal As String: myXstrRndVal = ""
+  Dim i As Long
+    Randomize
+    For i = LBound(myZstrCharData) To UBound(myZstrCharData)
+        Do
+            myXlonRnd = Int(myXlonBgn + Rnd() * (myXlonEnd - myXlonBgn + 1))
+        Loop Until myZbisChckFlag(myXlonRnd) = False
+        myZbisChckFlag(myXlonRnd) = True
+        myXstrRndVal = myXstrRndVal & myZstrCharData(myXlonRnd)
+    Next i
+    PfncstrRandomStringArrange = myXstrRndVal
+    Erase myZbisChckFlag
+End Function
+
+ '定型Ｆ_指定文字列の一部を変更する
+Private Function PfncstrReplaceString( _
+            ByVal myXstrOrgString As String, ByVal myXstrRplcWord As String, _
+            ByVal myXstrNewWord As String) As String
+    PfncstrReplaceString = Empty
+    If InStr(myXstrOrgString, myXstrRplcWord) <= 0 Then Exit Function
+    PfncstrReplaceString = Replace(myXstrOrgString, myXstrRplcWord, myXstrNewWord)
+End Function
+
+ '定型Ｐ_現在のシステム日付及び時刻を取得する
+Private Sub PfixSystemDateTime( _
+            myXdatDate As Date, myXdatTime As Date, myXdatDateTime As Date)
+'myXdatDate = "yyyy/mm/dd"
+'myXdatTime = "hh:nn:mm"
+'myXdatDateTime = "yyyy/mm/dd hh:nn:mm"
+    myXdatDate = Empty: myXdatTime = Empty: myXdatDateTime = Empty
+    myXdatDate = Date
+    myXdatTime = Time
+    myXdatDateTime = Now
+End Sub
+
+ '定型Ｐ_日付から年と月と日を取得する
+Private Sub PfixYearMonthDay( _
+            myXlonYear As Long, myXlonMnth As Long, myXlonDay As Long, _
+            ByVal myXdatDate As Date)
+'myXdatDate = "yyyy/mm/dd"
+    myXlonYear = Empty: myXlonMnth = Empty: myXlonDay = Empty
+    If myXdatDate = CDate("00:00:00") Then Exit Sub
+    myXlonYear = Year(myXdatDate)
+    myXlonMnth = Month(myXdatDate)
+    myXlonDay = Day(myXdatDate)
+End Sub
+
+ '定型Ｐ_時刻から時と分と秒を取得する
+Private Sub PfixHourMinuteSecond( _
+            myXlonHour As Long, myXlonMnt As Long, myXlonScnd As Long, _
+            ByVal myXdatTime As Date)
+'myXdatTime = "hh:nn:mm"
+    myXlonHour = Empty: myXlonMnt = Empty: myXlonScnd = Empty
+    If myXdatTime = CDate("00:00:00") Then Exit Sub
+    myXlonHour = Hour(myXdatTime)
+    myXlonMnt = Minute(myXdatTime)
+    myXlonScnd = Second(myXdatTime)
+End Sub
+
+ '定型Ｆ_数値から月を返す
+Private Function PfncstrMonthNameFromNumeric(ByVal myXlonMnthNum As Long, _
+            Optional ByVal coXbisNoMnthName As Boolean = False) As String
+'coXbisNoMnthName = False : 月名有り
+'coXbisNoMnthName = True  : 月名無し
+    PfncstrMonthNameFromNumeric = Empty
+    If myXlonMnthNum < 1 Or myXlonMnthNum > 12 Then Exit Function
+    PfncstrMonthNameFromNumeric = MonthName(myXlonMnthNum, coXbisNoMnthName)
+End Function
+
+ '定型Ｆ_数値から曜日を返す
+Private Function PfncstrWeekdayNameFromNumeric(ByVal myXlonWkDayNum As Long, _
+            Optional ByVal coXbisNoWkdayName As Boolean = False) As String
+'coXbisNoMnthName = False : 曜日名有り
+'coXbisNoMnthName = True  : 曜日名無し
+'myXlonWkDay = 1 = vbSunday    : 日曜日
+'myXlonWkDay = 2 = vbMonday    : 月曜日
+'myXlonWkDay = 3 = vbTuesday   : 火曜日
+'myXlonWkDay = 4 = vbWednesday : 水曜日
+'myXlonWkDay = 5 = vbThursday  : 木曜日
+'myXlonWkDay = 6 = vbFriday    : 金曜日
+'myXlonWkDay = 7 = vbSaturday  : 土曜日
+    PfncstrWeekdayNameFromNumeric = Empty
+    If myXlonWkDayNum < 1 Or myXlonWkDayNum > 7 Then Exit Function
+    PfncstrWeekdayNameFromNumeric = WeekdayName(myXlonWkDayNum, coXbisNoWkdayName)
+End Function
+
+ '定型Ｆ_日付から月を取得する
+Private Function PfncstrMonthName(ByVal myXdatDate As Date, _
+            Optional ByVal coXbisNoMnthName As Boolean = False) As String
+'myXdatDate = "yyyy/mm/dd"
+'coXbisNoMnthName = False : 月名有り
+'coXbisNoMnthName = True  : 月名無し
+    PfncstrMonthName = Empty
+    If myXdatDate = CDate("00:00:00") Then Exit Function
+  Dim myXlonMnthNum As Long
+    myXlonMnthNum = Month(myXdatDate)
+    PfncstrMonthName = MonthName(myXlonMnthNum, coXbisNoMnthName)
+End Function
+
+ '定型Ｆ_日付から曜日を取得する
+Private Function PfncstrWeekdayName(ByVal myXdatDate As Date, _
+            Optional ByVal coXbisNoWkdayName As Boolean = False) As String
+'myXdatDate = "yyyy/mm/dd"
+'coXbisNoMnthName = False : 曜日名有り
+'coXbisNoMnthName = True  : 曜日名無し
+    PfncstrWeekdayName = Empty
+    If myXdatDate = CDate("00:00:00") Then Exit Function
+  Dim myXlonWkDayNum As Long
+    myXlonWkDayNum = Weekday(myXdatDate)
+    PfncstrWeekdayName = WeekdayName(myXlonWkDayNum, coXbisNoWkdayName)
+End Function
+
+ '定型Ｆ_指定日から指定期間前or後の日付を取得する
+Private Function PfncdatDateAdd( _
+            ByVal myXdatDate As Date, ByVal myXlonNum As Long, _
+            Optional ByVal coXstrDateUnit As String = "d") As Date
+'myXdatDate = "yyyy/mm/dd"
+'myXlonNum < 0 : 前
+'myXlonNum > 0 : 後
+'coXstrDateUnit = "yyyy" : 年
+'coXstrDateUnit = "m"    : 月
+'coXstrDateUnit = "ww"   : 週
+'coXstrDateUnit = "d"    : 日
+    PfncdatDateAdd = Empty
+    If myXdatDate = CDate("00:00:00") Then Exit Function
+    PfncdatDateAdd = DateAdd(coXstrDateUnit, myXlonNum, myXdatDate)
+End Function
+
+ '定型Ｆ_数値から日付を返す
+Private Function PfncdatDateFromNumeric( _
+            ByVal myXlonYearNum As Long, ByVal myXlonMnthNum As Long, _
+            ByVal myXlonDayNum As Long) As Date
+    PfncdatDateFromNumeric = Empty
+    If myXlonMnthNum < 1 Or myXlonMnthNum > 12 Then Exit Function
+    If myXlonDayNum < 1 Or myXlonDayNum > 31 Then Exit Function
+    PfncdatDateFromNumeric = DateSerial(myXlonYearNum, myXlonMnthNum, myXlonDayNum)
+End Function
+
+ '定型Ｆ_数値から時刻を返す
+Private Function PfncdatTimeFromNumeric( _
+            ByVal myXlonHourNum As Long, ByVal myXlonMntNum As Long, _
+            ByVal myXlonScndNum As Long) As Date
+    PfncdatTimeFromNumeric = Empty
+    If myXlonHourNum < 0 Or myXlonHourNum > 24 Then Exit Function
+    If myXlonMntNum < 0 Or myXlonMntNum > 60 Then Exit Function
+    If myXlonScndNum < 0 Or myXlonScndNum > 60 Then Exit Function
+    PfncdatTimeFromNumeric = TimeSerial(myXlonHourNum, myXlonMntNum, myXlonScndNum)
+End Function
+
+ '定型Ｆ_日付と時刻の表記を指定の書式に変換する
+Private Function PfncstrFormatDateTime( _
+            ByVal myXdatDateTime As Date, ByVal myXstrFormat As String) As String
+'myXdatDateTime = "yyyy/mm/dd hh:nn:mm"
+'(例) myXstrFormat = "yy年" → Format("2013/1/2 3:4:56", "yy年") = "13年"
+'(例) myXstrFormat = "yy年" → Format("2013/1/2 3:4:56", "yyyy年mm月dd日") = "2013年01月02日"
+'(例) myXstrFormat = "yy年" → Format("2013/1/2 3:4:56", "yyyy/m/d") = "2013/1/2"
+'(例) myXstrFormat = "yy年" → Format("2013/1/2 3:4:56", "hh:nn:ss") = "03:04:56"
+'(例) myXstrFormat = "yy年" → Format("2013/1/2 3:4:56", "h:n:s") = "3:4:56"
+    PfncstrFormatDateTime = Empty
+    If myXdatDateTime = CDate("00:00:00") Then Exit Function
+    If myXstrFormat = "" Then Exit Function
+    PfncstrFormatDateTime = Format(myXdatDateTime, myXstrFormat)
+End Function
+
+ '定型Ｆ_数値の表記を指定の書式に変換する
+Private Function PfncstrFormatNumeric( _
+            ByVal myXlonNum As Double, ByVal myXstrFormat As String) As String
+'myXdatDateTime = "yyyy/mm/dd hh:nn:mm"
+'(例) myXstrFormat = "0" → Format(12345, "0") = "12345"
+'(例) myXstrFormat = "#,###" → Format(12345, "#,###") = "12,345"
+'(例) myXstrFormat = "000,000" → Format(12345, "000,000") = "012,345"
+'(例) myXstrFormat = "0.00%" → Format(12345, "0.00%") = "1234500.00%"
+'(例) myXstrFormat = "#,###" → Format(12345, "#,###") = "12,345"
+'(例) myXstrFormat = "#,###" → Format(12345, "#,###.00") = "12,345.00"
+    PfncstrFormatNumeric = Empty
+    If myXstrFormat = "" Then Exit Function
+    PfncstrFormatNumeric = Format(myXlonNum, myXstrFormat)
+End Function
+
+ '定型Ｆ_数値の小数点以下を四捨五入する
+Private Function PfncstrRoundOffDecimals(ByVal myXdouDcmls As Double) As Double
+'myXdatDateTime = "yyyy/mm/dd hh:nn:mm"
+    PfncstrRoundOffDecimals = Empty
+    If myXstrFormat = "" Then Exit Function
+    PfncstrRoundOffDecimals = Format(myXdouDcmls, 0)
+End Function
+
+ '定型Ｐ_月カレンダーフォームを作成する(日曜日始まり)
+Private Sub PfixMonthCalenderFormSundayStart( _
+            myXlonDaysPerMnth As Long, myXlonDaysForClndr As Long, _
+            myZstrClndrForm() As String, _
+            ByVal myXdatTrgtYearMnth As Date)
+'myZstrClndrForm(1, i) : "m/d"
+'myZstrClndrForm(2, i) : 曜日
+'myXdatTrgtYearMnth = "yyyy/mm"
+    myXlonDaysPerMnth = Empty: myXlonDaysForClndr = Empty: Erase myZstrClndrForm
+  Dim myXstrTrgtDate As String, myXdatBgnDate As Date, myXdatEndDate As Date
+    myXstrTrgtDate = Format(myXdatTrgtYearMnth, "yyyy/mm")
+    myXdatBgnDate = CDate(myXstrTrgtDate)
+    myXdatEndDate = DateAdd("d", -1, DateAdd("m", 1, myXdatBgnDate))
+    myXlonDaysPerMnth = Day(myXdatEndDate) - Day(myXdatBgnDate) + 1
+    myXlonDaysForClndr = myXlonDaysPerMnth + (Weekday(myXdatBgnDate) - 1) _
+                                            + (7 - Weekday(myXdatEndDate))
+    If myXlonDaysForClndr <= 0 Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    i = 2 - (1 - L): j = myXlonDaysForClndr - (1 - L)
+    ReDim myZstrClndrForm(i, j) As String
+  Dim myXlonTrgtYear As Long, myXlonTrgtMnth As Long
+    myXlonTrgtYear = Year(myXdatTrgtYearMnth)
+    myXlonTrgtMnth = Month(myXdatTrgtYearMnth)
+  Dim myXdatTrgtDay As Date, n As Long
+    For j = Day(myXdatBgnDate) To Day(myXdatEndDate)
+        n = j + Weekday(myXdatBgnDate) - (2 - L)
+        myXdatTrgtDay = DateSerial(myXlonTrgtYear, myXlonTrgtMnth, j)
+        myZstrClndrForm(i - 1, n) = Format(myXdatTrgtDay, "m/d")
+        myZstrClndrForm(i - 0, n) = WeekdayName(Weekday(myXdatTrgtDay), True)
+    Next j
+End Sub
+
+ '定型Ｐ_月カレンダーフォームを作成する(月曜日始まり)
+Private Sub PfixMonthCalenderFormMondayStart( _
+            myXlonDaysPerMnth As Long, myXlonDaysForClndr As Long, _
+            myZstrClndrForm() As String, _
+            ByVal myXdatTrgtYearMnth As Date)
+'myZstrClndrForm(1, i) : "m/d"
+'myZstrClndrForm(2, i) : 曜日
+'myXdatTrgtYearMnth = "yyyy/mm"
+    myXlonDaysPerMnth = Empty: myXlonDaysForClndr = Empty: Erase myZstrClndrForm
+  Dim myXstrTrgtDate As String, myXdatBgnDate As Date, myXdatEndDate As Date
+    myXstrTrgtDate = Format(myXdatTrgtYearMnth, "yyyy/mm")
+    myXdatBgnDate = CDate(myXstrTrgtDate)
+    myXdatEndDate = DateAdd("d", -1, DateAdd("m", 1, myXdatBgnDate))
+    myXlonDaysPerMnth = Day(myXdatEndDate) - Day(myXdatBgnDate) + 1
+    Select Case Weekday(myXdatBgnDate)
+        Case vbSunday: myXlonDaysForClndr = myXlonDaysPerMnth + 6
+        Case Else: myXlonDaysForClndr = myXlonDaysPerMnth + (Weekday(myXdatBgnDate) - 2)
+    End Select
+    Select Case Weekday(myXdatEndDate)
+        Case vbSunday: myXlonDaysForClndr = myXlonDaysForClndr
+        Case Else: myXlonDaysForClndr = myXlonDaysForClndr + (8 - Weekday(myXdatEndDate))
+    End Select
+    If myXlonDaysForClndr <= 0 Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    i = 2 - (1 - L): j = myXlonDaysForClndr - (1 - L)
+    ReDim myZstrClndrForm(i, j) As String
+  Dim myXlonTrgtYear As Long, myXlonTrgtMnth As Long
+    myXlonTrgtYear = Year(myXdatTrgtYearMnth)
+    myXlonTrgtMnth = Month(myXdatTrgtYearMnth)
+  Dim myXdatTrgtDay As Date, n As Long
+    For j = Day(myXdatBgnDate) To Day(myXdatEndDate)
+        n = j + Weekday(myXdatBgnDate) - (2 - L)
+        If Weekday(myXdatBgnDate) = vbSunday Then n = j + 6
+        myXdatTrgtDay = DateSerial(myXlonTrgtYear, myXlonTrgtMnth, j)
+        myZstrClndrForm(i - 1, n) = Format(myXdatTrgtDay, "m/d")
+        myZstrClndrForm(i - 0, n) = WeekdayName(Weekday(myXdatTrgtDay), True)
+    Next j
+End Sub
+
       <br></pre>
     </body>
   </html>
