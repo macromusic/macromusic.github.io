@@ -630,51 +630,6 @@
 'ExitPath:
 'End Sub
 '
-' '定型Ｐ_フォルダファイルオブジェクト一覧の日付情報とオブジェクト併記の配列を取得する
-'Private Sub PfixGetFolderFileDateInformationAndObject2DArray( _
-'            myXlonInfoCnt As Long, myZvarDatInfoAndObj() As Variant, _
-'            ByRef myZobjFldrFile() As Object, _
-'            Optional ByVal coXlonDateOptn As Long = 3)
-''myZvarDatInfoAndObj(i, 1) : 日付情報
-''myZvarDatInfoAndObj(i, 2) : 元フォルダor元ファイル
-''myZobjFldrFile(i) : 元フォルダor元ファイル
-''coXlonDateOptn = 1  : 作成日時 (DateCreated)
-''coXlonDateOptn = 2  : 最終アクセス日時 (DateLastAccessed)
-''coXlonDateOptn = 3  : 最終更新日時 (DateLastModified)
-'    myXlonInfoCnt = Empty: Erase myZvarDatInfoAndObj
-'  Dim myXobjTmp As Object, Li As Long
-'    On Error GoTo ExitPath
-'    Li = LBound(myZobjFldrFile): Set myXobjTmp = myZobjFldrFile(Li)
-'    On Error GoTo 0
-'  Dim myZdatBuf() As Date, myZobjBuf() As Object
-'  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
-'  Dim myXdatTmp As Date, i As Long, n As Long: n = Lo - 1
-'    On Error GoTo NextPath
-'    For i = LBound(myZobjFldrFile) To UBound(myZobjFldrFile)
-'        myXdatTmp = Empty
-'        Select Case coXlonDateOptn
-'            Case 1: myXdatTmp = myZobjFldrFile(i).DateCreated       '作成日時
-'            Case 2: myXdatTmp = myZobjFldrFile(i).DateLastAccessed  'アクセス日時
-'            Case 3: myXdatTmp = myZobjFldrFile(i).DateLastModified  '更新日時
-'        End Select
-'        n = n + 1
-'        ReDim Preserve myZdatBuf(n) As Date
-'        ReDim Preserve myZobjBuf(n) As Object
-'        myZdatBuf(n) = myXdatTmp
-'        Set myZobjBuf(n) = myZobjFldrFile(i)
-'NextPath:
-'    Next i
-'    On Error GoTo 0
-'    myXlonInfoCnt = n - Lo + 1
-'    ReDim myZvarDatInfoAndObj(n, Lo + 1) As Variant
-'    For i = LBound(myZdatBuf) To UBound(myZdatBuf)
-'        myZvarDatInfoAndObj(i, Lo + 0) = myZdatBuf(i)
-'        Set myZvarDatInfoAndObj(i, Lo + 1) = myZobjBuf(i)
-'    Next i
-'    Erase myZdatBuf: Erase myZobjBuf
-'ExitPath:
-'End Sub
-'
 ' '定型Ｐ_ファイルパス一覧から存在するファイルを抽出する
 'Private Sub PfixPickUpExistFileArray( _
 '            myXlonExistFileCnt As Long, myZobjExistFile() As Object, _
