@@ -346,7 +346,121 @@ NextPath:
 ExitPath:
 End Sub
 
- '定型Ｐ_指定ディレクトリ内のサブフォルダ一覧を取得してソートする
+ '定型Ｐ_フォルダファイルオブジェクト一覧の日付情報とオブジェクト併記の配列を取得する
+Private Sub PfixGetFolderFileDateInformationAndObject2DArray( _
+            myXlonInfoCnt As Long, myZvarDatInfoAndObj() As Variant, _
+            ByRef myZobjFldrFile() As Object, _
+            Optional ByVal coXlonDateOptn As Long = 3)
+'myZvarDatInfoAndObj(i, 1) : 日付情報
+'myZvarDatInfoAndObj(i, 2) : 元フォルダor元ファイル
+'myZobjFldrFile(i) : 元フォルダor元ファイル
+'coXlonDateOptn = 1  : 作成日時 (DateCreated)
+'coXlonDateOptn = 2  : 最終アクセス日時 (DateLastAccessed)
+'coXlonDateOptn = 3  : 最終更新日時 (DateLastModified)
+    myXlonInfoCnt = Empty: Erase myZvarDatInfoAndObj
+  Dim myXobjTmp As Object, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZobjFldrFile): Set myXobjTmp = myZobjFldrFile(Li)
+    On Error GoTo 0
+  Dim myZdatBuf() As Date, myZobjBuf() As Object
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim myXdatTmp As Date, i As Long, n As Long: n = Lo - 1
+    On Error GoTo NextPath
+    For i = LBound(myZobjFldrFile) To UBound(myZobjFldrFile)
+        myXdatTmp = Empty
+        Select Case coXlonDateOptn
+            Case 1: myXdatTmp = myZobjFldrFile(i).DateCreated       '作成日時
+            Case 2: myXdatTmp = myZobjFldrFile(i).DateLastAccessed  'アクセス日時
+            Case 3: myXdatTmp = myZobjFldrFile(i).DateLastModified  '更新日時
+        End Select
+        n = n + 1
+        ReDim Preserve myZdatBuf(n) As Date
+        ReDim Preserve myZobjBuf(n) As Object
+        myZdatBuf(n) = myXdatTmp
+        Set myZobjBuf(n) = myZobjFldrFile(i)
+NextPath:
+    Next i
+    On Error GoTo 0
+    myXlonInfoCnt = n - Lo + 1
+    ReDim myZvarDatInfoAndObj(n, Lo + 1) As Variant
+    For i = LBound(myZdatBuf) To UBound(myZdatBuf)
+        myZvarDatInfoAndObj(i, Lo + 0) = myZdatBuf(i)
+        Set myZvarDatInfoAndObj(i, Lo + 1) = myZobjBuf(i)
+    Next i
+    Erase myZdatBuf: Erase myZobjBuf
+ExitPath:
+End Sub
+
+ '定型Ｐ_フォルダ一覧をフォルダ名順にソートする
+Private Sub PincSortFldrArray( _
+            myXlonFldrCnt As Long, myZobjFldrFile() As Object, _
+            ByRef myZobjOrgFldr() As Object, _
+            Optional ByVal coXlonOrder As Long = 1, _
+            Optional ByVal coXlonMode As Long = 1)
+'Includes PfixGetFolderFileStringInformationAndObject2DArray
+'Includes PfixQuickSortOfStringObject2DArray
+'myZobjOrgFldr(i) : 元フォルダ
+'coXlonOrder = 1  : 昇順 (Ascending Order)
+'coXlonOrder = -1 : 降順 (Descending Order)
+'coXlonMode = vbBinaryCompare  = 0 : バイナリモードの比較
+'coXlonMode = vbTextCompare    = 1 : テキストモードの比較
+    myXlonFldrCnt = Empty: Erase myZobjFldrFile
+'//文字列情報一覧を取得
+  Dim myXlonInfoCnt As Long, myZvarStrAndObj() As Variant
+    Call PfixGetFolderFileStringInformationAndObject2DArray( _
+            myXlonInfoCnt, myZvarStrAndObj, _
+            myZobjOrgFldr, 1)
+    If myXlonInfoCnt <= 0 Then Exit Sub
+    myXlonFldrCnt = myXlonInfoCnt
+'//文字列によるクイックソート
+  Dim L As Long, U As Long
+    L = LBound(myZvarStrAndObj, 1)
+    U = UBound(myZvarStrAndObj, 1)
+    Call PfixQuickSortOfStringObject2DArray(myZvarStrAndObj, L, U, coXlonOrder, coXlonMode)
+'//オブジェクトを配列変数に格納
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long: i = myXlonFldrCnt + Lo - 1
+    ReDim myZobjFldrFile(i) As Object
+    For i = LBound(myZvarStrAndObj, 1) To UBound(myZvarStrAndObj, 1)
+        Set myZobjFldrFile(i + Lo - L) = myZvarStrAndObj(i, L + 1)
+    Next i
+    Erase myZvarStrAndObj
+End Sub
+
+ '定型Ｐ_フォルダ一覧を更新日時順にソートする
+Private Sub PincSortFldrArrayDateLastModified( _
+            myXlonFldrCnt As Long, myZobjFldrFile() As Object, _
+            ByRef myZobjOrgFldr() As Object, _
+            Optional ByVal coXlonOrder As Long = -1)
+'Includes PfixGetFolderFileDateInformationAndObject2DArray
+'Includes PfixQuickSortOfNumericObject2DArray
+'myZobjOrgFldr(i) : 元フォルダ
+'coXlonOrder = 1    : 昇順 (Ascending Order)
+'coXlonOrder = -1   : 降順 (Descending Order)
+    myXlonFldrCnt = Empty: Erase myZobjFldrFile
+'//更新日時情報一覧を取得
+  Dim myXlonInfoCnt As Long, myZvarDatInfoAndObj() As Variant
+    Call PfixGetFolderFileDateInformationAndObject2DArray( _
+            myXlonInfoCnt, myZvarDatInfoAndObj, _
+            myZobjOrgFldr, 3)
+    If myXlonInfoCnt <= 0 Then Exit Sub
+    myXlonFldrCnt = myXlonInfoCnt
+'//数値によるクイックソート
+  Dim L As Long, U As Long
+    L = LBound(myZvarDatInfoAndObj, 1)
+    U = UBound(myZvarDatInfoAndObj, 1)
+    Call PfixQuickSortOfNumericObject2DArray(myZvarDatInfoAndObj, L, U, coXlonOrder)
+'//オブジェクトを配列変数に格納
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long: i = myXlonFldrCnt + Lo - 1
+    ReDim myZobjFldrFile(i) As Object
+    For i = LBound(myZvarDatInfoAndObj, 1) To UBound(myZvarDatInfoAndObj, 1)
+        Set myZobjFldrFile(i + Lo - L) = myZvarDatInfoAndObj(i, L + 1)
+    Next i
+    Erase myZvarDatInfoAndObj
+End Sub
+
+ '定型Ｐ_指定ディレクトリ内のサブフォルダ一覧を取得してフォルダ名でソートする
 Private Sub PincGetAndSortSubFolderArray( _
             myXlonFldrCnt As Long, myZobjFldr() As Object, _
             ByVal myXobjDir As Object)
