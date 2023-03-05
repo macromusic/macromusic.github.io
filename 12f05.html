@@ -1,1 +1,335 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>macro sample</div>
+      <pre>
+'Includes PfixGetFolderTreeWithComeBack
+'Includes PfixGetFolderFileStringInformationFor1DArray
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_指定ディレクトリ階層内のフォルダ一覧を取得する
+'Rev.002
+
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CSubLyrFldrLst"
+
+'//PropertyGet_出力データ
+  Private Lc As Long
+  Private myXlonFldrCnt As Long, myZobjFldr() As Object, _
+            myZstrFldrName() As String, myZstrFldrPath() As String
+  
+'//PropertySetLet_入力制御信号
+  Private myXbisNotOutFldrInfo As Boolean
+  
+'//PropertySetLet_入力データ
+  Private myXstrDirPath As String, myXlonLyrs As Long
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  Private myZlonFldrLyrNo() As Long
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    Erase myZlonFldrLyrNo
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getOptnBase() As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    getOptnBase = L
+End Property
+
+Public Property Get getFldrCnt() As Long
+    getFldrCnt = myXlonFldrCnt
+End Property
+
+Public Property Get getFldrAry(ByVal k As Long) As Object
+    Set getFldrAry = myZobjFldr(k)
+'myZobjFldr(k) : フォルダオブジェクト
+End Property
+
+Public Property Get getFldrNameAry(ByVal k As Long) As String
+    getFldrNameAry = myZstrFldrName(k)
+'myZstrFldrName(k) : フォルダ名
+End Property
+
+Public Property Get getFldrPathAry(ByVal k As Long) As String
+    getFldrPathAry = myZstrFldrPath(k)
+'myZstrFldrPath(k) : フォルダパス
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXlonFldrCnt = Empty
+    Erase myZobjFldr: Erase myZstrFldrName: Erase myZstrFldrPath
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letNotOutFldrInfo(ByVal RHS As Boolean)
+    myXbisNotOutFldrInfo = RHS
+'myXbisNotOutFldrInfo = False : フォルダオブジェクとフォルダ情報を両方出力する
+'myXbisNotOutFldrInfo = True  : フォルダオブジェクトのみ出力してフォルダ情報は出力しない
+End Property
+
+Public Property Let letDirPath(RHS As String)
+    myXstrDirPath = RHS
+End Property
+
+Public Property Let letLyrs(ByVal RHS As Long)
+    myXlonLyrs = RHS
+'myXlonLyrs = 0   : 全フォルダ階層取得
+'myXlonLyrs = 1～ : 取得したいフォルダ階層数
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXstrDirPath = "" Then GoTo ExitPath
+    If myXlonLyrs < 0 Then myXlonLyrs = 0
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    Call ctrProc
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//S:指定ディレクトリのフォルダ階層一覧を取得
+    Call snsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//P:フォルダ情報取得
+    Call prsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'SnsP_指定ディレクトリのフォルダ階層一覧を取得
+Private Sub snsProc()
+    myXbisExitFlag = False
+
+'//フォルダ階層一覧を階層ごとにフォルダ名でソートして取得
+    Call PfixGetFolderTreeWithComeBack( _
+            myXlonFldrCnt, myZobjFldr, myZlonFldrLyrNo, _
+            myXstrDirPath, myXlonLyrs)
+    If myXlonFldrCnt <= 0 Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_フォルダ情報取得
+Private Sub prsProc()
+    myXbisExitFlag = False
+    
+    If myXbisNotOutFldrInfo = True Then Exit Sub
+    
+'//フォルダ一覧のフォルダ名を取得
+  Dim myXlonInfoCnt As Long
+    Call PfixGetFolderFileStringInformationFor1DArray( _
+            myXlonInfoCnt, myZstrFldrName, _
+            myZobjFldr, 1)
+    If myXlonInfoCnt <= 0 Then GoTo ExitPath
+    
+'//フォルダ一覧のフォルダ名を取得
+    Call PfixGetFolderFileStringInformationFor1DArray( _
+            myXlonInfoCnt, myZstrFldrPath, _
+            myZobjFldr, 2)
+    If myXlonInfoCnt <= 0 Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_フォルダ階層一覧を取得する
+Private Sub PfixGetFolderTreeWithComeBack( _
+            myXlonFldrTreeCnt As Long, _
+            myZobjFldrTree() As Object, myZlonFldrLyrNo() As Long, _
+            ByVal myXstrDirPath As String, _
+            Optional ByVal coXlonLyrs As Long = 0)
+'myZobjFldrTree(i) : フォルダ階層のオブジェクト一覧
+'myZlonFldrLyrNo(i) : フォルダ階層のオブジェクト一覧の階層No
+'myXstrDirPath : フォルダ階層を取得したいディレクトリパス
+'coXlonLyrs = 0   : 全フォルダ階層取得
+'coXlonLyrs = 1～ : 取得したいフォルダ階層数
+    myXlonFldrTreeCnt = Empty: Erase myZobjFldrTree: Erase myZlonFldrLyrNo
+    If myXstrDirPath = "" Then Exit Sub
+'//初期ディレクトリをセット
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXobjDir As Object: Set myXobjDir = myXobjFSO.GetFolder(myXstrDirPath)
+    Set myXobjFSO = Nothing
+'//再帰プロシージャ開始
+  Dim myXlonFldrCnt As Long, myXlonLyrNo As Long
+    myXlonFldrCnt = 0: myXlonLyrNo = 0
+    Call PsubFolderTreeComeBack( _
+            myZobjFldrTree, myZlonFldrLyrNo, myXlonFldrCnt, _
+            myXlonLyrNo, coXlonLyrs, myXobjDir)
+    Set myXobjDir = Nothing
+    myXlonFldrTreeCnt = myXlonFldrCnt
+End Sub
+Private Sub PsubFolderTreeComeBack( _
+            myZobjFldrTree() As Object, myZlonFldrLyrNo() As Long, _
+            ByRef myXlonFldrCnt As Long, _
+            ByVal myXlonLyrNo As Long, ByVal myXlonLyrs As Long, _
+            ByVal myXobjFldr As Object)
+'//再起用サブプロシージャ
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+'//フォルダを配列変数に格納
+    myXlonFldrCnt = myXlonFldrCnt + 1
+    myXlonLyrNo = myXlonLyrNo + 1
+  Dim n As Long: n = myXlonFldrCnt + L - 1
+    ReDim Preserve myZobjFldrTree(n) As Object
+    ReDim Preserve myZlonFldrLyrNo(n) As Long
+    Set myZobjFldrTree(n) = myXobjFldr
+    myZlonFldrLyrNo(n) = myXlonLyrNo
+    If (myXlonLyrs >= 1 And myXlonLyrNo >= myXlonLyrs) Then Exit Sub
+'//サブフォルダを確認
+  Dim myXlonSubFldrCnt As Long
+    myXlonSubFldrCnt = myXobjFldr.SubFolders.Count
+    If myXlonSubFldrCnt <= 0 Then Exit Sub
+'//再帰を使用してサブフォルダを探索
+  Dim myZobjSubFldr As Object
+    For Each myZobjSubFldr In myXobjFldr.SubFolders
+        Call PsubFolderTreeComeBack( _
+                myZobjFldrTree, myZlonFldrLyrNo, myXlonFldrCnt, _
+                myXlonLyrNo, myXlonLyrs, myZobjSubFldr)
+    Next myZobjSubFldr
+    Set myZobjSubFldr = Nothing
+End Sub
+
+ '定型Ｐ_1次元配列のフォルダファイルオブジェクト一覧の文字列情報を取得する
+Private Sub PfixGetFolderFileStringInformationFor1DArray( _
+                myXlonInfoCnt As Long, myZstrInfo() As String, _
+                ByRef myZobjFldrFile() As Object, _
+                Optional ByVal coXlonStrOptn As Long = 1)
+'myZstrInfo(i) : 抽出フォルダ情報
+'myZobjFldrFile(i) : 元フォルダor元ファイル
+'coXlonStrOptn = 1  : 名前 (Name)
+'coXlonStrOptn = 2  : パス (Path)
+'coXlonStrOptn = 3  : 親フォルダ (ParentFolder)
+'coXlonStrOptn = 4  : 属性 (Attributes)
+'coXlonStrOptn = 5  : 種類 (Type)
+    myXlonInfoCnt = Empty: Erase myZstrInfo
+  Dim myXobjTmp As Object, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZobjFldrFile): Set myXobjTmp = myZobjFldrFile(Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim myXstrTmp As String, i As Long, n As Long: n = Lo - 1
+    On Error GoTo NextPath
+    For i = LBound(myZobjFldrFile) To UBound(myZobjFldrFile)
+        myXstrTmp = Empty
+        Select Case coXlonStrOptn
+            Case 1: myXstrTmp = myZobjFldrFile(i).Name
+            Case 2: myXstrTmp = myZobjFldrFile(i).Path
+            Case 3: myXstrTmp = myZobjFldrFile(i).ParentFolder
+            Case 4: myXstrTmp = myZobjFldrFile(i).Attributes
+            Case 5: myXstrTmp = myZobjFldrFile(i).Type
+        End Select
+        n = n + 1: ReDim Preserve myZstrInfo(n) As String
+        myZstrInfo(n) = myXstrTmp
+NextPath:
+    Next i
+    On Error GoTo 0
+    myXlonInfoCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_指定ディレクトリ階層内のフォルダ一覧を取得する
+'Private Sub PforNewInstanceOfCSubLyrFldrLst()
+'  Dim Lc As Long
+'  Dim myXlonFldrCnt As Long, myZobjFldr() As Object, _
+'        myZstrFldrName() As String, myZstrFldrPath() As String
+'    'myZobjFldr(k) : フォルダオブジェクト
+'    'myZstrFldrName(k) : フォルダ名
+'    'myZstrFldrPath(k) : フォルダパス
+''//クラス内変数への入力
+'  Dim myXbisNotOutFileInfo As Boolean
+'    'myXbisNotOutFileInfo = False : ファイルオブジェクとファイル情報を両方出力する
+'    'myXbisNotOutFileInfo = True  : ファイルオブジェクトのみ出力してファイル情報は出力しない
+'    myXbisNotOutFileInfo = False
+'  Dim myXstrDirPath As String
+'    myXstrDirPath = "C:\_Cdrive\_VBA\11 プログラムデータベース"
+'  Dim myXlonLyrs As Long
+'    'myXlonLyrs = 0   : 全フォルダ階層取得
+'    'myXlonLyrs = 1～ : 取得したいフォルダ階層数
+'    myXlonLyrs = 0
+''//CSubLyrFldrLstクラスモジュールのインスタンス生成
+'  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+'  Dim k As Long
+'  Dim myXinsSubLyrFldrLst As CSubLyrFldrLst: Set myXinsSubLyrFldrLst = New CSubLyrFldrLst
+'    With myXinsSubLyrFldrLst
+'    '//クラス内変数への入力
+'        .letDirPath = myXstrDirPath
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        .exeProc
+'        myXlonFldrCnt = .getFldrCnt
+'        If myXlonFldrCnt <= 0 Then GoTo JumpPath
+'        k = myXlonFldrCnt + Lo - 1
+'        ReDim myZobjFldr(k) As Object
+'        ReDim myZstrFldrName(k) As String
+'        ReDim myZstrFldrPath(k) As String
+'        Lc = .getOptnBase
+'        For k = 1 To myXlonFldrCnt
+'            Set myZobjFldr(k + Lo - 1) = .getFldrAry(k + Lc - 1)
+'            myZstrFldrName(k + Lo - 1) = .getFldrNameAry(k + Lc - 1)
+'            myZstrFldrPath(k + Lo - 1) = .getFldrPathAry(k + Lc - 1)
+'        Next k
+'    End With
+'JumpPath:
+'    Set myXinsSubLyrFldrLst = Nothing
+'    Call PforDisplayVariablesOfCSubLyrFldrLst(myXlonFldrCnt, myZstrFldrName)   'Debug.Print
+'End Sub
+'Private Sub PforDisplayVariablesOfCSubLyrFldrLst( _
+'            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+''//CSubLyrFldrLstクラス内から出力した変数の内容確認
+'    Debug.Print "データ数: " & myXlonDataCnt
+'    If myXlonDataCnt <= 0 Then Exit Sub
+'  Dim k As Long
+'    For k = LBound(myZvarField) To UBound(myZvarField)
+'        Debug.Print "データ" & k & ": " & myZvarField(k)
+'    Next k
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
