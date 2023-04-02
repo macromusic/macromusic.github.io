@@ -1,1 +1,761 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes CRngSlct
+'Includes CPicInsrt
+'Includes CPicArngRng
+'Includes PfncstrFileNameByFSO
+'Includes PfixChangeModuleConstValue
+'Includes PfixGetRangePlaceForShapeArrange
+'Includes PfncbisCheckArrayDimension
+'Includes x
 
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_複数の画像ファイルをサイズと位置をシートの行列位置で指定して挿入
+'Rev.003
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "xRefInsrtPicsSlctRng"
+  Private Const meMlonExeNum As Long = 0
+  
+'//モジュール内定数
+  
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//出力データ
+  Private myXlonExeFileCnt As Long, _
+            myZstrExeFileName() As String, myZstrExeFilePath() As String
+    'myZstrExeFileName(k) : 実行ファイル名
+    'myZstrExeFilePath(k) : 実行ファイルパス
+  
+'//入力制御信号
+  
+'//入力データ
+  Private myXlonOrgFileCnt As Long, myZstrOrgFilePath() As String
+    'myZstrOrgFilePath(k) : 元ファイルパス
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+  Private myXbisRngSlctUse As Boolean
+    'myXbisRngSlctUse = False : インプットボックスを使用しない
+    'myXbisRngSlctUse = True  : インプットボックスを使用して画像のサイズと位置を指定する
+  
+'//モジュール内変数_データ
+  Private myXlonRngOptn As Long
+    'myXlonRngOptn = 0  : 選択範囲
+    'myXlonRngOptn = 1  : 選択位置から最終行までの範囲
+    'myXlonRngOptn = 2  : 選択位置から最終列までの範囲
+    'myXlonRngOptn = 3  : 全データ範囲
+  Private myXstrInptBxTtl As String, myXstrInptBxPrmpt As String
+  Private myXobjSlctRng As Object
+  Private myXobjSheet As Object
+  Private myXlonStrtRow As Long, myXlonStrtCol As Long, _
+            myXdouOrgSizeHghtRows As Long, myXdouOrgSizeWdthCols As Long
+  
+  Private myXlonRunFileNo As Long, _
+            myXstrRunFileName As String, myXstrRunFilePath As String
+  
+  Private myXstrPstDrctn As String
+    'myXstrPstDrctn = "LftToRght" : 配置の方向_左から右_Zタイプ
+    'myXstrPstDrctn = "TopToBttm" : 配置の方向_上から下_Nタイプ
+  Private myXlonNforDrctn As Long
+    'myXlonNforDrctn : 配置の方向に配置するShape数
+  Private myXlonRowIntrvl As Long, myXlonColIntrvl As Long
+  Private myXlonShpNameOn As Long
+    'myXlonShpNameOn = 0 : Shape名をセルに表示しない
+    'myXlonShpNameOn = 1 : Shape名をセルに表示する
+  Private myXlonPstnTopRow As Long, myXlonPstnLftCol As Long, _
+            myXlonPstnBttmRow As Long, myXlonPstnRghtCol As Long
+
+  Private myXlonPstFrmt As Long
+    'myXlonPstFrmt = 1 : "図 (PNG)"
+    'myXlonPstFrmt = 2 : "図 (JPEG)"
+    'myXlonPstFrmt = 3 : "図 (GIF)"
+    'myXlonPstFrmt = 4 : "図 (拡張メタファイル)"
+    'myXlonPstFrmt = 5 : "ビットマップ"
+    'myXlonPstFrmt = 6 : "Microsoft Office 描画オブジェクト"
+    'myXlonPstFrmt = ? : 形式変更しない
+
+  Private myXbisPicWthOtAspctRto As Boolean
+    'myXbisPicWthOtAspctRto = False : 画像の縦横比を固定してサイズを設定
+    'myXbisPicWthOtAspctRto = True  : 画像の縦横比を固定せずにサイズを設定
+  Private myXbisUnlckAspctRto As Boolean
+    'myXbisUnlckAspctRto = False : 画像の縦横比を固定する
+    'myXbisUnlckAspctRto = True  : 画像の縦横比を固定しない
+  Private myXlonPlcmnt As Long
+    'myXlonPlcmnt = xlMoveAndSize = 1  : 画像をセルに合わせて移動やサイズ変更をする
+    'myXlonPlcmnt = xlMove = 2         : 画像をセルに合わせて移動するがサイズ変更はしない
+    'myXlonPlcmnt = xlFreeFloating = 3 : 画像をセルに合わせて移動やサイズ変更をしない
+  Private myXdouTrmTop As Double, myXdouTrmLft As Double, _
+            myXdouTrmBttm As Double, myXdouTrmRght As Double
+    'myXdouTrmX : x [cm]
+  Private myXdouPstnTopOfst As Double, myXdouPstnLftOfst As Double
+    'myXdouXOfst : x [point]
+  Private myXdouSizeTopOfst As Double, myXdouSizeLftOfst As Double, _
+            myXdouSizeBttmOfst As Double, myXdouSizeRghtOfst As Double
+    'myXdouXOfst : x [point]
+  Private myXobjPicture As Object
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXbisRngSlctUse = False
+
+    myXlonRngOptn = Empty
+    myXstrInptBxTtl = Empty: myXstrInptBxPrmpt = Empty
+    Set myXobjSlctRng = Nothing
+    Set myXobjSheet = Nothing
+    myXlonStrtRow = Empty: myXlonStrtCol = Empty
+    myXdouOrgSizeHghtRows = Empty: myXdouOrgSizeWdthCols = Empty
+    
+    myXlonRunFileNo = Empty: myXstrRunFileName = Empty: myXstrRunFilePath = Empty
+
+    myXstrPstDrctn = Empty: myXlonNforDrctn = Empty
+    myXlonRowIntrvl = Empty: myXlonColIntrvl = Empty
+    myXlonShpNameOn = Empty
+    myXlonPstnTopRow = Empty: myXlonPstnLftCol = Empty
+    myXlonPstnBttmRow = Empty: myXlonPstnRghtCol = Empty
+
+    myXlonPstFrmt = Empty
+    
+    myXbisPicWthOtAspctRto = False: myXbisUnlckAspctRto = False: myXlonPlcmnt = Empty
+    myXdouTrmTop = Empty: myXdouTrmLft = Empty
+    myXdouTrmBttm = Empty: myXdouTrmRght = Empty
+    myXdouPstnTopOfst = Empty: myXdouPstnLftOfst = Empty
+    myXdouSizeTopOfst = Empty: myXdouSizeLftOfst = Empty
+    myXdouSizeBttmOfst = Empty: myXdouSizeRghtOfst = Empty
+    Set myXobjPicture = Nothing
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_モジュールメモリのリセット
+Public Sub resetConstant()
+  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
+  Dim myZvarM(1, 2) As Variant
+    myZvarM(1, 1) = "meMlonExeNum": myZvarM(1, 2) = 0
+    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+End Sub
+
+'PublicP_
+Public Sub exeProc()
+    
+'//処理実行
+    Call callxRefInsrtPicsSlctRng
+    
+'//処理結果表示
+    Select Case myXbisCmpltFlag
+        Case True: MsgBox "実行完了"
+        Case Else: MsgBox "異常あり", vbExclamation
+    End Select
+    
+End Sub
+
+'PublicP_
+Public Sub callProc( _
+            myXbisCmpltFlagOUT As Boolean, myXlonExeFileCntOUT As Long, _
+            myZstrExeFileNameOUT() As String, myZstrExeFilePathOUT() As String, _
+            ByVal myXlonOrgFileCntIN As Long, ByRef myZstrOrgFilePathIN() As String)
+    
+'//入力変数を初期化
+    myXlonOrgFileCnt = Empty: Erase myZstrOrgFilePath
+
+'//入力変数を取り込み
+    myXlonOrgFileCnt = myXlonOrgFileCntIN
+    If myXlonOrgFileCnt <= 0 Then Exit Sub
+    myZstrOrgFilePath() = myZstrOrgFilePathIN()
+    
+'//出力変数を初期化
+    myXbisCmpltFlagOUT = False
+    myXlonExeFileCntOUT = Empty
+    Erase myZstrExeFileNameOUT: Erase myZstrExeFilePathOUT
+    
+'//処理実行
+    Call ctrProc
+    If myXbisCmpltFlag = False Then Exit Sub
+    
+'//出力変数に格納
+    myXbisCmpltFlagOUT = myXbisCmpltFlag
+    myXlonExeFileCntOUT = myXlonExeFileCnt
+    If myXlonExeFileCntOUT <= 0 Then Exit Sub
+    myZstrExeFileNameOUT() = myZstrExeFileName()
+    myZstrExeFilePathOUT() = myZstrExeFilePath()
+    
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call remProc: If myXbisExitFlag = True Then GoTo ExitPath
+    Call checkInputVariables
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"    'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables
+    Call setControlVariables1
+    Call setControlVariables2
+    Call setControlVariables3
+    Call setControlVariables4
+    
+'//S:Loop前の情報取得処理
+    Call snsProcBeforeLoop
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"    'PassFlag
+    
+    Application.ScreenUpdating = False
+    
+  Dim n As Long: n = 0
+'//C:ファイルリストを順次実行
+  Dim k As Long
+    For k = LBound(myZstrOrgFilePath) To UBound(myZstrOrgFilePath)
+        myXlonRunFileNo = k
+        myXstrRunFilePath = myZstrOrgFilePath(k)
+        myXstrRunFileName = PfncstrFileNameByFSO(myXstrRunFilePath)
+            
+    '//Run:各ファイルのデータ出力処理
+        Call runProcForLoop
+        If myXbisExitFlag = True Then GoTo NextPath
+'        Debug.Print "PassFlag: " & meMstrMdlName & "3-" & k   'PassFlag
+        
+        n = n + 1
+        ReDim Preserve myZstrExeFileName(n) As String
+        ReDim Preserve myZstrExeFilePath(n) As String
+        myZstrExeFileName(n) = myXstrRunFilePath
+        myZstrExeFilePath(n) = myXstrRunFileName
+NextPath:
+    Next k
+    myXlonExeFileCnt = n
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"    'PassFlag
+    
+    Application.ScreenUpdating = True
+    
+    Call checkOutputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+    myXbisCmpltFlag = True
+ExitPath:
+    If coXbisTestMode = False Then Call recProc
+    Call initializeModuleVariables
+End Sub
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+    myXlonExeFileCnt = Empty
+    Erase myZstrExeFileName: Erase myZstrExeFilePath
+End Sub
+
+'RemP_保存した変数を取り出す
+Private Sub remProc()
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXlonOrgFileCnt <= 0 Then GoTo ExitPath
+    If PfncbisCheckArrayDimension(myZstrOrgFilePath, 1) = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+
+    myXbisRngSlctUse = True
+    'myXbisRngSlctUse = False : インプットボックスを使用しない
+    'myXbisRngSlctUse = True  : インプットボックスを使用して画像のサイズと位置を指定する
+
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables1()
+
+    myXlonRngOptn = 0
+    'myXlonRngOptn = 0  : 選択範囲
+    'myXlonRngOptn = 1  : 選択位置から最終行までの範囲
+    'myXlonRngOptn = 2  : 選択位置から最終列までの範囲
+    'myXlonRngOptn = 3  : 全データ範囲
+    
+    myXstrInptBxTtl = "画像挿入の位置とサイズ指定"
+    myXstrInptBxPrmpt = "1枚目の画像を貼り付ける位置とサイズを指定して下さい。" & vbCrLf & _
+                        "2枚目以降の画像は指定サイズに調整して貼り付けます。"
+
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables2()
+
+    myXlonNforDrctn = 2
+    'myXlonNforDrctn : 配置の方向に配置するShape数
+
+    myXlonRowIntrvl = 1
+    myXlonColIntrvl = 1
+
+    myXstrPstDrctn = "LftToRght"
+    'myXstrPstDrctn = "LftToRght" : 配置の方向_左から右_Zタイプ
+    'myXstrPstDrctn = "TopToBttm" : 配置の方向_上から下_Nタイプ
+    
+    myXlonShpNameOn = 1
+    'myXlonShpNameOn = 0 : Shape名をセルに表示しない
+    'myXlonShpNameOn = 1 : Shape名をセルに表示する
+
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables3()
+    
+    myXlonPstFrmt = 0
+    'myXlonPstFrmt = 1 : "図 (PNG)"
+    'myXlonPstFrmt = 2 : "図 (JPEG)"
+    'myXlonPstFrmt = 3 : "図 (GIF)"
+    'myXlonPstFrmt = 4 : "図 (拡張メタファイル)"
+    'myXlonPstFrmt = 5 : "ビットマップ"
+    'myXlonPstFrmt = 6 : "Microsoft Office 描画オブジェクト"
+    'myXlonPstFrmt = ? : 形式変更しない
+
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables4()
+
+    myXbisPicWthOtAspctRto = False
+    'myXbisPicWthOtAspctRto = False : 画像の縦横比を固定してサイズを設定
+    'myXbisPicWthOtAspctRto = True  : 画像の縦横比を固定せずにサイズを設定
+
+    myXbisUnlckAspctRto = False
+    'myXbisUnlckAspctRto = False : 画像の縦横比を固定する
+    'myXbisUnlckAspctRto = True  : 画像の縦横比を固定しない
+
+    myXlonPlcmnt = 2
+    'myXlonPlcmnt = xlMoveAndSize = 1  : 画像をセルに合わせて移動やサイズ変更をする
+    'myXlonPlcmnt = xlMove = 2         : 画像をセルに合わせて移動するがサイズ変更はしない
+    'myXlonPlcmnt = xlFreeFloating = 3 : 画像をセルに合わせて移動やサイズ変更をしない
+
+    myXdouTrmTop = 0
+    myXdouTrmLft = 0
+    myXdouTrmBttm = 0
+    myXdouTrmRght = 0
+    'myXdouTrmX : x [cm]
+    
+    myXdouPstnTopOfst = 2
+    myXdouPstnLftOfst = 2
+    'myXdouXOfst : x [point]
+    
+    myXdouSizeTopOfst = myXdouPstnTopOfst
+    myXdouSizeLftOfst = myXdouPstnLftOfst
+    myXdouSizeBttmOfst = (-1) * myXdouSizeTopOfst
+    myXdouSizeRghtOfst = (-1) * myXdouSizeLftOfst
+    'myXdouXOfst : x [point]
+    
+End Sub
+
+'SnsP_Loop前の情報取得処理
+Private Sub snsProcBeforeLoop()
+    myXbisExitFlag = False
+
+    If myXbisRngSlctUse = False Then Exit Sub
+
+'//シート上のセル範囲を取得
+    Call instCRngSlct
+    If myXobjSlctRng Is Nothing Then GoTo ExitPath
+    
+    With myXobjSlctRng
+        Set myXobjSheet = .Parent
+        myXlonStrtRow = .Row
+        myXlonStrtCol = .Column
+        myXdouOrgSizeHghtRows = .Rows.Count
+        myXdouOrgSizeWdthCols = .Columns.Count
+    End With
+    myXobjSheet.Activate
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_各ファイルのデータ出力処理
+Private Sub runProcForLoop()
+    myXbisExitFlag = False
+    
+'//Shapeを順番に等間隔に配置する場合のセル範囲の位置情報を取得
+  Dim myXlonShpNameRow As Long, myXlonShpNameCol As Long
+    Call PfixGetRangePlaceForShapeArrange( _
+            myXlonPstnTopRow, myXlonPstnLftCol, myXlonPstnBttmRow, myXlonPstnRghtCol, _
+            myXlonShpNameRow, myXlonShpNameCol, _
+            myXlonRunFileNo, _
+            myXlonStrtRow, myXlonStrtCol, myXdouOrgSizeHghtRows, myXdouOrgSizeWdthCols, _
+            myXlonNforDrctn, myXlonRowIntrvl, myXlonColIntrvl, _
+            myXstrPstDrctn, myXlonShpNameOn)
+  Dim myXdouSizeHghtRows As Long, myXdouSizeWdthCols As Long
+    myXdouSizeHghtRows = myXlonPstnBttmRow - myXlonPstnTopRow + 1
+    myXdouSizeWdthCols = myXlonPstnRghtCol - myXlonPstnLftCol + 1
+    If myXdouSizeHghtRows <= 0 Or myXdouSizeWdthCols <= 0 Then GoTo ExitPath
+    
+    On Error Resume Next
+    myXobjSheet.Cells(myXlonShpNameRow, myXlonShpNameCol).Value = myXstrRunFileName
+    On Error GoTo 0
+    
+'//画像をシート上に挿入
+    Call instCPicInsrt
+    If myXobjPicture Is Nothing Then GoTo ExitPath
+    
+'//画像の大きさと位置をシートの行列位置で調整
+    Call instCPicArngRng
+    If myXobjPicture Is Nothing Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'checkP_出力変数内容を確認する
+Private Sub checkOutputVariables()
+    myXbisExitFlag = False
+    
+    If myXlonExeFileCnt <= 0 Then GoTo ExitPath
+    If PfncbisCheckArrayDimension(myZstrExeFileName, 1) = False Then GoTo ExitPath
+    If PfncbisCheckArrayDimension(myZstrExeFilePath, 1) = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RecP_使用した変数を保存する
+Private Sub recProc()
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    
+  Dim myZvarM(1, 2) As Variant
+    myZvarM(1, 1) = "meMlonExeNum"
+    myZvarM(1, 2) = meMlonExeNum + 1
+    
+  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
+    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+    
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'◆ClassProc名_シート上のセル範囲を取得する
+Private Sub instCRngSlct()
+  Dim myXinsRngSlct As CRngSlct: Set myXinsRngSlct = New CRngSlct
+    With myXinsRngSlct
+    '//クラス内変数への入力
+        .letRngOptn = myXlonRngOptn
+        .letInptBoxPrmptTtl(1) = myXstrInptBxPrmpt
+        .letInptBoxPrmptTtl(2) = myXstrInptBxTtl
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        Set myXobjSlctRng = .getSlctRng
+    End With
+    Set myXinsRngSlct = Nothing
+End Sub
+
+'◆ClassProc名_画像をシート上に挿入する
+Private Sub instCPicInsrt()
+  Dim myXinsPicInsrt As CPicInsrt: Set myXinsPicInsrt = New CPicInsrt
+    With myXinsPicInsrt
+    '//クラス内変数への入力
+        Set .setSheet = myXobjSheet
+        .letFilePath = myXstrRunFilePath
+        .letPstFrmt = myXlonPstFrmt
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        Set myXobjPicture = .fncobjPicture
+    End With
+    Set myXinsPicInsrt = Nothing
+End Sub
+
+'◆ClassProc名_画像の大きさと位置をシートの行列位置で調整する
+Private Sub instCPicArngRng()
+  Dim myXinsPicArngRng As CPicArngRng: Set myXinsPicArngRng = New CPicArngRng
+    With myXinsPicArngRng
+    '//クラス内変数への入力
+        .letPicWthOtAspctRto = myXbisPicWthOtAspctRto
+        .letUnlckAspctRto = myXbisUnlckAspctRto
+        .letPlcmnt = myXlonPlcmnt
+        Set .setPicture = myXobjPicture
+        .letTrmTop = myXdouTrmTop
+        .letTrmLft = myXdouTrmLft
+        .letTrmBttm = myXdouTrmBttm
+        .letTrmRght = myXdouTrmRght
+        .letSizeTopRow = myXlonPstnTopRow
+        .letSizeLftCol = myXlonPstnLftCol
+        .letSizeBttmRow = myXlonPstnBttmRow
+        .letSizeRghtCol = myXlonPstnRghtCol
+        .letSizeTopOfst = myXdouSizeTopOfst
+        .letSizeLftOfst = myXdouSizeLftOfst
+        .letSizeBttmOfst = myXdouSizeBttmOfst
+        .letSizeRghtOfst = myXdouSizeRghtOfst
+        .letPstnTopRow = myXlonPstnTopRow
+        .letPstnLftCol = myXlonPstnLftCol
+        .letPstnTopOfst = myXdouPstnTopOfst
+        .letPstnLftOfst = myXdouPstnLftOfst
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        Set myXobjPicture = .fncobjPicture
+    End With
+    Set myXinsPicArngRng = Nothing
+End Sub
+
+'===============================================================================================
+
+ '定型Ｆ_指定ファイルのファイル名を取得する(FileSystemObject使用)
+Private Function PfncstrFileNameByFSO(ByVal myXstrFilePath As String) As String
+    PfncstrFileNameByFSO = Empty
+    If myXstrFilePath = "" Then Exit Function
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXbisFileExist As Boolean: myXbisFileExist = myXobjFSO.FileExists(myXstrFilePath)
+    If myXbisFileExist = False Then Exit Function
+    PfncstrFileNameByFSO = myXobjFSO.GetFileName(myXstrFilePath)
+    Set myXobjFSO = Nothing
+End Function
+
+ '定型Ｐ_Shapeを順番に等間隔に配置する場合のセル範囲の位置情報を取得する
+Private Sub PfixGetRangePlaceForShapeArrange( _
+            myXlonTopRow As Long, myXlonLftCol As Long, _
+            myXlonBttmRow As Long, myXlonRghtCol As Long, _
+            myXlonShpNameRow As Long, myXlonShpNameCol As Long, _
+            ByVal k As Long, _
+            ByVal myXlonStrtRow As Long, ByVal myXlonStrtCol As Long, _
+            ByVal myXlonShpHghtRows As Long, ByVal myXlonShpWdthCols As Long, _
+            ByVal myXlonNforDrctn As Long, _
+            ByVal myXlonRowIntrvl As Long, ByVal myXlonColIntrvl As Long, _
+            Optional ByVal coXstrPstDrctn As String = "LftToRght", _
+            Optional ByVal coXlonShpNameOn As Long = 0)
+'myXlonStrtRow : Shapeを配置する最初の行
+'myXlonStrtCol : Shapeを配置する最初の列
+'myXlonShpHghtRows : Shapeサイズ調整する行範囲
+'myXlonShpWdthCols : Shapeサイズ調整する列範囲
+'myXlonNforDrctn : 配置の方向に配置するShape数
+'myXlonRowIntrvl : ShapeとShapeの間の行間隔
+'myXlonColIntrvl : ShapeとShapeの間の列間隔
+'coXstrPstDrctn = "LftToRght" : 配置の方向_左から右_Zタイプ
+'coXstrPstDrctn = "TopToBttm" : 配置の方向_上から下_Nタイプ
+'coXlonShpNameOn = 0 : Shape名をセルに表示しない
+'coXlonShpNameOn = 1 : Shape名をセルに表示する
+    myXlonTopRow = Empty: myXlonLftCol = Empty
+    myXlonBttmRow = Empty: myXlonRghtCol = Empty
+    myXlonShpNameRow = Empty: myXlonShpNameCol = Empty
+    If k <= 0 Then Exit Sub
+    If myXlonStrtRow <= 0 Or myXlonStrtCol <= 0 Then Exit Sub
+    If myXlonShpHghtRows <= 0 Or myXlonShpWdthCols <= 0 Then Exit Sub
+    If myXlonNforDrctn <= 0 Then Exit Sub
+    If myXlonRowIntrvl < 0 Or myXlonColIntrvl < 0 Then Exit Sub
+    If coXstrPstDrctn <> "LftToRght" And coXstrPstDrctn <> "TopToBttm" Then Exit Sub
+    If coXlonShpNameOn <> 0 Then coXlonShpNameOn = 1
+  Dim myXlonSctnRngHght As Long, myXlonSctnRngWdth As Long
+    myXlonSctnRngHght = coXlonShpNameOn + myXlonShpHghtRows + myXlonRowIntrvl
+    myXlonSctnRngWdth = myXlonShpWdthCols + myXlonColIntrvl
+    If myXlonSctnRngHght <= 0 Or myXlonSctnRngWdth <= 0 Then Exit Sub
+  Dim i As Long, j As Long
+    If coXstrPstDrctn = "LftToRght" Then
+        i = Int((k - 0.1) / myXlonNforDrctn) * myXlonSctnRngHght
+        myXlonTopRow = myXlonStrtRow + i + coXlonShpNameOn
+        myXlonBttmRow = myXlonTopRow + myXlonShpHghtRows - 1
+        j = (k - 1 - Int((k - 0.1) / myXlonNforDrctn) * myXlonNforDrctn) * myXlonSctnRngWdth
+        myXlonLftCol = myXlonStrtCol + j
+        myXlonRghtCol = myXlonLftCol + myXlonShpWdthCols - 1
+    ElseIf coXstrPstDrctn = "TopToBttm" Then
+        j = Int((k - 0.1) / myXlonNforDrctn) * myXlonSctnRngWdth
+        myXlonLftCol = myXlonStrtCol + j
+        myXlonRghtCol = myXlonLftCol + myXlonShpWdthCols - 1
+        i = (k - 1 - Int((k - 0.1) / myXlonNforDrctn) * myXlonNforDrctn) * myXlonSctnRngHght
+        myXlonTopRow = myXlonStrtRow + i + coXlonShpNameOn
+        myXlonBttmRow = myXlonTopRow + myXlonShpHghtRows - 1
+    End If
+    If coXlonShpNameOn = 1 Then
+        myXlonShpNameRow = myXlonTopRow - coXlonShpNameOn
+        myXlonShpNameCol = myXlonLftCol
+    End If
+End Sub
+
+ '定型Ｆ_配列変数の次元数が指定次元と一致するかをチェックする
+Private Function PfncbisCheckArrayDimension( _
+            ByRef myZvarDataAry As Variant, ByVal myXlonDmnsn As Long) As Boolean
+    PfncbisCheckArrayDimension = False
+    If IsArray(myZvarDataAry) = False Then Exit Function
+    If myXlonDmnsn <= 0 Then Exit Function
+  Dim myXlonTmp As Long, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXlonTmp = UBound(myZvarDataAry, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    If k - 1 <> myXlonDmnsn Then Exit Function
+    PfncbisCheckArrayDimension = True
+End Function
+
+ '定型Ｐ_モジュール内定数の値を変更する
+Private Sub PfixChangeModuleConstValue(myXbisExitFlag As Boolean, _
+            ByVal myXstrMdlName As String, ByRef myZvarM() As Variant)
+    myXbisExitFlag = False
+    If myXstrMdlName = "" Then GoTo ExitPath
+  Dim L As Long, myXvarTmp As Variant
+    On Error GoTo ExitPath
+    L = LBound(myZvarM, 1): myXvarTmp = myZvarM(L, L)
+    On Error GoTo 0
+  Dim myXlonDclrLines As Long, myXobjCdMdl As Object
+    Set myXobjCdMdl = ThisWorkbook.VBProject.VBComponents(myXstrMdlName).CodeModule
+    myXlonDclrLines = myXobjCdMdl.CountOfDeclarationLines
+    If myXlonDclrLines <= 0 Then GoTo ExitPath
+  Dim i As Long, n As Long
+  Dim myXstrTmp As String, myXstrSrch As String, myXstrOrg As String, myXstrRplc As String
+Application.DisplayAlerts = False
+    For i = 1 To myXlonDclrLines
+        myXstrTmp = myXobjCdMdl.Lines(i, 1)
+        For n = LBound(myZvarM, 1) To UBound(myZvarM, 1)
+            myXstrSrch = "Const" & Space(1) & myZvarM(n, L) & Space(1) & "As" & Space(1)
+            If InStr(myXstrTmp, myXstrSrch) > 0 Then
+                myXstrOrg = Left(myXstrTmp, InStr(myXstrTmp, "=" & Space(1)) + 1)
+                myXstrRplc = myXstrOrg & myZvarM(n, L + 1)
+                Call myXobjCdMdl.ReplaceLine(i, myXstrRplc)
+            End If
+        Next n
+    Next i
+Application.DisplayAlerts = True
+    Set myXobjCdMdl = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+'===============================================================================================
+
+''SetP_制御用変数を設定する
+'Private Sub setControlVariables()
+'    myXbisRngSlctUse = True
+'    'myXbisRngSlctUse = False : インプットボックスを使用しない
+'    'myXbisRngSlctUse = True  : インプットボックスを使用して画像のサイズと位置を指定する
+'End Sub
+''SetP_制御用変数を設定する
+'Private Sub setControlVariables1()
+'    myXlonRngOptn = 0
+'    'myXlonRngOptn = 0  : 選択範囲
+'    'myXlonRngOptn = 1  : 選択位置から最終行までの範囲
+'    'myXlonRngOptn = 2  : 選択位置から最終列までの範囲
+'    'myXlonRngOptn = 3  : 全データ範囲
+'    myXstrInptBxTtl = "画像挿入の位置とサイズ指定"
+'    myXstrInptBxPrmpt = "1枚目の画像を貼り付ける位置とサイズを指定して下さい。" & vbCrLf & _
+'                        "2枚目以降の画像は指定サイズに調整して貼り付けます。"
+'End Sub
+''SetP_制御用変数を設定する
+'Private Sub setControlVariables2()
+'    myXlonNforDrctn = 2
+'    'myXlonNforDrctn : 配置の方向に配置するShape数
+'    myXlonRowIntrvl = 1
+'    myXlonColIntrvl = 1
+'    myXstrPstDrctn = "LftToRght"
+'    'myXstrPstDrctn = "LftToRght" : 配置の方向_左から右_Zタイプ
+'    'myXstrPstDrctn = "TopToBttm" : 配置の方向_上から下_Nタイプ
+'    myXlonShpNameOn = 1
+'    'myXlonShpNameOn = 0 : Shape名をセルに表示しない
+'    'myXlonShpNameOn = 1 : Shape名をセルに表示する
+'End Sub
+''SetP_制御用変数を設定する
+'Private Sub setControlVariables3()
+'    myXlonPstFrmt = 0
+'    'myXlonPstFrmt = 1 : "図 (PNG)"
+'    'myXlonPstFrmt = 2 : "図 (JPEG)"
+'    'myXlonPstFrmt = 3 : "図 (GIF)"
+'    'myXlonPstFrmt = 4 : "図 (拡張メタファイル)"
+'    'myXlonPstFrmt = 5 : "ビットマップ"
+'    'myXlonPstFrmt = 6 : "Microsoft Office 描画オブジェクト"
+'    'myXlonPstFrmt = ? : 形式変更しない
+'End Sub
+''SetP_制御用変数を設定する
+'Private Sub setControlVariables4()
+'    myXbisPicWthOtAspctRto = False
+'    'myXbisPicWthOtAspctRto = False : 画像の縦横比を固定してサイズを設定
+'    'myXbisPicWthOtAspctRto = True  : 画像の縦横比を固定せずにサイズを設定
+'    myXbisUnlckAspctRto = False
+'    'myXbisUnlckAspctRto = False : 画像の縦横比を固定する
+'    'myXbisUnlckAspctRto = True  : 画像の縦横比を固定しない
+'    myXlonPlcmnt = 2
+'    'myXlonPlcmnt = xlMoveAndSize = 1  : 画像をセルに合わせて移動やサイズ変更をする
+'    'myXlonPlcmnt = xlMove = 2         : 画像をセルに合わせて移動するがサイズ変更はしない
+'    'myXlonPlcmnt = xlFreeFloating = 3 : 画像をセルに合わせて移動やサイズ変更をしない
+'    myXdouTrmTop = 0
+'    myXdouTrmLft = 0
+'    myXdouTrmBttm = 0
+'    myXdouTrmRght = 0
+'    'myXdouTrmX : x [cm]
+'    myXdouPstnTopOfst = 2
+'    myXdouPstnLftOfst = 2
+'    'myXdouXOfst : x [point]
+'    myXdouSizeTopOfst = myXdouPstnTopOfst
+'    myXdouSizeLftOfst = myXdouPstnLftOfst
+'    myXdouSizeBttmOfst = (-1) * myXdouSizeTopOfst
+'    myXdouSizeRghtOfst = (-1) * myXdouSizeLftOfst
+'    'myXdouXOfst : x [point]
+'End Sub
+'◆ModuleProc名_複数の画像ファイルをサイズと位置をシートの行列位置で指定して挿入
+Private Sub callxRefInsrtPicsSlctRng()
+  Dim myXlonOrgFileCnt As Long, myZstrOrgFilePath() As String
+    'myZstrOrgFilePath(i) : 元ファイルパス
+    myXlonOrgFileCnt = 2
+  ReDim myZstrOrgFilePath(myXlonOrgFileCnt) As String
+    myZstrOrgFilePath(1) = ThisWorkbook.Path & "\画像サンプル\71-18.png"
+    myZstrOrgFilePath(2) = ThisWorkbook.Path & "\画像サンプル\71-20.png"
+'  Dim myXbisCmpltFlag As Boolean
+'  Dim myXlonExeFileCnt As Long, myZstrExeFileName() As String, myZstrExeFilePath() As String
+'    'myZstrExeFileName(k) : 実行ファイル名
+'    'myZstrExeFilePath(k) : 実行ファイルパス
+    Call xRefInsrtPicsSlctRng.callProc( _
+            myXbisCmpltFlag, _
+            myXlonExeFileCnt, myZstrExeFileName, myZstrExeFilePath, _
+            myXlonOrgFileCnt, myZstrOrgFilePath)
+    Call variablesOfxRefInsrtPicsSlctRng(myXlonExeFileCnt, myZstrExeFileName)    'Debug.Print
+End Sub
+Private Sub variablesOfxRefInsrtPicsSlctRng( _
+            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+'//xRefInsrtPicsSlctRng内から出力した変数の内容確認
+    Debug.Print "データ数: " & myXlonDataCnt
+    If myXlonDataCnt <= 0 Then Exit Sub
+  Dim k As Long
+    For k = LBound(myZvarField) To UBound(myZvarField)
+        Debug.Print "データ" & k & ": " & myZvarField(k)
+    Next k
+End Sub
+'
+'  Public Const coXbisTestMode As Boolean = True
+'  Public Const coXbisTestMode As Boolean = False
+'
+Private Sub resetConstantInxRefInsrtPicsSlctRng()
+'//xRefInsrtPicsSlctRngモジュールのモジュールメモリのリセット処理
+    Call xRefInsrtPicsSlctRng.resetConstant
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
