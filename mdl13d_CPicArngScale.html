@@ -1,1 +1,481 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfncobjGetPictureShapeRange
+'Includes PfixCropPicture
+'Includes PfixSetPictureScaleWithLockAspectRatio
+'Includes PfixSetPictureScaleWithoutLockAspectRatio
+'Includes PfixSetPicturePlace
+'Includes PfixSetPictureLockAspectRatio
+'Includes PfixSetPicturePlacement
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_画像を倍率で大きさと位置を指定して調整する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CPicArngScale"
+  
+'//PropertyGet_出力データ
+  Private myXobjPicture As Object
+    
+'//PropertySetLet_入力制御信号
+  Private myXbisPicWthOtAspctRto As Boolean
+  Private myXbisRltvToOrgSize As Boolean, myXlonScaleFrom As Long
+  Private myXbisUnlckAspctRto As Boolean, myXlonPlcmnt As Long
+  
+'//PropertySetLet_入力データ
+  Private myXobjPicShp As Object
+  Private myXdouTrmTop As Double, myXdouTrmLft As Double, _
+            myXdouTrmBttm As Double, myXdouTrmRght As Double
+  Private myXdouSclHght As Double, myXdouSclWdth As Double, _
+            myXdouPstnTop As Double, myXdouPstnLft As Double
+    
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXobjSheet As Object, myXobjPicShpRng As Object
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    Set myXobjSheet = Nothing: Set myXobjPicShpRng = Nothing
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getPicture() As Object
+    Set getPicture = myXobjPicture
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    Set myXobjPicture = Nothing
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letPicWthOtAspctRto(ByVal RHS As Boolean)
+    myXbisPicWthOtAspctRto = RHS
+'myXbisPicWthOtAspctRto = False : 画像の縦横比を固定してサイズを設定
+'myXbisPicWthOtAspctRto = True  : 画像の縦横比を固定せずにサイズを設定
+End Property
+
+Public Property Let letRltvToOrgSize(ByVal RHS As Long)
+    myXbisRltvToOrgSize = RHS
+'myXbisRltvToOrgSize = True  : 元のサイズを基準にする
+'myXbisRltvToOrgSize = False : 元のサイズを基準にしない
+End Property
+
+Public Property Let letScaleFrom(ByVal RHS As Long)
+    myXlonScaleFrom = RHS
+'myXlonScaleFrom = msoScaleFromTopLeft     : 0 : 図形の左上隅の位置が保持
+'myXlonScaleFrom = msoScaleFromMiddle      : 1 : 図形の中心の位置が保持
+'myXlonScaleFrom = msoScaleFromBottomRight : 2 : 図形の右下隅の位置が保持
+End Property
+
+Public Property Let letUnlckAspctRto(ByVal RHS As Boolean)
+    myXbisUnlckAspctRto = RHS
+'myXbisUnlckAspctRto = False : 画像の縦横比を固定する
+'myXbisUnlckAspctRto = True  : 画像の縦横比を固定しない
+End Property
+
+Public Property Let letPlcmnt(ByVal RHS As Long)
+    myXlonPlcmnt = RHS
+'myXlonPlcmnt = xlMoveAndSize = 1  : 画像をセルに合わせて移動やサイズ変更をする
+'myXlonPlcmnt = xlMove = 2         : 画像をセルに合わせて移動するがサイズ変更はしない
+'myXlonPlcmnt = xlFreeFloating = 3 : 画像をセルに合わせて移動やサイズ変更をしない
+End Property
+
+Public Property Set setPicture(ByVal RHS As Object)
+    Set myXobjPicShp = RHS
+End Property
+
+Public Property Let letTrmTop(ByVal RHS As Double)
+    myXdouTrmTop = RHS
+'myXdouTrmTop : x [cm]
+End Property
+
+Public Property Let letTrmLft(ByVal RHS As Double)
+    myXdouTrmLft = RHS
+'myXdouTrmLft : x [cm]
+End Property
+
+Public Property Let letTrmBttm(ByVal RHS As Double)
+    myXdouTrmBttm = RHS
+'myXdouTrmBttm : x [cm]
+End Property
+
+Public Property Let letTrmRght(ByVal RHS As Double)
+    myXdouTrmRght = RHS
+'myXdouTrmRght : x [cm]
+End Property
+
+Public Property Let letSclHght(ByVal RHS As Double)
+    myXdouSclHght = RHS
+'myXdouSclHght : x [%]
+End Property
+
+Public Property Let letSclWdth(ByVal RHS As Double)
+    myXdouSclWdth = RHS
+'myXdouSclWdth : x [%]
+End Property
+
+Public Property Let letPstnTop(ByVal RHS As Double)
+    myXdouPstnTop = RHS
+'myXdouPstnTop : x [point]
+End Property
+
+Public Property Let letPstnLft(ByVal RHS As Double)
+    myXdouPstnLft = RHS
+'myXdouPstnLft : x [point]
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXlonPlcmnt < 1 And myXlonPlcmnt > 3 Then myXlonPlcmnt = 2
+    If myXlonScaleFrom < 0 And myXlonScaleFrom > 2 Then myXlonScaleFrom = 0
+
+    If myXobjPicShp Is Nothing Then GoTo ExitPath
+    Set myXobjSheet = myXobjPicShp.Parent
+        
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicF_
+Public Function fncobjPicture() As Object
+    Set fncobjPicture = Nothing
+    Call ctrProc
+    Set fncobjPicture = myXobjPicture
+End Function
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+
+'//画像ShapeRangeを取得
+    Set myXobjPicShpRng = PfncobjGetPictureShapeRange(myXobjPicShp)
+    If myXobjPicShpRng Is Nothing Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+
+'//画像をトリミング
+    Call PfixCropPicture( _
+            myXbisExitFlag, _
+            myXobjPicShpRng, myXdouTrmTop, myXdouTrmLft, myXdouTrmBttm, myXdouTrmRght)
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+
+'//画像のサイズを設定
+    If myXbisPicWthOtAspctRto = False Then
+    '//画像の縦横比を固定して倍率でサイズを設定
+        Call PfixSetPictureScaleWithLockAspectRatio( _
+                myXbisExitFlag, _
+                myXobjPicShpRng, myXdouSclHght, myXdouSclWdth, _
+                True, msoScaleFromTopLeft)
+    Else
+    '//画像の縦横比を固定せずに倍率でサイズを設定
+        Call PfixSetPictureScaleWithoutLockAspectRatio( _
+                myXbisExitFlag, _
+                myXobjPicShpRng, myXdouSclHght, myXdouSclWdth, _
+                True, msoScaleFromTopLeft)
+    End If
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+
+'//画像の位置を設定
+    Call PfixSetPicturePlace(myXbisExitFlag, myXobjPicShpRng, myXdouPstnTop, myXdouPstnLft)
+    If myXbisExitFlag = True Then Exit Sub
+'    Debug.Print "PassFlag: " & meMstrMdlName & "5"     'PassFlag
+
+'//画像の縦横比の固定を設定
+    Call PfixSetPictureLockAspectRatio(myXbisExitFlag, myXobjPicShpRng, myXbisUnlckAspctRto)
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "6"     'PassFlag
+
+'//画像の位置サイズ変更のプロパティを設定
+    Call PfixSetPicturePlacement(myXbisExitFlag, myXobjPicShp, myXlonPlcmnt)
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "7"     'PassFlag
+    
+    Set myXobjPicture = myXobjPicShp
+    
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
+
+ '定型Ｆ_画像ShapeRangeを取得する
+Private Function PfncobjGetPictureShapeRange(ByVal myXobjPicShp As Object) As Object
+    Set PfncobjGetPictureShapeRange = Nothing
+    On Error GoTo ExitPath
+    Set PfncobjGetPictureShapeRange = myXobjPicShp.ShapeRange
+    On Error GoTo 0
+ExitPath:
+End Function
+
+ '定型Ｐ_画像をトリミングする
+Private Sub PfixCropPicture(myXbisExitFlag As Boolean, _
+            ByVal myXobjPicShpRng As Object, _
+            ByVal myXdouTrmTop As Double, ByVal myXdouTrmLft As Double, _
+            ByVal myXdouTrmBttm As Double, ByVal myXdouTrmRght As Double)
+'myXdouTrmTop  : x [cm]
+'myXdouTrmLft  : x [cm]
+'myXdouTrmBttm : x [cm]
+'myXdouTrmRght : x [cm]
+  Const coXdouPointPerCm As Double = 72 / 2.54
+    myXbisExitFlag = False
+    If myXobjPicShpRng Is Nothing Then GoTo ExitPath
+  Dim myXdouPicHght As Double, myXdouPicWdth As Double
+    On Error GoTo ExitPath
+    myXdouPicHght = myXobjPicShpRng.Height
+    myXdouPicWdth = myXobjPicShpRng.Width
+    On Error GoTo 0
+    If myXdouTrmTop + myXdouTrmBttm > myXdouPicHght Then GoTo ExitPath
+    If myXdouTrmLft + myXdouTrmRght > myXdouPicWdth Then GoTo ExitPath
+    With myXobjPicShpRng.PictureFormat
+        .CropTop = coXdouPointPerCm * myXdouTrmTop
+        .CropLeft = coXdouPointPerCm * myXdouTrmLft
+        .CropBottom = coXdouPointPerCm * myXdouTrmBttm
+        .CropRight = coXdouPointPerCm * myXdouTrmRght
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_画像の縦横比を固定して倍率でサイズを設定する
+Private Sub PfixSetPictureScaleWithLockAspectRatio( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjPicShpRng As Object, _
+            ByVal myXdouSclHght As Double, ByVal myXdouSclWdth As Double, _
+            Optional ByVal coXbisRltvToOrgSize As Boolean = True, _
+            Optional ByVal coXlonScaleFrom As Long = msoScaleFromTopLeft)
+'myXdouSclHght : x [%]
+'myXdouSclWdth : x [%]
+'coXbisRltvToOrgSize = True  : 元のサイズを基準にする
+'coXbisRltvToOrgSize = False : 元のサイズを基準にしない
+'coXlonScaleFrom = msoScaleFromTopLeft     : 0 : 図形の左上隅の位置が保持
+'coXlonScaleFrom = msoScaleFromMiddle      : 1 : 図形の中心の位置が保持
+'coXlonScaleFrom = msoScaleFromBottomRight : 2 : 図形の右下隅の位置が保持
+    myXbisExitFlag = False
+  Dim myXdouPicType As Double
+    On Error GoTo ExitPath
+    myXdouPicType = myXobjPicShpRng.Type
+    On Error GoTo 0
+    If myXdouSclHght < 0 Or myXdouSclWdth < 0 Then GoTo ExitPath
+    If coXbisRltvToOrgSize = True Then
+        If myXdouPicType = msoEmbeddedOLEObject Or myXdouPicType = msoLinkedOLEObject Or _
+                myXdouPicType = msoOLEControlObject Or _
+                myXdouPicType = msoLinkedPicture Or myXdouPicType = msoPicture Then
+            coXbisRltvToOrgSize = msoTrue
+        Else
+            coXbisRltvToOrgSize = msoFalse
+        End If
+    Else
+        coXbisRltvToOrgSize = msoFalse
+    End If
+  Dim myXdouScale As Double
+    If myXdouSclHght <= myXdouSclWdth Then
+        myXdouScale = myXdouSclHght / 100
+    Else
+        myXdouScale = myXdouSclWdth / 100
+    End If
+    myXobjPicShpRng.LockAspectRatio = msoTrue
+    Call myXobjPicShpRng.ScaleHeight(myXdouScale, coXbisRltvToOrgSize, coXlonScaleFrom)
+'    Call myXobjPicShpRng.ScaleWidth(myXdouScale, coXbisRltvToOrgSize, coXlonScaleFrom)
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_画像の縦横比を固定せずに倍率でサイズを設定する
+Private Sub PfixSetPictureScaleWithoutLockAspectRatio( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjPicShpRng As Object, _
+            ByVal myXdouSclHght As Double, ByVal myXdouSclWdth As Double, _
+            Optional ByVal coXbisRltvToOrgSize As Boolean = True, _
+            Optional ByVal coXlonScaleFrom As Long = msoScaleFromTopLeft)
+'myXdouSclHght : x [%]
+'myXdouSclWdth : x [%]
+'coXbisRltvToOrgSize = True  : 元のサイズを基準にする
+'coXbisRltvToOrgSize = False : 元のサイズを基準にしない
+'coXlonScaleFrom = msoScaleFromTopLeft     : 0 : 図形の左上隅の位置が保持
+'coXlonScaleFrom = msoScaleFromMiddle      : 1 : 図形の中心の位置が保持
+'coXlonScaleFrom = msoScaleFromBottomRight : 2 : 図形の右下隅の位置が保持
+    myXbisExitFlag = False
+  Dim myXdouPicType As Double
+    On Error GoTo ExitPath
+    myXdouPicType = myXobjPicShpRng.Type
+    On Error GoTo 0
+    If myXdouSclHght < 0 Or myXdouSclWdth < 0 Then GoTo ExitPath
+    myXdouSclHght = myXdouSclHght / 100
+    myXdouSclWdth = myXdouSclWdth / 100
+    If coXbisRltvToOrgSize = True Then
+        If myXdouPicType = msoEmbeddedOLEObject Or myXdouPicType = msoLinkedOLEObject Or _
+                myXdouPicType = msoOLEControlObject Or _
+                myXdouPicType = msoLinkedPicture Or myXdouPicType = msoPicture Then
+            coXbisRltvToOrgSize = msoTrue
+        Else
+            coXbisRltvToOrgSize = msoFalse
+        End If
+    Else
+        coXbisRltvToOrgSize = msoFalse
+    End If
+    myXobjPicShpRng.LockAspectRatio = msoFalse
+    Call myXobjPicShpRng.ScaleHeight(myXdouSclHght, coXbisRltvToOrgSize, coXlonScaleFrom)
+    Call myXobjPicShpRng.ScaleWidth(myXdouSclWdth, coXbisRltvToOrgSize, coXlonScaleFrom)
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_画像の位置を設定する
+Private Sub PfixSetPicturePlace( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjPicShpRng As Object, _
+            ByVal myXdouShpTop As Double, ByVal myXdouShpLft As Double)
+'myXdouTopOfst : x [point]
+'myXdouLftOfst : x [point]
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+  Dim myXdouTmpTop As Double: myXdouTmpTop = myXobjPicShpRng.Top
+    On Error GoTo 0
+    If myXdouShpTop < 0 Or myXdouShpLft < 0 Then GoTo ExitPath
+    myXobjPicShpRng.Top = myXdouShpTop
+    myXobjPicShpRng.Left = myXdouShpLft
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_画像の縦横比の固定を設定する
+Private Sub PfixSetPictureLockAspectRatio(myXbisExitFlag As Boolean, _
+            ByVal myXobjPicShpRng As Object, _
+            Optional ByVal coXbisUnlckAspctRto As Boolean = True)
+'coXbisUnlckAspctRto = False : 縦横比を固定する
+'coXbisUnlckAspctRto = True  : 縦横比を固定しない
+    myXbisExitFlag = False
+    If myXobjPicShpRng Is Nothing Then GoTo ExitPath
+  Dim myXlonLckAspctRto As Long
+    If coXbisUnlckAspctRto = True Then
+        myXlonLckAspctRto = msoFalse
+    Else
+        myXlonLckAspctRto = msoTrue
+    End If
+    On Error GoTo ExitPath
+    myXobjPicShpRng.LockAspectRatio = myXlonLckAspctRto
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_画像の位置サイズ変更のプロパティを設定する
+Private Sub PfixSetPicturePlacement(myXbisExitFlag As Boolean, _
+            ByVal myXobjPicShp As Object, _
+            Optional ByVal coXlonPlcmnt As Long = xlMove)
+'coXlonPlcmnt = xlMoveAndSize = 1  : セルに合わせて移動やサイズ変更をする
+'coXlonPlcmnt = xlMove = 2         : セルに合わせて移動するがサイズ変更はしない
+'coXlonPlcmnt = xlFreeFloating = 3 : セルに合わせて移動やサイズ変更をしない
+    myXbisExitFlag = False
+    If myXobjPicShp Is Nothing Then GoTo ExitPath
+    On Error GoTo ExitPath
+    myXobjPicShp.Placement = coXlonPlcmnt
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_画像を倍率で大きさと位置を指定して調整する
+'Private Sub instCPicArngScale()
+'  Dim myXobjPicture As Object
+''//クラス内変数への入力
+'  Const coXbisPicWthOtAspctRto As Boolean = True
+'    'coXbisPicWthOtAspctRto = False : 画像の縦横比を固定してサイズを設定
+'    'coXbisPicWthOtAspctRto = True  : 画像の縦横比を固定せずにサイズを設定
+'  Const coXbisRltvToOrgSize As Boolean = True
+'    'coXbisRltvToOrgSize = True  : 元のサイズを基準にする
+'    'coXbisRltvToOrgSize = False : 元のサイズを基準にしない
+'  Const coXlonScaleFrom As Long = 0
+'    'coXlonScaleFrom = msoScaleFromTopLeft     : 0 : 図形の左上隅の位置が保持
+'    'coXlonScaleFrom = msoScaleFromMiddle      : 1 : 図形の中心の位置が保持
+'    'coXlonScaleFrom = msoScaleFromBottomRight : 2 : 図形の右下隅の位置が保持
+'  Const coXbisUnlckAspctRto As Boolean = True
+'    'coXbisUnlckAspctRto = False : 画像の縦横比を固定する
+'    'coXbisUnlckAspctRto = True  : 画像の縦横比を固定しない
+'  Const coXlonPlcmnt As Long = 2
+'    'coXlonPlcmnt = xlMoveAndSize = 1  : 画像をセルに合わせて移動やサイズ変更をする
+'    'coXlonPlcmnt = xlMove = 2         : 画像をセルに合わせて移動するがサイズ変更はしない
+'    'coXlonPlcmnt = xlFreeFloating = 3 : 画像をセルに合わせて移動やサイズ変更をしない
+'  Dim myXobjPicShp As Object
+'    Set myXobjPicShp = ActiveSheet.Pictures(1)
+'  Dim myXdouTrmTop As Double, myXdouTrmLft As Double, _
+'        myXdouTrmBttm As Double, myXdouTrmRght As Double
+'    'myXdouTrmX : x [cm]
+'    myXdouTrmTop = 0
+'    myXdouTrmLft = 0
+'    myXdouTrmBttm = 0
+'    myXdouTrmRght = 0
+'  Dim myXdouSclHght As Double, myXdouSclWdth As Double
+''    'myXdouSclX : x [%]
+'    myXdouSclHght = 100
+'    myXdouSclWdth = 100
+'  Dim myXdouPstnTop As Double, myXdouPstnLft As Double
+''    'myXdouPstnX : x [point]
+'    myXdouPstnTop = 5
+'    myXdouPstnLft = 5
+''//CPicArngScaleクラスモジュールのインスタンス生成
+'  Dim myXinsPicArngScale As CPicArngScale: Set myXinsPicArngScale = New CPicArngScale
+'    With myXinsPicArngScale
+'    '//クラス内変数への入力
+'        .letPicWthOtAspctRto = coXbisPicWthOtAspctRto
+'        .letRltvToOrgSize = coXbisRltvToOrgSize
+'        .letScaleFrom = coXlonScaleFrom
+'        .letUnlckAspctRto = coXbisUnlckAspctRto
+'        .letPlcmnt = coXlonPlcmnt
+'        Set .setPicture = myXobjPicShp
+'        .letTrmTop = myXdouTrmTop
+'        .letTrmLft = myXdouTrmLft
+'        .letTrmBttm = myXdouTrmBttm
+'        .letTrmRght = myXdouTrmRght
+'        .letSclHght = myXdouSclHght
+'        .letSclWdth = myXdouSclWdth
+'        .letPstnTop = myXdouPstnTop
+'        .letPstnLft = myXdouPstnLft
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        Set myXobjPicture = .fncobjPicture
+'    End With
+'    Set myXinsPicArngScale = Nothing
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
