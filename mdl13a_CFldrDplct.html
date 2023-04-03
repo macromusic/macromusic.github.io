@@ -1,1 +1,478 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfncbisCheckFolderExist
+'Includes PfncbisCheckArrayDimension
+'Includes PincCopyOrMoveFolderWithAutoNamingAndHierarchyCheck
+'Includes PincFolderAutoNamingAndHierarchyCheck
+'Includes PfnclonCountFolderLayer
+'Includes PfncstrFolderAutoNaming
+'Includes PfixGetFolderNameInformation
+'Includes PfixCreateFolderWithHierarchyCheck
+'Includes PfixCopyOrMoveFolder
+'Includes PfixGetFolderNameInformationByFSO
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_フォルダを複製する
+'Rev.003
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CFldrDplct"
+  
+'//モジュール内定数
+  Private Const coXbisMove As Boolean = False
+  
+'//PropertyGet_出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//PropertyGet_出力データ
+  Private Lc As Long
+  Private myXlonExeFldrCnt As Long, _
+            myZstrExeFldrPath() As String, myZstrExeFldrName() As String
+  
+'//PropertySetLet_入力制御信号
+  Private myXbisAutoNaming As Boolean
+  
+'//PropertySetLet_入力データ
+  Private myXstrOrgFldrPath As String
+  Private myZstrDplctFldrPath() As String
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXstrNewFldrPath As String
+  Private myXstrExeFldrPath As String, myXstrExeFldrName As String
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXstrNewFldrPath = Empty
+    myXstrExeFldrPath = Empty: myXstrExeFldrName = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getCmpltFlag() As Boolean
+    getCmpltFlag = myXbisCmpltFlag
+End Property
+
+Public Property Get getOptnBase() As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    getOptnBase = L
+End Property
+
+Public Property Get getExeFldrCnt() As Long
+    getExeFldrCnt = myXlonExeFldrCnt
+End Property
+
+Public Property Get getExeFldrPathAry(ByVal i As Long) As String
+    getExeFldrPathAry = myZstrExeFldrPath(i)
+'myZstrExeFldrPath(i) : 実行したファイルパス
+End Property
+
+Public Property Get getExeFldrNameAry(ByVal i As Long) As String
+    getExeFldrNameAry = myZstrExeFldrName(i)
+'myZstrExeFldrName(i) : 実行したファイル名
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+    myXlonExeFldrCnt = Empty: Erase myZstrExeFldrPath: Erase myZstrExeFldrName
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letOrgFldrPath(ByVal RHS As String)
+    myXstrOrgFldrPath = RHS
+End Property
+
+Public Property Let letDplctFldrPathAry(ByRef RHS() As String)
+'myZstrDplctFldrPath(i) : 元データ配列
+    myZstrDplctFldrPath() = RHS()
+End Property
+
+Public Property Let letAutoNaming(ByVal RHS As Boolean)
+    myXbisAutoNaming = RHS
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If PfncbisCheckFolderExist(myXstrOrgFldrPath) = False Then GoTo ExitPath
+    If PfncbisCheckArrayDimension(myZstrDplctFldrPath, 1) = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    Call ctrProc
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"  'PassFlag
+    
+'//C:フォルダリストを順次実行
+  Dim myXvarTmpPath As Variant, n As Long: n = 0
+    For Each myXvarTmpPath In myZstrDplctFldrPath
+        myXstrNewFldrPath = CStr(myXvarTmpPath)
+ 
+    '//P:各フォルダのデータ加工処理
+        Call prsProcForLoop
+        If myXbisExitFlag = True Then GoTo NextPath
+'        Debug.Print "PassFlag: " & meMstrMdlName & "2-" & k  'PassFlag
+        
+        n = n + 1
+        ReDim Preserve myZstrExeFldrPath(n) As String
+        ReDim Preserve myZstrExeFldrName(n) As String
+        myZstrExeFldrPath(n) = myXstrExeFldrPath
+        myZstrExeFldrName(n) = myXstrExeFldrName
+NextPath:
+    Next
+    myXlonExeFldrCnt = n
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"  'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'PrcsP_各フォルダのデータ加工処理
+Private Sub prsProcForLoop()
+    myXbisExitFlag = False
+ 
+'//フォルダを複製
+    Call PincCopyOrMoveFolderWithAutoNamingAndHierarchyCheck( _
+            myXstrExeFldrPath, _
+            myXstrOrgFldrPath, myXstrNewFldrPath, _
+            coXbisMove, , myXbisAutoNaming)
+    If myXstrExeFldrPath = "" Then GoTo ExitPath
+    
+'//指定フォルダのフォルダ名情報を取得(FileSystemObject使用)
+  Dim myXstrPrntPath As String
+    Call PfixGetFolderNameInformationByFSO( _
+            myXstrPrntPath, myXstrExeFldrName, _
+            myXstrExeFldrPath)
+    If myXstrExeFldrName = "" Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+ '定型Ｆ_指定フォルダの存在を確認する
+Private Function PfncbisCheckFolderExist(ByVal myXstrDirPath As String) As Boolean
+    PfncbisCheckFolderExist = False
+    If myXstrDirPath = "" Then Exit Function
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    PfncbisCheckFolderExist = myXobjFSO.FolderExists(myXstrDirPath)
+    Set myXobjFSO = Nothing
+End Function
+
+ '定型Ｆ_配列変数の次元数が指定次元と一致するかをチェックする
+Private Function PfncbisCheckArrayDimension( _
+            ByRef myZvarOrgData As Variant, ByVal myXlonDmnsn As Long) As Boolean
+    PfncbisCheckArrayDimension = False
+    If IsArray(myZvarOrgData) = False Then Exit Function
+    If myXlonDmnsn <= 0 Then Exit Function
+  Dim myXlonTmp As Long, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXlonTmp = UBound(myZvarOrgData, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    If k - 1 <> myXlonDmnsn Then Exit Function
+    PfncbisCheckArrayDimension = True
+End Function
+
+ '定型Ｐ_フォルダを複製または移動する(フォルダ名自動生成＆階層チェック機能付き)
+Private Sub PincCopyOrMoveFolderWithAutoNamingAndHierarchyCheck( _
+            myXstrDirPathOUT As String, _
+            ByVal myXstrOrgDirPath As String, ByVal myXstrNewDirPath As String, _
+            Optional ByVal coXbisMove As Boolean = False, _
+            Optional ByVal coXlonNGLayer As Long = 1, _
+            Optional ByVal coXbisAutoNaming As Boolean = False)
+'Includes PfncbisCheckFolderExist
+'Includes PincFolderAutoNamingAndHierarchyCheck
+'Includes PfixCopyOrMoveFolder
+'coXbisMove = False  : フォルダを複製
+'coXbisMove = True   : フォルダを移動
+'coXlonNGLayer >= 1  : フォルダの必要階層数
+'coXbisAutoNaming = False  : 同一名フォルダがあれば終了
+'coXbisAutoNaming = True   : 同一名フォルダがあればフォルダ名を自動生成
+    myXstrDirPathOUT = Empty
+'//元フォルダが存在しなければ中止
+    If PfncbisCheckFolderExist(myXstrOrgDirPath) = False Then GoTo ExitPath
+'//複製or移動フォルダのフォルダ名自動生成＆階層チェック
+  Dim myXbisDirExistFlag As Boolean
+    Call PincFolderAutoNamingAndHierarchyCheck( _
+            myXbisDirExistFlag, myXstrDirPathOUT, _
+            myXstrNewDirPath, coXlonNGLayer, coXbisAutoNaming)
+    If myXstrDirPathOUT = "" Then GoTo ExitPath
+    If myXbisDirExistFlag = True Then _
+        If myXstrDirPathOUT = myXstrNewDirPath Then GoTo ExitPath
+'//フォルダを複製または移動
+  Dim myXbisExitFlag As Boolean
+    Call PfixCopyOrMoveFolder(myXbisExitFlag, _
+            myXstrOrgDirPath, myXstrDirPathOUT, coXbisMove)
+    If myXbisExitFlag = True Then GoTo ExitPath
+    Exit Sub
+ExitPath:
+    myXstrDirPathOUT = ""
+End Sub
+
+ '定型Ｐ_フォルダ名自動生成＆階層チェック
+Private Sub PincFolderAutoNamingAndHierarchyCheck( _
+            myXbisDirExistFlag As Boolean, myXstrDirPathOUT As String, _
+            ByVal myXstrDirPathIN As String, _
+            Optional ByVal coXlonNGLayer As Long = 1, _
+            Optional ByVal coXbisAutoNaming As Boolean = False)
+'Includes PfnclonCountFolderLayer
+'Includes PfncbisCheckFolderExist
+'Includes PfncstrFolderAutoNaming
+'Includes PfixGetFolderNameInformation
+'Includes PfixCreateFolderWithHierarchyCheck
+'coXlonNGLayer >= 1  : フォルダの必要階層数
+'coXbisAutoNaming = False  : 同一名フォルダがあれば終了
+'coXbisAutoNaming = True   : 同一名フォルダがあればフォルダ名を自動生成
+    myXbisDirExistFlag = False: myXstrDirPathOUT = Empty
+'//対象フォルダが指定階層より下層でなければ中止
+    If coXlonNGLayer <= 0 Then GoTo ExitPath
+    If PfnclonCountFolderLayer(myXstrDirPathIN) <= coXlonNGLayer Then GoTo ExitPath
+'//対象フォルダと同一名フォルダが存在するか確認
+    myXbisDirExistFlag = PfncbisCheckFolderExist(myXstrDirPathIN)
+    If myXbisDirExistFlag = True Then
+    '//同一名フォルダが存在する場合
+    '//フォルダ名を自動生成
+        Select Case coXbisAutoNaming
+            Case True: myXstrDirPathOUT = PfncstrFolderAutoNaming(myXstrDirPathIN)
+            Case Else: myXstrDirPathOUT = myXstrDirPathIN: Exit Sub
+        End Select
+    Else
+    '//同一名フォルダが存在しない場合
+    '//フォルダ階層をチェック
+      Dim myXstrPrntPath As String, myXstrDirName As String
+        Call PfixGetFolderNameInformation(myXstrPrntPath, myXstrDirName, myXstrDirPathIN)
+      Dim myXstrBaseDirPath As String, myXstrRltvDirPath As String
+        If Left(myXstrPrntPath, 2) = "\\" Then
+          Dim myXstrTmpPath As String: myXstrTmpPath = Mid(myXstrPrntPath, 3)
+            myXstrBaseDirPath = Left(myXstrPrntPath, InStr(myXstrTmpPath, "\") + 2 - 1)
+        Else
+            myXstrBaseDirPath = Left(myXstrPrntPath, InStr(myXstrPrntPath, "\") - 1)
+        End If
+        myXstrRltvDirPath = Mid(myXstrPrntPath, Len(myXstrBaseDirPath) + 2)
+      Dim myXbisExitFlag As Boolean
+        Call PfixCreateFolderWithHierarchyCheck(myXbisExitFlag, _
+                myXstrBaseDirPath, myXstrRltvDirPath)
+        If myXbisExitFlag = True Then GoTo ExitPath
+        myXstrDirPathOUT = myXstrDirPathIN
+    End If
+    Exit Sub
+ExitPath:
+    myXstrDirPathOUT = ""
+End Sub
+
+ '定型Ｆ_指定フォルダの階層位置を取得する
+Private Function PfnclonCountFolderLayer(ByVal myXstrDirPath As String) As Long
+    PfnclonCountFolderLayer = Empty
+    If myXstrDirPath = "" Then Exit Function
+    If Right(myXstrDirPath, 1) = "\" Then Exit Function
+  Dim myXstrTmpPath As String: myXstrTmpPath = myXstrDirPath
+    If Left(myXstrTmpPath, 2) = "\\" Then myXstrTmpPath = Mid(myXstrTmpPath, 3)
+  Dim i As Long, n As Long: n = 0
+    For i = Len(myXstrTmpPath) To 1 Step -1
+        If Mid(myXstrTmpPath, i, 1) = "\" Then n = n + 1
+    Next i
+    PfnclonCountFolderLayer = n
+End Function
+
+ '定型Ｆ_フォルダ名を自動生成する
+Private Function PfncstrFolderAutoNaming(ByVal myXstrDirPath As String) As String
+    PfncstrFolderAutoNaming = Empty
+    If myXstrDirPath = "" Then Exit Function
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXbisDirExistFlag As Boolean
+    myXbisDirExistFlag = myXobjFSO.FolderExists(myXstrDirPath)
+    Do While myXbisDirExistFlag = True
+        myXstrDirPath = myXstrDirPath & "_" & Format(Now, "YYYYMMDDHHmmSS")
+        myXbisDirExistFlag = myXobjFSO.FolderExists(myXstrDirPath)
+    Loop
+    PfncstrFolderAutoNaming = myXstrDirPath
+    Set myXobjFSO = Nothing
+End Function
+
+ '定型Ｐ_指定フォルダのフォルダ名情報を取得する
+Private Sub PfixGetFolderNameInformation( _
+            myXstrPrntPath As String, myXstrDirName As String, _
+            ByVal myXstrDirPath As String)
+    myXstrPrntPath = Empty: myXstrDirName = Empty
+    If myXstrDirPath = "" Then Exit Sub
+  Dim i As Long, myXlonInStrRev As Long: myXlonInStrRev = 0
+    For i = Len(myXstrDirPath) To 1 Step -1
+        If Mid(myXstrDirPath, i, 1) = "\" Then
+            myXlonInStrRev = i: Exit For
+        End If
+    Next i
+    If myXlonInStrRev <= 0 Or myXlonInStrRev >= Len(myXstrDirPath) Then Exit Sub
+    myXstrPrntPath = Left(myXstrDirPath, myXlonInStrRev - 1)
+    myXstrDirName = Mid(myXstrDirPath, myXlonInStrRev + 1)
+End Sub
+
+ '定型Ｐ_フォルダ階層をチェックしてフォルダを新規作成する
+Private Sub PfixCreateFolderWithHierarchyCheck(myXbisExitFlag As Boolean, _
+            ByVal myXstrBaseDirPath As String, ByVal myXstrRltvDirPath As String)
+    myXbisExitFlag = False
+    If myXstrRltvDirPath = "" Then GoTo ExitPath
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+'//基点フォルダが存在しなければ中止
+    If myXobjFSO.FolderExists(myXstrBaseDirPath) = False Then GoTo ExitPath
+'//新規フォルダと同一名フォルダが存在すれば中止
+  Dim myXstrTmpPath As String
+    myXstrTmpPath = myXstrBaseDirPath & "\" & myXstrRltvDirPath
+    If myXobjFSO.FolderExists(myXstrTmpPath) = True Then Exit Sub
+'//フォルダパスをフォルダ名に分割
+  Dim myZvarSplitVrbl As Variant
+    myZvarSplitVrbl = Split(myXstrRltvDirPath, "\")
+'//フォルダの有無を階層で順次チェックして、フォルダ無しの場合フォルダを新規作成
+    myXstrTmpPath = myXstrBaseDirPath
+  Dim i As Long
+    For i = LBound(myZvarSplitVrbl) To UBound(myZvarSplitVrbl)
+        myXstrTmpPath = myXstrTmpPath & "\" & myZvarSplitVrbl(i)
+        With myXobjFSO
+            If .FolderExists(myXstrTmpPath) = True Then GoTo NextPath
+            Call .CreateFolder(myXstrTmpPath)
+        End With
+NextPath:
+    Next i
+    Set myXobjFSO = Nothing: myZvarSplitVrbl = Empty
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_フォルダを複製または移動する
+Private Sub PfixCopyOrMoveFolder(myXbisExitFlag As Boolean, _
+            ByVal myXstrOrgDirPath As String, ByVal myXstrNewDirPath As String, _
+            Optional ByVal coXbisMove As Boolean = False)
+'coXbisMove = False  : ファイルを複製
+'coXbisMove = True   : ファイルを移動
+    myXbisExitFlag = False
+    If myXstrOrgDirPath = "" Or myXstrNewDirPath = "" Then GoTo ExitPath
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    With myXobjFSO
+        If .FolderExists(myXstrOrgDirPath) = False Then GoTo ExitPath
+        If .FolderExists(myXstrNewDirPath) = True Then GoTo ExitPath
+        On Error GoTo ExitPath
+        Select Case coXbisMove
+            Case True: Call .MoveFolder(myXstrOrgDirPath, myXstrNewDirPath)
+            Case Else: Call .CopyFolder(myXstrOrgDirPath, myXstrNewDirPath)
+        End Select
+        On Error GoTo 0
+    End With
+    Set myXobjFSO = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_指定フォルダのフォルダ名情報を取得する(FileSystemObject使用)
+Private Sub PfixGetFolderNameInformationByFSO( _
+            myXstrPrntPath As String, myXstrDirName As String, _
+            ByVal myXstrDirPath As String)
+    myXstrPrntPath = Empty: myXstrDirName = Empty
+    If myXstrDirPath = "" Then Exit Sub
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    With myXobjFSO
+        myXstrPrntPath = .GetParentFolderName(myXstrDirPath)    '親フォルダパス
+        myXstrDirName = .GetFolder(myXstrDirPath).Name          'フォルダ名
+    End With
+    Set myXobjFSO = Nothing
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_フォルダを複製する
+'Private Sub instCFldrDplct()
+'  Dim myXbisCmpltFlag As Boolean
+'  Dim Lc As Long
+'  Dim myXlonExeFldrCnt As Long, _
+'        myZstrExeFldrPath() As String, myZstrExeFldrName() As String
+'    'myZstrExeFldrPath(k) : 実行フォルダパス
+'    'myZstrExeFldrName(k) : 実行フォルダ名
+''//クラス内変数への入力
+'  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+'  Dim i As Long
+'  Dim myXstrOrgFldrPath As String
+'    myXstrOrgFldrPath = XarbString
+'  Dim myXlonDplctFldrCnt As Long, myZstrDplctFldrPath() As String
+'    'myZstrDplctFldrPath(k) : 複製フォルダパス
+'    myXlonDplctFldrCnt = XarbLong
+'    i = myXlonDplctFldrCnt + L - 1: ReDim myZstrDplctFldrPath(i) As String
+'    myZstrDplctFldrPath(1) = XarbString
+''//CFldrDplctクラスモジュールのインスタンス生成
+'  Dim myXinsFldrDplct As CFldrDplct: Set myXinsFldrDplct = New CFldrDplct
+'    With myXinsFldrDplct
+'    '//クラス内変数への入力
+'        .letOrgFldrPath = myXstrOrgFldrPath
+'        .letDplctFldrPathAry() = myZstrDplctFldrPath()
+'        .letAutoNaming = True
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        .exeProc
+'        myXbisCmpltFlag = .getCmpltFlag
+'        myXlonExeFldrCnt = .getExeFldrCnt
+'        If myXlonExeFldrCnt <= 0 Then GoTo JumpPath
+'        i = myXlonExeFldrCnt + L - 1
+'        ReDim myZstrExeFldrPath(i) As String
+'        ReDim myZstrExeFldrName(i) As String
+'        Lc = .getOptnBase
+'        For i = 1 To myXlonExeFldrCnt
+'            myZstrExeFldrPath(i + L - 1) = .getExeFldrPathAry(i + Lc - 1)
+'            myZstrExeFldrName(i + L - 1) = .getExeFldrNameAry(i + Lc - 1)
+'        Next i
+'    End With
+'    Set myXinsFldrDplct = Nothing
+'    Call variablesOfCFldrDplct(myXlonExeFldrCnt, myZstrExeFldrPath)  'Debug.Print
+'JumpPath:
+'End Sub
+'Private Sub variablesOfCFldrDplct( _
+'            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+''//CFldrDplctクラス内から出力した変数の内容確認
+'    Debug.Print "データ数: " & myXlonDataCnt
+'    If myXlonDataCnt <= 0 Then Exit Sub
+'  Dim k As Long
+'    For k = LBound(myZvarField) To UBound(myZvarField)
+'        Debug.Print "データ" & k & ": " & myZvarField(k)
+'    Next k
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
