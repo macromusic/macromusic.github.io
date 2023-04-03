@@ -1,1 +1,585 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfncbisIsMatrix
+'Includes PincVNumericDecimationFilterIrregularStep
+'Includes PincHNumericDecimationFilterIrregularStep
+'Includes PfixQuotationRemainder
+'Includes PfixVNumericDecimationFilterRegularStep
+'Includes PfixHNumericDecimationFilterRegularStep
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_データ配列を間引き処理する
+'Rev.002
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CNumDcmtFltr"
+  
+'//PropertyGet_出力データ
+  Private myXlonDcmtRowCnt As Long, myXlonDcmtColCnt As Long, myZdouDcmtData() As Double
+    'myZdouDcmtData(i, j) : 間引き後データ配列
+  
+'//PropertySetLet_入力制御信号
+  Private myXbisIrgStep As Boolean
+  Private myXbisRowDrctn As Boolean
+  
+'//PropertySetLet_入力データ
+  Private myZdouOrgData() As Double
+    'myZdouOrgData(i, j) : 元データ配列
+  Private myXlonCalRowCol As Long, myXdouDcmtIrgStep As Double
+  Private myXlonDcmtRegStep As Long
+  Private myXlonBgnRowCol As Long, myXlonEndRowCol As Long
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonInptRowCnt As Long, myXlonInptColCnt As Long, myZdouInptData() As Double
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getDcmtRowCnt() As Long
+    getDcmtRowCnt = myXlonDcmtRowCnt
+End Property
+
+Public Property Get getDcmtColCnt() As Long
+    getDcmtColCnt = myXlonDcmtColCnt
+End Property
+
+Public Property Get getDcmtData(ByVal i As Long, ByVal j As Long) As Double
+    getDcmtData = myZdouDcmtData(i, j)
+'myZdouDcmtData(i, j) : 間引き後データ配列
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXlonDcmtRowCnt = Empty: myXlonDcmtColCnt = Empty: Erase myZdouDcmtData
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letIrgStep(ByVal RHS As Boolean)
+    myXbisIrgStep = RHS
+'myXbisIrgStep = True  : 指定間隔値に近い値で間引く
+'myXbisIrgStep = False : 等間隔で間引く
+End Property
+
+Public Property Let letRowDrctn(ByVal RHS As Boolean)
+    myXbisRowDrctn = RHS
+'myXbisRowDrctn = True  : 行方向のデータを処理
+'myXbisRowDrctn = False : 列方向のデータを処理
+End Property
+
+Public Property Let letOrgData(ByRef RHS() As Double)
+    myZdouOrgData() = RHS()
+'myZdouOrgData(i, j) : 元データ配列
+End Property
+
+Public Property Let letCalRowCol(ByVal RHS As Long)
+    myXlonCalRowCol = RHS
+End Property
+
+Public Property Let letDcmtIrgStep(ByVal RHS As Double)
+    myXdouDcmtIrgStep = RHS
+End Property
+
+Public Property Let letDcmtRegStep(ByVal RHS As Long)
+    myXlonDcmtRegStep = RHS
+End Property
+
+Public Property Let letBgnRowCol(ByVal RHS As Long)
+    myXlonBgnRowCol = RHS
+End Property
+
+Public Property Let letEndRowCol(ByVal RHS As Long)
+    myXlonEndRowCol = RHS
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If PfncbisIsMatrix(myZdouOrgData) = False Then GoTo ExitPath
+    
+  Dim L As Long, i As Long, j As Long
+    L = LBound(myZdouOrgData, 1)
+    myXlonInptRowCnt = UBound(myZdouOrgData, 1) - L + 1
+    myXlonInptColCnt = UBound(myZdouOrgData, 2) - L + 1
+    ReDim myZdouInptData(myXlonInptRowCnt, myXlonInptColCnt) As Double
+    For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
+        For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+            myZdouInptData(i + (1 - L), j + (1 - L)) = myZdouOrgData(i, j)
+        Next i
+    Next j
+    
+    If myXbisIrgStep = True Then
+        If myXlonCalRowCol <= 0 Then GoTo ExitPath
+        If myXdouDcmtIrgStep = 0 Then GoTo ExitPath
+    Else
+        If myXlonDcmtRegStep <= 0 Then GoTo ExitPath
+    End If
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    Call ctrProc
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+        
+    If myXbisIrgStep = True And myXbisRowDrctn = True Then
+    '//指定列を指定間隔値に近い値で間引く
+        Call PincVNumericDecimationFilterIrregularStep( _
+                myXlonDcmtRowCnt, myXlonDcmtColCnt, myZdouDcmtData, _
+                myZdouInptData, myXlonCalRowCol, myXdouDcmtIrgStep, _
+                myXlonBgnRowCol, myXlonEndRowCol)
+        If myXlonDcmtRowCnt <= 0 Or myXlonDcmtColCnt <= 0 Then GoTo ExitPath
+'        Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+        
+    ElseIf myXbisIrgStep = True And myXbisRowDrctn = False Then
+    '//指定行を指定間隔値に近い値で間引く
+        Call PincHNumericDecimationFilterIrregularStep( _
+                myXlonDcmtRowCnt, myXlonDcmtColCnt, myZdouDcmtData, _
+                myZdouInptData, myXlonCalRowCol, myXdouDcmtIrgStep, _
+                myXlonBgnRowCol, myXlonEndRowCol)
+        If myXlonDcmtRowCnt <= 0 Or myXlonDcmtColCnt <= 0 Then GoTo ExitPath
+'        Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+    ElseIf myXbisIrgStep = False And myXbisRowDrctn = True Then
+    '//行方向に等間隔で間引く
+        Call PfixVNumericDecimationFilterRegularStep( _
+                myXlonDcmtRowCnt, myXlonDcmtColCnt, myZdouDcmtData, _
+                myZdouInptData, myXlonDcmtRegStep, myXlonBgnRowCol, myXlonEndRowCol)
+        If myXlonDcmtRowCnt <= 0 Or myXlonDcmtColCnt <= 0 Then GoTo ExitPath
+'        Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+        
+    Else
+    '//列方向に等間隔で間引く
+        Call PfixHNumericDecimationFilterRegularStep( _
+                myXlonDcmtRowCnt, myXlonDcmtColCnt, myZdouDcmtData, _
+                myZdouInptData, myXlonDcmtRegStep, myXlonBgnRowCol, myXlonEndRowCol)
+        If myXlonDcmtRowCnt <= 0 Or myXlonDcmtColCnt <= 0 Then GoTo ExitPath
+'        Debug.Print "PassFlag: " & meMstrMdlName & "5"     'PassFlag
+    
+    End If
+    
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
+
+ '定型Ｆ_指定変数が数値行列かどうかをチェックする
+Private Function PfncbisIsMatrix(ByRef myZvarMtrx As Variant) As Boolean
+    PfncbisIsMatrix = False
+  Dim myXdouTmp As Double, L1 As Long, L2 As Long
+    On Error GoTo ExitPath
+    L1 = LBound(myZvarMtrx, 1): L2 = LBound(myZvarMtrx, 2)
+    myXdouTmp = myZvarMtrx(L1, L2)
+    On Error GoTo 0
+    PfncbisIsMatrix = True
+ExitPath:
+End Function
+
+ '定型Ｐ_2次元の数値配列の指定列を指定間隔値に近い値で間引いたデータ配列を取得する
+Private Sub PincVNumericDecimationFilterIrregularStep( _
+        myXlonDcmtRowCnt As Long, myXlonDcmtColCnt As Long, _
+        myZdouDcmtData() As Double, _
+        ByRef myZdouOrgData() As Double, ByVal myXlonCalCol As Long, _
+        ByVal myXdouDcmtStep As Double, _
+        Optional ByVal coXlonBgnRow As Long = 1, _
+        Optional ByVal coXlonEndRow As Long = 0)
+'Includes PfixQuotationRemainder
+'myZdouDcmtData(i, j) : 間引きデータ配列
+'myZdouOrgData(i, j)  : 元データ配列
+  Const coXlonTrgtVal As Long = 1
+    myXlonDcmtRowCnt = Empty: myXlonDcmtColCnt = Empty: Erase myZdouDcmtData
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 1): Ui = UBound(myZdouOrgData, 1)
+    If myXlonCalCol < LBound(myZdouOrgData, 2) _
+        Or myXlonCalCol > UBound(myZdouOrgData, 2) Then Exit Sub
+    If myXdouDcmtStep <= 0 Or myXdouDcmtStep > Ui Then Exit Sub
+    If coXlonBgnRow < Li Then coXlonBgnRow = Li
+    If coXlonEndRow > Ui Then coXlonEndRow = Ui
+    If coXlonEndRow < coXlonBgnRow Then coXlonEndRow = Ui
+    myXdouTmp = myZdouOrgData(coXlonBgnRow, myXlonCalCol)
+    On Error GoTo 0
+'//指定間隔値に近い値にターゲットフラグを付ける
+'myZdouCal(r, 1) : 間引き計算対象のデータ
+'myZdouCal(r, 2) : ターゲットフラグ
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim myXlonTrgtCol As Long: myXlonTrgtCol = Lo + 0
+  Dim myXlonDcmtCol As Long: myXlonDcmtCol = Lo + 1
+  Dim myZdouCal() As Double, r As Long
+    r = Ui + Lo - Li: ReDim myZdouCal(r, myXlonDcmtCol) As Double
+    For r = Li To Ui
+        myZdouCal(r + Lo - Li, myXlonDcmtCol) = myZdouOrgData(r, myXlonCalCol)
+    Next r
+  Dim myXlonTrgtCnt As Long, myXlonBgnRow As Long, myXlonEndRow As Long
+    myXlonBgnRow = coXlonBgnRow + Lo - Li
+    myXlonEndRow = coXlonEndRow + Lo - Li
+    Call PsubVNumericDecimation(myXlonTrgtCnt, myZdouCal, _
+            myXlonBgnRow, myXlonEndRow, myXdouDcmtStep, _
+            myXlonTrgtCol, myXlonDcmtCol, coXlonTrgtVal)
+    If myXlonTrgtCnt <= 0 Then Exit Sub
+'//ターゲットフラグの付いたデータを抜粋
+    myXlonDcmtRowCnt = myXlonTrgtCnt
+    myXlonDcmtColCnt = UBound(myZdouOrgData, 2) - LBound(myZdouOrgData, 2) + 1
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    i = myXlonDcmtRowCnt + Lo - 1: j = myXlonDcmtColCnt + Lo - 1
+    ReDim myZdouDcmtData(i, j) As Double
+    For i = coXlonBgnRow To coXlonEndRow
+        If myZdouCal(i, myXlonTrgtCol) <> coXlonTrgtVal Then GoTo NextPath
+        n = n + 1
+        For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
+            myZdouDcmtData(n, j + Lo - Li) = myZdouOrgData(i, j)
+        Next j
+NextPath:
+    Next i
+    Erase myZdouCal
+ExitPath:
+End Sub
+Private Sub PsubVNumericDecimation( _
+            myXlonTrgtCnt As Long, myZdouCal() As Double, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonEndRow As Long, _
+            ByVal myXlonStep As Double, _
+            ByVal myXlonTrgtCol As Long, ByVal myXlonDcmtCol As Long, _
+            ByVal myXlonTrgtVal As Long)
+'//指定間隔値に近い値にターゲットフラグを付ける
+    myXlonTrgtCnt = Empty
+  Dim myXlonBgnVal As Double, myXlonEndVal As Double
+    On Error GoTo ExitPath
+    myXlonBgnVal = myZdouCal(myXlonBgnRow, myXlonDcmtCol)
+    myXlonEndVal = myZdouCal(myXlonEndRow, myXlonDcmtCol)
+    On Error GoTo 0
+  Dim myXdouAveStep As Double, myXdouAveIntvl As Double, myXlonJump As Long
+    If myXlonEndRow - myXlonBgnRow = 0 Then Exit Sub
+    myXdouAveStep = (myXlonEndVal - myXlonBgnVal) / (myXlonEndRow - myXlonBgnRow)
+    myXdouAveIntvl = myXlonStep / myXdouAveStep
+    If myXdouAveIntvl < 1 Then Exit Sub
+    myXlonJump = Int(myXdouAveIntvl) - 2
+  Dim myXdouQuot As Double, myXdouRemain As Double, myXdouNumer As Double
+  Dim n As Long: n = 0
+    myXdouNumer = myZdouCal(myXlonBgnRow, myXlonDcmtCol)
+    Call PfixQuotationRemainder(myXdouQuot, myXdouRemain, myXdouNumer, myXlonStep)
+    If myXdouRemain = 0 Then
+        n = n + 1: myZdouCal(myXlonBgnRow, myXlonTrgtCol) = myXlonTrgtVal
+    End If
+  Dim myXdouPrsntQ As Double, myXdouPrsntR As Double, _
+        myXdouPrvsQ As Double, myXdouPrvsR As Double, i As Long
+    For i = myXlonBgnRow + 1 To myXlonEndRow
+        myXdouNumer = myZdouCal(i, myXlonDcmtCol)
+        Call PfixQuotationRemainder(myXdouPrsntQ, myXdouPrsntR, myXdouNumer, myXlonStep)
+        If myXdouPrsntQ = myXdouQuot Then GoTo NextPath
+        myXdouQuot = myXdouPrsntQ
+        If myXdouPrsntR = 0 Then
+            myZdouCal(i, myXlonTrgtCol) = myXlonTrgtVal
+            n = n + 1: i = i + myXlonJump: GoTo NextPath
+        End If
+        myXdouNumer = myZdouCal(i - 1, myXlonDcmtCol)
+        Call PfixQuotationRemainder(myXdouPrvsQ, myXdouPrvsR, myXdouNumer, myXlonStep)
+        If myXdouPrsntR <= myXlonStep - myXdouPrvsR Then
+            myZdouCal(i, myXlonTrgtCol) = myXlonTrgtVal
+        Else
+            myZdouCal(i - 1, myXlonTrgtCol) = myXlonTrgtVal
+        End If
+        n = n + 1: i = i + myXlonJump
+NextPath:
+    Next i
+    myXlonTrgtCnt = n
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元の数値配列の指定行を指定間隔値に近い値で間引いたデータ配列を取得する
+Private Sub PincHNumericDecimationFilterIrregularStep( _
+        myXlonDcmtRowCnt As Long, myXlonDcmtColCnt As Long, _
+        myZdouDcmtData() As Double, _
+        ByRef myZdouOrgData() As Double, ByVal myXlonCalRow As Long, _
+        ByVal myXdouDcmtStep As Double, _
+        Optional ByVal coXlonBgnCol As Long = 1, _
+        Optional ByVal coXlonEndCol As Long = 0)
+'Includes PfixQuotationRemainder
+'myZdouDcmtData(i, j) : 間引きデータ配列
+'myZdouOrgData(i, j)  : 元データ配列
+  Const coXlonTrgtVal As Long = 1
+    myXlonDcmtRowCnt = Empty: myXlonDcmtColCnt = Empty: Erase myZdouDcmtData
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 2): Ui = UBound(myZdouOrgData, 2)
+    If myXlonCalRow < LBound(myZdouOrgData, 1) _
+        Or myXlonCalRow > UBound(myZdouOrgData, 1) Then Exit Sub
+    If myXdouDcmtStep <= 0 Or myXdouDcmtStep > Ui Then Exit Sub
+    If coXlonBgnCol <= 0 Then coXlonBgnCol = Li
+    If coXlonEndCol = Ui Then coXlonEndCol = Ui
+    If coXlonEndCol < coXlonBgnCol Then coXlonEndCol = Ui
+    myXdouTmp = myZdouOrgData(myXlonCalRow, coXlonBgnCol)
+    On Error GoTo 0
+'//指定間隔値に近い値にターゲットフラグを付ける
+'myZdouCal(1, c) : 間引き計算対象のデータ
+'myZdouCal(2, c) : ターゲットフラグ
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim myXlonTrgtRow As Long: myXlonTrgtRow = Lo + 0
+  Dim myXlonDcmtRow As Long: myXlonDcmtRow = Lo + 1
+  Dim myZdouCal() As Double, c As Long
+    c = Ui + Lo - Li: ReDim myZdouCal(myXlonDcmtRow, c) As Double
+    For c = Li To Ui
+        myZdouCal(myXlonDcmtRow, c + Lo - Li) = myZdouOrgData(myXlonCalRow, c)
+    Next c
+  Dim myXlonTrgtCnt As Long, myXlonBgnCol As Long, myXlonEndCol As Long
+    myXlonBgnCol = coXlonBgnCol + Lo - Li
+    myXlonEndCol = coXlonEndCol + Lo - Li
+    Call PsubHNumericDecimation(myXlonTrgtCnt, myZdouCal, _
+            myXlonBgnCol, myXlonEndCol, myXdouDcmtStep, _
+            myXlonTrgtRow, myXlonDcmtRow, coXlonTrgtVal)
+    If myXlonTrgtCnt <= 0 Then Exit Sub
+'//ターゲットフラグの付いたデータを抜粋
+    myXlonDcmtRowCnt = UBound(myZdouOrgData, 1)
+    myXlonDcmtColCnt = myXlonTrgtCnt
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    i = myXlonDcmtRowCnt + Lo - 1: j = myXlonDcmtColCnt + Lo - 1
+    ReDim myZdouDcmtData(i, j) As Double
+    For j = coXlonBgnCol To coXlonEndCol
+        If myZdouCal(myXlonTrgtRow, j) <> coXlonTrgtVal Then GoTo NextPath
+        n = n + 1
+        For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+            myZdouDcmtData(i + Lo - Li, n) = myZdouOrgData(i, j)
+        Next i
+NextPath:
+    Next j
+    Erase myZdouCal
+ExitPath:
+End Sub
+Private Sub PsubHNumericDecimation( _
+            myXlonTrgtCnt As Long, myZdouCal() As Double, _
+            ByVal myXlonBgnCol As Long, ByVal myXlonEndCol As Long, _
+            ByVal myXlonStep As Double, _
+            ByVal myXlonTrgtRow As Long, ByVal myXlonDcmtRow As Long, _
+            ByVal myXlonTrgtVal As Long)
+'//指定間隔値に近い値にターゲットフラグを付ける
+    myXlonTrgtCnt = Empty
+  Dim myXlonBgnVal As Double, myXlonEndVal As Double
+    On Error GoTo ExitPath
+    myXlonBgnVal = myZdouCal(myXlonDcmtRow, myXlonBgnCol)
+    myXlonEndVal = myZdouCal(myXlonDcmtRow, myXlonEndCol)
+    On Error GoTo 0
+  Dim myXdouAveStep As Double, myXdouAveIntvl As Double, myXlonJump As Long
+    If myXlonEndCol - myXlonBgnCol = 0 Then Exit Sub
+    myXdouAveStep = (myXlonEndVal - myXlonBgnVal) / (myXlonEndCol - myXlonBgnCol)
+    myXdouAveIntvl = myXlonStep / myXdouAveStep
+    If myXdouAveIntvl < 1 Then Exit Sub
+    myXlonJump = Int(myXdouAveIntvl) - 2
+  Dim myXdouQuot As Double, myXdouRemain As Double, myXdouNumer As Double
+  Dim n As Long: n = 0
+    myXdouNumer = myZdouCal(myXlonDcmtRow, myXlonBgnCol)
+    Call PfixQuotationRemainder(myXdouQuot, myXdouRemain, myXdouNumer, myXlonStep)
+    If myXdouRemain = 0 Then
+        myZdouCal(myXlonTrgtRow, myXlonBgnCol) = myXlonTrgtVal: n = n + 1
+    End If
+  Dim myXdouPrsntQ As Double, myXdouPrsntR As Double, _
+        myXdouPrvsQ As Double, myXdouPrvsR As Double, j As Long
+    For j = myXlonBgnCol + 1 To myXlonEndCol
+        myXdouNumer = myZdouCal(myXlonDcmtRow, j)
+        Call PfixQuotationRemainder(myXdouPrsntQ, myXdouPrsntR, myXdouNumer, myXlonStep)
+        If myXdouPrsntQ = myXdouQuot Then GoTo NextPath
+        myXdouQuot = myXdouPrsntQ
+        If myXdouPrsntR = 0 Then
+            myZdouCal(myXlonTrgtRow, j) = myXlonTrgtVal
+            n = n + 1: j = j + myXlonJump: GoTo NextPath
+        End If
+        myXdouNumer = myZdouCal(myXlonDcmtRow, j - 1)
+        Call PfixQuotationRemainder(myXdouPrvsQ, myXdouPrvsR, myXdouNumer, myXlonStep)
+        If myXdouPrsntR <= myXlonStep - myXdouPrvsR Then
+            myZdouCal(myXlonTrgtRow, j) = myXlonTrgtVal
+        Else
+            myZdouCal(myXlonTrgtRow, j - 1) = myXlonTrgtVal
+        End If
+        n = n + 1: j = j + myXlonJump
+NextPath:
+    Next j
+    myXlonTrgtCnt = n
+ExitPath:
+End Sub
+
+ '定型Ｐ_商と余りを導出する
+Private Sub PfixQuotationRemainder( _
+        myXdouQuot As Double, myXdouRemain As Double, _
+        ByVal myXdouNumer As Double, ByVal myXdouDenom As Double)
+'myXdouQuot   : 商
+'myXdouRemain : 余り
+'myXdouNumer  : 分子
+'myXdouDenom  : 分母
+    myXdouQuot = Empty: myXdouRemain = Empty
+    If myXdouDenom = 0 Then Exit Sub
+    On Error GoTo ErrPath
+    myXdouQuot = myXdouNumer \ myXdouDenom
+    myXdouRemain = myXdouNumer Mod myXdouDenom
+    On Error GoTo 0
+ErrPath:
+    myXdouQuot = Empty: myXdouRemain = Empty
+    myXdouQuot = Int(myXdouNumer / myXdouDenom)
+    If myXdouQuot < 0 Then myXdouQuot = myXdouQuot + 1
+    myXdouRemain = myXdouNumer - myXdouQuot * myXdouDenom
+End Sub
+
+ '定型Ｐ_2次元の数値配列の行方向に等間隔で間引いたデータ配列を取得する
+Private Sub PfixVNumericDecimationFilterRegularStep( _
+        myXlonDcmtRowCnt As Long, myXlonDcmtColCnt As Long, _
+        myZdouDcmtData() As Double, _
+        ByRef myZdouOrgData() As Double, ByVal myXlonDcmtStep As Long, _
+        Optional ByVal coXlonBgnRow As Long = 1, _
+        Optional ByVal coXlonEndRow As Long = 0)
+'myZdouDcmtData(i, j) : 間引きデータ配列
+'myZdouOrgData(i, j)  : 元データ配列
+    myXlonDcmtRowCnt = Empty: myXlonDcmtColCnt = Empty: Erase myZdouDcmtData
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 1): Ui = UBound(myZdouOrgData, 1)
+    If myXlonDcmtStep <= 0 Or myXlonDcmtStep > Ui Then Exit Sub
+    If coXlonBgnRow < Li Then coXlonBgnRow = Li
+    If coXlonEndRow > Ui Then coXlonEndRow = Ui
+    If coXlonEndRow < coXlonBgnRow Then coXlonEndRow = Ui
+    myXdouTmp = myZdouOrgData(coXlonBgnRow, Li)
+    On Error GoTo 0
+    myXlonDcmtRowCnt = Int((coXlonEndRow - coXlonBgnRow + 0.9) / myXlonDcmtStep) + 1
+    myXlonDcmtColCnt = UBound(myZdouOrgData, 2) - LBound(myZdouOrgData, 2) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    i = myXlonDcmtRowCnt + Lo - 1: j = myXlonDcmtColCnt + Lo - 1
+    ReDim myZdouDcmtData(i, j) As Double
+    For i = coXlonBgnRow To coXlonEndRow Step myXlonDcmtStep
+        n = n + 1
+        For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
+            myZdouDcmtData(n, j) = myZdouOrgData(i, j)
+        Next j
+    Next i
+    Exit Sub
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元の数値配列の列方向に等間隔で間引いたデータ配列を取得する
+Private Sub PfixHNumericDecimationFilterRegularStep( _
+        myXlonDcmtRowCnt As Long, myXlonDcmtColCnt As Long, _
+        myZdouDcmtData() As Double, _
+        ByRef myZdouOrgData() As Double, ByVal myXlonDcmtStep As Long, _
+        Optional ByVal coXlonBgnCol As Long = 1, _
+        Optional ByVal coXlonEndCol As Long = 0)
+'myZdouDcmtData(i, j) : 間引きデータ配列
+'myZdouOrgData(i, j)  : 元データ配列
+    myXlonDcmtRowCnt = Empty: myXlonDcmtColCnt = Empty: Erase myZdouDcmtData
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 2): Ui = UBound(myZdouOrgData, 2)
+    If myXlonDcmtStep <= 0 Or myXlonDcmtStep > Ui Then Exit Sub
+    If coXlonBgnCol < Li Then coXlonBgnCol = Li
+    If coXlonEndCol = Ui Then coXlonEndCol = Ui
+    If coXlonEndCol < coXlonBgnCol Then coXlonEndCol = Ui
+    myXdouTmp = myZdouOrgData(Li, coXlonBgnCol)
+    On Error GoTo 0
+    myXlonDcmtRowCnt = UBound(myZdouOrgData, 1) - LBound(myZdouOrgData, 1) + 1
+    myXlonDcmtColCnt = Int((coXlonEndCol - coXlonBgnCol + 0.9) / myXlonDcmtStep) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    i = myXlonDcmtRowCnt + Lo - 1: j = myXlonDcmtColCnt + Lo - 1
+    ReDim myZdouDcmtData(i, j) As Double
+    For j = coXlonBgnCol To coXlonEndCol Step myXlonDcmtStep
+        n = n + 1
+        For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+            myZdouDcmtData(i, n) = myZdouOrgData(i, j)
+        Next i
+    Next j
+    Exit Sub
+ExitPath:
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_データ配列を間引き処理する
+'Private Sub instCNumDcmtFltr()
+'  Const coXlonCalRowCol As Long = 2
+'  Const coXdouDcmtIrgStep As Double = 0.2
+'  Const coXlonDcmtRegStep As Long = 10
+'  Const coXlonBgnRowCol As Long = 1
+'  Const coXlonEndRowCol As Long = 0
+''  Dim myXlonOrgRowCnt As Long, myXlonOrgColCnt As Long, myZdouOrgData() As Double
+''    'myZdouOrgData(i, j) : 元データ配列
+''    myXlonOrgRowCnt = UBound(myZdouOrgData, 1)
+''    myXlonOrgColCnt = UBound(myZdouOrgData, 2)
+''  Dim myXlonDcmtRowCnt As Long, myXlonDcmtColCnt As Long, myZdouDcmtData() As Double
+''    'myZdouDcmtData(i, j) : 間引き後データ配列
+''//CNumDcmtFltrクラスモジュールのインスタンス生成
+'  Dim myXinsNumDcmtFltr As CNumDcmtFltr: Set myXinsNumDcmtFltr = New CNumDcmtFltr
+'  Dim i As Long, j As Long
+'    With myXinsNumDcmtFltr
+'    '//クラス内変数への入力
+''        .letIrgStep = True
+'        .letRowDrctn = True
+'        .letOrgData = myZdouOrgData
+'        .letCalRowCol = coXlonCalRowCol
+'        .letDcmtIrgStep = coXdouDcmtIrgStep
+'        .letDcmtRegStep = coXlonDcmtRegStep
+'        .letBgnRowCol = coXlonBgnRowCol
+'        .letEndRowCol = coXlonEndRowCol
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        .exeProc
+'        myXlonDcmtRowCnt = .getDcmtRowCnt
+'        myXlonDcmtColCnt = .getDcmtColCnt
+'        If myXlonDcmtRowCnt <= 0 Or myXlonDcmtColCnt <= 0 Then GoTo JumpPath
+'        i = myXlonCalRowCnt + Lo - 1: j = myXlonCalColCnt + Lo - 1
+'        ReDim myZdouCalData(i, j) As Double
+'        For j = 1 To myXlonDcmtColCnt
+'            For i = 1 To myXlonDcmtRowCnt
+'                myZdouDcmtData(i, j) = .getDcmtData(i, j)
+'            Next i
+'        Next j
+'    End With
+'JumpPath:
+'    Set myXinsNumDcmtFltr = Nothing
+'    Call variablesOfCNumDcmtFltr(myXlonDcmtRowCnt, myZdouDcmtData)   'Debug.Print
+'End Sub
+'Private Sub variablesOfCNumDcmtFltr( _
+'            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+''//CNumDcmtFltrクラス内から出力した変数の内容確認
+'    Debug.Print "データ数: " & myXlonDataCnt
+'    If myXlonDataCnt <= 0 Then Exit Sub
+'  Dim i As Long, j As Long
+'    For i = LBound(myZvarField, 1) To UBound(myZvarField, 1)
+'        For j = LBound(myZvarField, 2) To UBound(myZvarField, 2)
+'            Debug.Print "データ" & i & "," & j & ": " & myZvarField(i, j)
+'        Next j
+'    Next i
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
