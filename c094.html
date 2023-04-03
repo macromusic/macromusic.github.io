@@ -1,1 +1,1912 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
 
+
+ '定型Ｆ_配列計算-相加平均
+Private Function PfncdouArithmeticMean(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouArithmeticMean = Empty
+  Dim myXdouAveTmp As Double: myXdouAveTmp = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1: myXdouAveTmp = myXdouAveTmp + myZdouOrgData(i)
+    Next i
+    PfncdouArithmeticMean = myXdouAveTmp / n
+End Function
+
+ '定型Ｆ_配列計算-相乗平均
+Private Function PfncdouGeometricMean(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouGeometricMean = Empty
+  Dim myXdouAveTmp As Double: myXdouAveTmp = 1
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1: myXdouAveTmp = myXdouAveTmp * myZdouOrgData(i)
+    Next i
+    PfncdouGeometricMean = myXdouAveTmp ^ (1 / n)
+End Function
+
+ '定型Ｆ_配列計算-中央値
+Private Function PincdouMedian(ByRef myZdouOrgData() As Double) As Double
+'Includes PfixQuickSortOfNumeric1DArray
+'myZdouOrgData(i) : 元データ配列
+    PincdouMedian = Empty
+  Dim L As Long: L = LBound(myZdouOrgData)
+  Dim U As Long: U = UBound(myZdouOrgData)
+  Dim myXlonCnt As Long: myXlonCnt = U - L + 1
+  Dim myZdouTmp() As Double: myZdouTmp() = myZdouOrgData()
+    Call PfixQuickSortOfNumeric1DArray(myZdouTmp, L, U, 1)
+  Dim m As Long, n As Long, myXdouM1 As Double, myXdouM2 As Double
+    If myXlonCnt Mod 2 = 1 Then
+        m = Int((L + U) / 2)
+        PincdouMedian = myZdouTmp(m)
+    Else
+        m = Int((L + U) / 2): n = m + 1
+        myXdouM1 = myZdouTmp(m): myXdouM2 = myZdouTmp(n)
+        PincdouMedian = (myXdouM1 + myXdouM2) / 2
+    End If
+    Erase myZdouTmp
+End Function
+
+ '定型Ｐ_配列計算-四分位数
+Private Sub PincQuartile( _
+            myXdouThrdQrtl As Double, myXdouFrstQrtl As Double, myXdouMedian As Double, _
+            ByRef myZdouOrgData() As Double)
+'Includes PfixQuickSortOfNumeric1DArray
+'myXdouThrdQrtl : 第三四分位数
+'myXdouFrstQrtl : 第一四分位数
+'myZdouOrgData(i) : 元データ配列
+    myXdouThrdQrtl = Empty: myXdouFrstQrtl = Empty: myXdouMedian = Empty
+  Dim L As Long: L = LBound(myZdouOrgData)
+  Dim U As Long: U = UBound(myZdouOrgData)
+  Dim myXlonCnt As Long: myXlonCnt = U - L + 1
+  Dim myZdouTmp() As Double: myZdouTmp() = myZdouOrgData()
+    Call PfixQuickSortOfNumeric1DArray(myZdouTmp, L, U, 1)
+  Dim m As Long, n As Long, i As Long, j As Long, myXdouM1 As Double, myXdouM2 As Double
+    If myXlonCnt Mod 2 = 1 Then
+        m = Int((L + U) / 2)
+        myXdouMedian = myZdouTmp(m)
+        myXlonCnt = U - (m + 1) + 1
+        If myXlonCnt Mod 2 = 1 Then
+            i = Int(((m + 1) + U) / 2)
+            myXdouThrdQrtl = myZdouTmp(i)
+            i = Int((L + (m - 1)) / 2)
+            myXdouFrstQrtl = myZdouTmp(i)
+        Else
+            i = Int(((m + 1) + U) / 2): j = i + 1
+            myXdouM1 = myZdouTmp(i): myXdouM2 = myZdouTmp(j)
+            myXdouThrdQrtl = (myXdouM1 + myXdouM2) / 2
+            i = Int((L + (m - 1)) / 2): j = i + 1
+            myXdouM1 = myZdouTmp(i): myXdouM2 = myZdouTmp(j)
+            myXdouFrstQrtl = (myXdouM1 + myXdouM2) / 2
+        End If
+    Else
+        m = Int((L + U) / 2): n = m + 1
+        myXdouM1 = myZdouTmp(m): myXdouM2 = myZdouTmp(n)
+        myXdouMedian = (myXdouM1 + myXdouM2) / 2
+        myXlonCnt = U - n + 1
+        If myXlonCnt Mod 2 = 1 Then
+            i = Int((n + U) / 2)
+            myXdouThrdQrtl = myZdouTmp(i)
+            j = Int((L + m) / 2)
+            myXdouFrstQrtl = myZdouTmp(j)
+        Else
+            i = Int((n + U) / 2): j = i + 1
+            myXdouM1 = myZdouTmp(i): myXdouM2 = myZdouTmp(j)
+            myXdouThrdQrtl = (myXdouM1 + myXdouM2) / 2
+            i = Int((L + m) / 2): j = i + 1
+            myXdouM1 = myZdouTmp(i): myXdouM2 = myZdouTmp(j)
+            myXdouFrstQrtl = (myXdouM1 + myXdouM2) / 2
+        End If
+    End If
+    Erase myZdouTmp
+End Sub
+
+ '定型Ｐ_配列計算-最大＆最小
+Private Sub PincMaxMin(myXdouMax As Double, myXdouMin As Double, _
+            ByRef myZdouOrgData() As Double)
+'Includes PfixQuickSortOfNumeric1DArray
+'myZdouOrgData(i) : 元データ配列
+    myXdouMax = Empty: myXdouMin = Empty
+  Dim L As Long: L = LBound(myZdouOrgData)
+  Dim U As Long: U = UBound(myZdouOrgData)
+  Dim myZdouTmp() As Double: myZdouTmp() = myZdouOrgData()
+    Call PfixQuickSortOfNumeric1DArray(myZdouTmp, L, U, 1)
+    myXdouMax = myZdouTmp(U)
+    myXdouMin = myZdouTmp(L)
+    Erase myZdouTmp
+End Sub
+
+ '定型Ｐ_配列計算-最大＆最小＆四分位数
+Private Sub PincMaxMinQuartile( _
+            myXdouMax As Double, myXdouMin As Double, _
+            myXdouThrdQrtl As Double, myXdouFrstQrtl As Double, myXdouMedian As Double, _
+            ByRef myZdouOrgData() As Double)
+'Includes PfixQuickSortOfNumeric1DArray
+'myXdouThrdQrtl : 第三四分位数
+'myXdouFrstQrtl : 第一四分位数
+'myZdouOrgData(i) : 元データ配列
+    myXdouMax = Empty: myXdouMin = Empty: myXdouMedian = Empty
+  Dim L As Long: L = LBound(myZdouOrgData)
+  Dim U As Long: U = UBound(myZdouOrgData)
+  Dim myXlonCnt As Long: myXlonCnt = U - L + 1
+  Dim myZdouTmp() As Double: myZdouTmp() = myZdouOrgData()
+    Call PfixQuickSortOfNumeric1DArray(myZdouTmp, L, U, 1)
+    myXdouMax = myZdouTmp(U)
+    myXdouMin = myZdouTmp(L)
+  Dim m As Long, n As Long, i As Long, j As Long, myXdouM1 As Double, myXdouM2 As Double
+    If myXlonCnt Mod 2 = 1 Then
+        m = Int((L + U) / 2)
+        myXdouMedian = myZdouTmp(m)
+        myXlonCnt = U - (m + 1) + 1
+        If myXlonCnt Mod 2 = 1 Then
+            i = Int(((m + 1) + U) / 2)
+            myXdouThrdQrtl = myZdouTmp(i)
+            i = Int((L + (m - 1)) / 2)
+            myXdouFrstQrtl = myZdouTmp(i)
+        Else
+            i = Int(((m + 1) + U) / 2): j = i + 1
+            myXdouM1 = myZdouTmp(i): myXdouM2 = myZdouTmp(j)
+            myXdouThrdQrtl = (myXdouM1 + myXdouM2) / 2
+            i = Int((L + (m - 1)) / 2): j = i + 1
+            myXdouM1 = myZdouTmp(i): myXdouM2 = myZdouTmp(j)
+            myXdouFrstQrtl = (myXdouM1 + myXdouM2) / 2
+        End If
+    Else
+        m = Int((L + U) / 2): n = m + 1
+        myXdouM1 = myZdouTmp(m): myXdouM2 = myZdouTmp(n)
+        myXdouMedian = (myXdouM1 + myXdouM2) / 2
+        myXlonCnt = U - n + 1
+        If myXlonCnt Mod 2 = 1 Then
+            i = Int((n + U) / 2)
+            myXdouThrdQrtl = myZdouTmp(i)
+            j = Int((L + m) / 2)
+            myXdouFrstQrtl = myZdouTmp(j)
+        Else
+            i = Int((n + U) / 2): j = i + 1
+            myXdouM1 = myZdouTmp(i): myXdouM2 = myZdouTmp(j)
+            myXdouThrdQrtl = (myXdouM1 + myXdouM2) / 2
+            i = Int((L + m) / 2): j = i + 1
+            myXdouM1 = myZdouTmp(i): myXdouM2 = myZdouTmp(j)
+            myXdouFrstQrtl = (myXdouM1 + myXdouM2) / 2
+        End If
+    End If
+    Erase myZdouTmp
+End Sub
+
+ '定型Ｆ_配列計算-合計
+Private Function PfncdouSum(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouSum = Empty
+  Dim i As Long, myXdouSum As Double: myXdouSum = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+    Next i
+    PfncdouSum = myXdouSum
+End Function
+
+ '定型Ｆ_配列計算-平方和
+Private Function PfncdouSumSq(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouSumSq = Empty
+  Dim i As Long, myXdouSumSq As Double: myXdouSumSq = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        myXdouSumSq = myXdouSumSq + myZdouOrgData(i) ^ 2
+    Next i
+    PfncdouSumSq = myXdouSumSq
+End Function
+
+ '定型Ｆ_配列計算-偏差平方和
+Private Function PfncdouDevSq(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouDevSq = Empty
+  Dim myXdouSumSq As Double: myXdouSumSq = 0
+  Dim myXdouSum As Double: myXdouSum = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1
+        myXdouSumSq = myXdouSumSq + myZdouOrgData(i) ^ 2
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+    Next i
+    If n <= 0 Then Exit Function
+    PfncdouDevSq = myXdouSumSq - (myXdouSum ^ 2) / n
+End Function
+
+ '定型Ｆ_配列計算-分散
+Private Function PfncdouVarP(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouVarP = Empty
+  Dim myXdouSumSq As Double: myXdouSumSq = 0
+  Dim myXdouSum As Double: myXdouSum = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1
+        myXdouSumSq = myXdouSumSq + (myZdouOrgData(i)) ^ 2
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+    Next i
+    If n <= 0 Then Exit Function
+    PfncdouVarP = (myXdouSumSq - (myXdouSum ^ 2) / n) / n
+End Function
+
+ '定型Ｆ_配列計算-不偏標本分散
+Private Function PfncdouVarS(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouVarS = Empty
+  Dim myXdouSumSq As Double: myXdouSumSq = 0
+  Dim myXdouSum As Double: myXdouSum = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1
+        myXdouSumSq = myXdouSumSq + (myZdouOrgData(i)) ^ 2
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+    Next i
+    If n <= 1 Then Exit Function
+    PfncdouVarS = (myXdouSumSq - (myXdouSum ^ 2) / n) / (n - 1)
+End Function
+
+ '定型Ｆ_配列計算-標準偏差
+Private Function PfncdouStDevP(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouStDevP = Empty
+  Dim myXdouSumSq As Double: myXdouSumSq = 0
+  Dim myXdouSum As Double: myXdouSum = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1
+        myXdouSumSq = myXdouSumSq + (myZdouOrgData(i)) ^ 2
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+    Next i
+    If n <= 0 Then Exit Function
+    PfncdouStDevP = ((myXdouSumSq - (myXdouSum ^ 2) / n) / n) ^ 0.5
+End Function
+
+ '定型Ｆ_配列計算-不偏標本標準偏差
+Private Function PfncdouStDevS(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouStDevS = Empty
+  Dim myXdouSumSq As Double: myXdouSumSq = 0
+  Dim myXdouSum As Double: myXdouSum = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1
+        myXdouSumSq = myXdouSumSq + (myZdouOrgData(i)) ^ 2
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+    Next i
+    If n <= 1 Then Exit Function
+    PfncdouStDevS = ((myXdouSumSq - (myXdouSum ^ 2) / n) / (n - 1)) ^ 0.5
+End Function
+
+ '定型Ｐ_配列計算-偏差平方和＆分散＆標準偏差
+Private Sub PfixSumsqDevsqVarPStdevP( _
+            myXdouDevSq As Double, myXdouVarP As Double, myXdouStDevP As Double, _
+            ByRef myZdouOrgData() As Double)
+'myXdouDevSq  : 偏差平方和
+'myXdouVarP   : 分散
+'myXdouStDevP : 標準偏差
+'myZdouOrgData(i) : 元データ配列
+    myXdouDevSq = Empty: myXdouVarP = Empty: myXdouStDevP = Empty
+  Dim i As Long, myXdouSumSq As Double, myXdouSum As Double, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1
+        myXdouSumSq = myXdouSumSq + (myZdouOrgData(i)) ^ 2
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+    Next i
+    If n <= 0 Then Exit Sub
+    myXdouDevSq = myXdouSumSq - (myXdouSum ^ 2) / n
+    myXdouVarP = myXdouDevSq / n
+    myXdouStDevP = myXdouVarP ^ 0.5
+End Sub
+
+ '定型Ｐ_配列計算-偏差平方和＆不偏標本分散＆不偏標本標準偏差
+Private Sub PfixSumsqDevsqVarSStdevS( _
+            myXdouDevSq As Double, myXdouVarS As Double, myXdouStDevS As Double, _
+            ByRef myZdouOrgData() As Double)
+'myXdouDevSq  : 偏差平方和
+'myXdouVarS   : 分散
+'myXdouStDevS : 標準偏差
+'myZdouOrgData(i) : 元データ配列
+    myXdouDevSq = Empty: myXdouVarS = Empty: myXdouStDevS = Empty
+  Dim i As Long, myXdouSumSq As Double, myXdouSum As Double, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1
+        myXdouSumSq = myXdouSumSq + (myZdouOrgData(i)) ^ 2
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+    Next i
+    If n <= 0 Then Exit Sub
+    myXdouDevSq = myXdouSumSq - (myXdouSum ^ 2) / n
+    myXdouVarS = myXdouDevSq / (n - 1)
+    myXdouStDevS = myXdouVarS ^ 0.5
+End Sub
+
+ '定型Ｐ_配列計算-合計＆相加平均＆平方和＆偏差平方和＆分散＆標準偏差
+Private Sub PfixSumMeanSumsqDevsqVarPStdevP( _
+            myXdouSum As Double, myXdouMean As Double, myXdouSumSq As Double, _
+            myXdouDevSq As Double, myXdouVarP As Double, myXdouStDevP As Double, _
+            ByRef myZdouOrgData() As Double)
+'myXdouSum    : 合計
+'myXdouMean   : 相加平均
+'myXdouSumSq  : 平方和
+'myXdouDevSq  : 偏差平方和
+'myXdouVarP   : 分散
+'myXdouStDevP : 標準偏差
+'myZdouOrgData(i) : 元データ配列
+    myXdouSum = Empty: myXdouMean = Empty: myXdouSumSq = Empty
+    myXdouDevSq = Empty: myXdouVarP = Empty: myXdouStDevP = Empty
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+        myXdouSumSq = myXdouSumSq + (myZdouOrgData(i)) ^ 2
+    Next i
+    If n <= 0 Then Exit Sub
+    myXdouMean = myXdouSum / n
+    myXdouDevSq = myXdouSumSq - (myXdouSum ^ 2) / n
+    myXdouVarP = myXdouDevSq / n
+    myXdouStDevP = myXdouVarP ^ 0.5
+End Sub
+
+ '定型Ｐ_配列計算-合計＆相加平均＆平方和＆偏差平方和＆不偏標本分散＆不偏標本標準偏差
+Private Sub PfixSumMeanSumsqDevsqVarSStdevS( _
+            myXdouSum As Double, myXdouMean As Double, myXdouSumSq As Double, _
+            myXdouDevSq As Double, myXdouVarS As Double, myXdouStDevS As Double, _
+            ByRef myZdouOrgData() As Double)
+'myXdouSum    : 合計
+'myXdouMean   : 相加平均
+'myXdouSumSq  : 平方和
+'myXdouDevSq  : 偏差平方和
+'myXdouVarS   : 不偏標本分散
+'myXdouStDevS : 不偏標本標準偏差
+'myZdouOrgData(i) : 元データ配列
+    myXdouSum = Empty: myXdouMean = Empty: myXdouSumSq = Empty
+    myXdouDevSq = Empty: myXdouVarS = Empty: myXdouStDevS = Empty
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+        myXdouSumSq = myXdouSumSq + (myZdouOrgData(i)) ^ 2
+    Next i
+    If n <= 1 Then Exit Sub
+    myXdouMean = myXdouSum / n
+    myXdouDevSq = myXdouSumSq - (myXdouSum ^ 2) / n
+    myXdouVarS = myXdouDevSq / (n - 1)
+    myXdouStDevS = myXdouVarS ^ 0.5
+End Sub
+
+ '定型Ｆ_配列計算-二乗平均平方根
+Private Function PfncdouRootMeanSquare(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouRootMeanSquare = Empty
+  Dim myXdouSumSq As Double: myXdouSumSq = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1
+        myXdouSumSq = myXdouSumSq + (myZdouOrgData(i)) ^ 2
+    Next i
+    If n <= 0 Then Exit Function
+    PfncdouRootMeanSquare = (myXdouSumSq / n) ^ 0.5
+End Function
+
+ '定型Ｆ_配列計算-Σ[配列要素の積]
+Private Function PfncdouSumProduct( _
+        ByRef myZdouOrgDataX() As Double, ByRef myZdouOrgDataY() As Double) As Double
+'myZdouOrgDataX(i) : 元データ配列X
+'myZdouOrgDataY(i) : 元データ配列Y
+    PfncdouSumProduct = Empty
+  Dim i As Long, myXdouSumPrdct As Double: myXdouSumPrdct = 0
+    For i = LBound(myZdouOrgDataX) To UBound(myZdouOrgDataX)
+        myXdouSumPrdct = myXdouSumPrdct + myZdouOrgDataX(i) * myZdouOrgDataY(i)
+    Next i
+    PfncdouSumProduct = myXdouSumPrdct
+End Function
+
+ '定型Ｆ_配列計算-Σ[配列要素の偏差積]
+Private Function PfncdouDevProduct( _
+        ByRef myZdouOrgDataX() As Double, ByRef myZdouOrgDataY() As Double) As Double
+'myZdouOrgDataX(i) : 元データ配列X
+'myZdouOrgDataY(i) : 元データ配列Y
+    PfncdouDevProduct = Empty
+  Dim myXdouSumPrdct As Double: myXdouSumPrdct = 0
+  Dim myXdouSumX As Double: myXdouSumX = 0
+  Dim myXdouSumY As Double: myXdouSumY = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgDataX) To UBound(myZdouOrgDataX)
+        myXdouSumPrdct = myXdouSumPrdct + myZdouOrgDataX(i) * myZdouOrgDataY(i)
+        myXdouSumX = myXdouSumX + myZdouOrgDataX(i)
+        myXdouSumY = myXdouSumY + myZdouOrgDataY(i)
+        n = n + 1
+    Next i
+    If n <= 0 Then Exit Function
+    PfncdouDevProduct = myXdouSumPrdct - (myXdouSumX * myXdouSumY) / n
+End Function
+
+ '定型Ｆ_配列計算-共分散
+Private Function PfncdouCovarianceP( _
+        ByRef myZdouOrgDataX() As Double, ByRef myZdouOrgDataY() As Double) As Double
+'myZdouOrgDataX(i) : 元データ配列X
+'myZdouOrgDataY(i) : 元データ配列Y
+    PfncdouCovarianceP = Empty
+  Dim myXdouSumPrdct As Double: myXdouSumPrdct = 0
+  Dim myXdouSumX As Double: myXdouSumX = 0
+  Dim myXdouSumY As Double: myXdouSumY = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgDataX) To UBound(myZdouOrgDataX)
+        myXdouSumPrdct = myXdouSumPrdct + myZdouOrgDataX(i) * myZdouOrgDataY(i)
+        myXdouSumX = myXdouSumX + myZdouOrgDataX(i)
+        myXdouSumY = myXdouSumY + myZdouOrgDataY(i)
+        n = n + 1
+    Next i
+    If n <= 0 Then Exit Function
+    PfncdouCovarianceP = (myXdouSumPrdct - (myXdouSumX * myXdouSumY) / n) / n
+End Function
+
+ '定型Ｆ_配列計算-不偏標本共分散
+Private Function PfncdouCovarianceS( _
+        ByRef myZdouOrgDataX() As Double, ByRef myZdouOrgDataY() As Double) As Double
+'myZdouOrgDataX(i) : 元データ配列X
+'myZdouOrgDataY(i) : 元データ配列Y
+    PfncdouCovarianceS = Empty
+  Dim myXdouSumPrdct As Double: myXdouSumPrdct = 0
+  Dim myXdouSumX As Double: myXdouSumX = 0
+  Dim myXdouSumY As Double: myXdouSumY = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgDataX) To UBound(myZdouOrgDataX)
+        myXdouSumPrdct = myXdouSumPrdct + myZdouOrgDataX(i) * myZdouOrgDataY(i)
+        myXdouSumX = myXdouSumX + myZdouOrgDataX(i)
+        myXdouSumY = myXdouSumY + myZdouOrgDataY(i)
+        n = n + 1
+    Next i
+    If n <= 0 Then Exit Function
+    PfncdouCovarianceS = (myXdouSumPrdct - (myXdouSumX * myXdouSumY) / n) / (n - 1)
+End Function
+
+ '定型Ｆ_配列計算-相関係数
+Private Function PfncdouCorrel( _
+        ByRef myZdouOrgDataX() As Double, ByRef myZdouOrgDataY() As Double) As Double
+'myZdouOrgDataX(i) : 元データ配列X
+'myZdouOrgDataY(i) : 元データ配列Y
+    PfncdouCorrel = Empty
+  Dim myXdouSumPrdctXY As Double: myXdouSumPrdctXY = 0
+  Dim myXdouSumSqX As Double: myXdouSumSqX = 0
+  Dim myXdouSumSqY As Double: myXdouSumSqY = 0
+  Dim myXdouSumX As Double: myXdouSumX = 0
+  Dim myXdouSumY As Double: myXdouSumY = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgDataX) To UBound(myZdouOrgDataX)
+        myXdouSumPrdctXY = myXdouSumPrdctXY + myZdouOrgDataX(i) * myZdouOrgDataY(i)
+        myXdouSumSqX = myXdouSumSqX + myZdouOrgDataX(i) ^ 2
+        myXdouSumSqY = myXdouSumSqY + myZdouOrgDataY(i) ^ 2
+        myXdouSumX = myXdouSumX + myZdouOrgDataX(i)
+        myXdouSumY = myXdouSumY + myZdouOrgDataY(i)
+        n = n + 1
+    Next i
+    If n <= 0 Then Exit Function
+  Dim myXdouDevProductXY As Double, myXdouDevSqX As Double, myXdouDevSqY As Double
+    myXdouDevProductXY = myXdouSumPrdctXY - (myXdouSumX * myXdouSumY) / n
+    myXdouDevSqX = myXdouSumSqX - (myXdouSumX ^ 2) / n
+    myXdouDevSqY = myXdouSumSqY - (myXdouSumY ^ 2) / n
+    If myXdouDevSqX = 0 Or myXdouDevSqY = 0 Then Exit Function
+    PfncdouCorrel = myXdouDevProductXY / (myXdouDevSqX ^ 0.5) / (myXdouDevSqY ^ 0.5)
+End Function
+
+ '定型Ｆ_傾きと切片とX軸座標を指定してY軸の座標位置を取得する
+Private Function PfncdouYCoordinate( _
+            ByVal myXdouSlp As Double, ByVal myXdouIntcpt As Double, _
+            ByVal myXdouXCoord As Double) As Double
+    PfncdouYCoordinate = Empty
+    PfncdouYCoordinate = myXdouXCoord * myXdouSlp + myXdouIntcpt
+End Function
+
+ '定型Ｆ_傾きと切片とY軸座標を指定してX軸の座標位置を取得する
+Private Function PfncdouXCoordinate( _
+            ByVal myXdouSlp As Double, ByVal myXdouIntcpt As Double, _
+            ByVal myXdouYCoord As Double) As Double
+    PfncdouXCoordinate = Empty
+    If myXdouSlp = 0 Then Exit Function
+    PfncdouXCoordinate = (myXdouYCoord - myXdouIntcpt) / myXdouSlp
+End Function
+
+ '定型Ｐ_2直線の傾きと切片を指定して交点の座標位置を取得する
+Private Sub PfixIntersection(myXdouXIntrsct As Double, myXdouYIntrsct As Double, _
+            ByVal myXdouSlpA As Double, ByVal myXdouIntcptA As Double, _
+            ByVal myXdouSlpB As Double, ByVal myXdouIntcptB As Double)
+    myXdouXIntrsct = Empty: myXdouYIntrsct = Empty
+  Dim myXdouXSlpDev As Double, myXdouXIntcptDev As Double, myXdouXCal As Double
+    myXdouXSlpDev = myXdouSlpA - myXdouSlpB
+    If myXdouXSlpDev = 0 Then Exit Sub
+    myXdouXIntcptDev = myXdouIntcptB - myXdouIntcptA
+    myXdouXCal = myXdouSlpA * myXdouIntcptB - myXdouSlpB * myXdouIntcptA
+    myXdouXIntrsct = myXdouXIntcptDev / myXdouXSlpDev
+    myXdouYIntrsct = myXdouXCal / myXdouXSlpDev
+End Sub
+
+ '定型Ｐ_配列計算-傾きと切片とX軸データ配列を指定して直線のY軸データ配列取得
+Private Sub PfixStraightLineYArray( _
+            myXlonLnYCnt As Long, myZdouLnYData() As Double, _
+            ByVal myXdouSlp As Double, ByVal myXdouIntcpt As Double, _
+            ByRef myZdouOrgX() As Double)
+'myZdouLnYData(i) : 直線のY軸データ配列
+'myZdouOrgX(i) : X軸の元データ配列
+    myXlonLnYCnt = Empty: Erase myZdouLnYData
+  Dim i As Long, L As Long
+    i = UBound(myZdouOrgX): L = LBound(myZdouOrgX)
+    ReDim myZdouLnYData(i) As Double
+    myXlonLnYCnt = i - L + 1
+    For i = LBound(myZdouOrgX) To UBound(myZdouOrgX)
+        myZdouLnYData(i) = myXdouSlp * myZdouOrgX(i) + myXdouIntcpt
+    Next i
+End Sub
+
+ '定型Ｐ_配列計算-傾きと切片とY軸データ配列を指定して直線のX軸データ配列取得
+Private Sub PfixStraightLineXArray( _
+            myXlonLnXCnt As Long, myZdouLnXData() As Double, _
+            ByVal myXdouSlp As Double, ByVal myXdouIntcpt As Double, _
+            ByRef myZdouOrgY() As Double)
+'myZdouLnXData(i) : 直線のX軸データ配列
+'myZdouOrgY(i) : Y軸の元データ配列
+    myXlonLnXCnt = Empty: Erase myZdouLnXData
+    If myXdouSlp = 0 Then Exit Sub
+  Dim i As Long, L As Long
+    i = UBound(myZdouOrgY): L = LBound(myZdouOrgY)
+    ReDim myZdouLnXData(i) As Double
+    myXlonLnXCnt = i - L + 1
+    For i = LBound(myZdouOrgY) To UBound(myZdouOrgY)
+        myZdouLnXData(i) = (myZdouOrgY(i) - myXdouIntcpt) / myXdouSlp
+    Next i
+End Sub
+
+ '定型Ｆ_配列計算-2配列の傾き
+Private Function PfncdouSlope( _
+            ByRef myZdouOrgX() As Double, ByRef myZdouOrgY() As Double) As Double
+'myZdouOrgX(i) : X軸用データ配列
+'myZdouOrgY(i) : Y軸用データ配列
+    PfncdouSlope = Empty
+    If UBound(myZdouOrgX) <> UBound(myZdouOrgY) Then Exit Function
+  Dim n As Long: n = UBound(myZdouOrgX) - LBound(myZdouOrgX) + 1
+  Dim i As Long, SY2 As Double, SX2 As Double, SY As Double, SXY As Double, SX As Double
+    For i = LBound(myZdouOrgX) To UBound(myZdouOrgX)
+        SY2 = SY2 + (myZdouOrgY(i)) ^ 2
+        SX2 = SX2 + (myZdouOrgX(i)) ^ 2
+        SY = SY + myZdouOrgY(i)
+        SXY = SXY + myZdouOrgX(i) * myZdouOrgY(i)
+        SX = SX + myZdouOrgX(i)
+    Next i
+    PfncdouSlope = (n * SXY - SY * SX) / (n * SX2 - SX ^ 2)
+End Function
+
+ '定型Ｆ_配列計算-2配列の切片
+Private Function PfncdouIntercept( _
+            ByRef myZdouOrgX() As Double, ByRef myZdouOrgY() As Double) As Double
+'myZdouOrgX(i) : X軸用データ配列
+'myZdouOrgY(i) : Y軸用データ配列
+    PfncdouIntercept = Empty
+    If UBound(myZdouOrgX) <> UBound(myZdouOrgY) Then Exit Function
+  Dim n As Long: n = UBound(myZdouOrgX) - LBound(myZdouOrgX) + 1
+  Dim i As Long, SY2 As Double, SX2 As Double, SY As Double, SXY As Double, SX As Double
+    For i = LBound(myZdouOrgX) To UBound(myZdouOrgX)
+        SY2 = SY2 + (myZdouOrgY(i)) ^ 2
+        SX2 = SX2 + (myZdouOrgX(i)) ^ 2
+        SY = SY + myZdouOrgY(i)
+        SXY = SXY + myZdouOrgX(i) * myZdouOrgY(i)
+        SX = SX + myZdouOrgX(i)
+    Next i
+    PfncdouIntercept = (SX2 * SY - SXY * SX) / (n * SX2 - SX ^ 2)
+End Function
+
+ '定型Ｐ_配列計算-2配列の傾き＆切片
+Private Sub PfixSlopeIntercept( _
+            myXdouSlp As Double, myXdouIntcpt As Double, _
+            ByRef myZdouOrgX() As Double, ByRef myZdouOrgY() As Double)
+'myZdouOrgX(i) : X軸の元データ配列
+'myZdouOrgY(i) : Y軸の元データ配列
+    myXdouSlp = Empty: myXdouIntcpt = Empty
+    If UBound(myZdouOrgX) <> UBound(myZdouOrgY) Then Exit Sub
+  Dim n As Long: n = UBound(myZdouOrgX) - LBound(myZdouOrgX) + 1
+  Dim i As Long, SY2 As Double, SX2 As Double, SY As Double, SXY As Double, SX As Double
+    For i = LBound(myZdouOrgX) To UBound(myZdouOrgX)
+        SY2 = SY2 + (myZdouOrgY(i)) ^ 2
+        SX2 = SX2 + (myZdouOrgX(i)) ^ 2
+        SY = SY + myZdouOrgY(i)
+        SXY = SXY + myZdouOrgX(i) * myZdouOrgY(i)
+        SX = SX + myZdouOrgX(i)
+    Next i
+    myXdouSlp = (n * SXY - SY * SX) / (n * SX2 - SX ^ 2)
+    myXdouIntcpt = (SX2 * SY - SXY * SX) / (n * SX2 - SX ^ 2)
+End Sub
+
+ '定型Ｐ_配列計算-回帰直線のY軸データ配列
+Private Sub PincRegressionLineYArray( _
+            myXlonRgrsnLnYCnt As Long, myZdouRgrsnLnYData() As Double, _
+            ByRef myZdouOrgX() As Double, ByRef myZdouOrgY() As Double)
+'Includes PfixSlopeIntercept
+'myZdouRgrsnLnYData(i) : 回帰直線のY軸データ配列
+'myZdouOrgX(i) : X軸の元データ配列
+'myZdouOrgY(i) : Y軸の元データ配列
+    myXlonRgrsnLnYCnt = Empty: Erase myZdouRgrsnLnYData
+  Dim myXdouSlp As Double, myXdouIntcpt As Double
+    Call PfixSlopeIntercept(myXdouSlp, myXdouIntcpt, myZdouOrgX, myZdouOrgY)
+  Dim i As Long, U As Long, L As Long
+    U = UBound(myZdouOrgX): L = LBound(myZdouOrgX)
+    ReDim myZdouRgrsnLnYData(U) As Double
+    myXlonRgrsnLnYCnt = U - L + 1
+    For i = L To U
+        myZdouRgrsnLnYData(i) = myXdouSlp * myZdouOrgX(i) + myXdouIntcpt
+    Next i
+End Sub
+
+ '定型Ｐ_配列計算-回帰直線のX軸データ配列
+Private Sub PincRegressionLineXArray( _
+            myXlonRgrsnLnXCnt As Long, myZdouRgrsnLnXData() As Double, _
+            ByRef myZdouOrgX() As Double, ByRef myZdouOrgY() As Double)
+'Includes PfixSlopeIntercept
+'myZdouRgrsnLnXData(i) : 回帰直線のX軸データ配列
+'myZdouOrgX(i) : X軸の元データ配列
+'myZdouOrgY(i) : Y軸の元データ配列
+    myXlonRgrsnLnXCnt = Empty: Erase myZdouRgrsnLnXData
+  Dim myXdouSlp As Double, myXdouIntcpt As Double
+    Call PfixSlopeIntercept(myXdouSlp, myXdouIntcpt, myZdouOrgX, myZdouOrgY)
+    If myXdouSlp = 0 Then Exit Sub
+  Dim i As Long, U As Long, L As Long
+    U = UBound(myZdouOrgX): L = LBound(myZdouOrgX)
+    ReDim myZdouRgrsnLnXData(U) As Double
+    myXlonRgrsnLnXCnt = U - L + 1
+    For i = L To U
+        myZdouRgrsnLnXData(i) = (myZdouOrgY(i) - myXdouIntcpt) / myXdouSlp
+    Next i
+End Sub
+
+ '定型Ｆ_配列計算-回帰直線上のY軸の座標位置
+Private Function PincdouRegressionLineYCoordinate( _
+            ByVal myXdouXCoord As Double, _
+            ByRef myZdouOrgX() As Double, ByRef myZdouOrgY() As Double) As Double
+'Includes PfixSlopeIntercept
+'myZdouOrgX(i) : X軸用データ配列
+'myZdouOrgY(i) : Y軸用データ配列
+    PincdouRegressionLineYCoordinate = Empty
+  Dim myXdouSlp As Double, myXdouIntcpt As Double
+    Call PfixSlopeIntercept(myXdouSlp, myXdouIntcpt, myZdouOrgX, myZdouOrgY)
+  Dim myXdouTmp As Double
+    myXdouTmp = myXdouXCoord * myXdouSlp + myXdouIntcpt
+    PincdouRegressionLineYCoordinate = myXdouTmp
+End Function
+
+ '定型Ｆ_配列計算-回帰直線上のX軸の座標位置
+Private Function PincdouRegressionLineXCoordinate( _
+            ByVal myXdouYCoord As Double, _
+            ByRef myZdouOrgX() As Double, ByRef myZdouOrgY() As Double) As Double
+'Includes PfixSlopeIntercept
+'myZdouOrgX(i) : X軸用データ配列
+'myZdouOrgY(i) : Y軸用データ配列
+    PincdouRegressionLineXCoordinate = Empty
+  Dim myXdouSlp As Double, myXdouIntcpt As Double
+    Call PfixSlopeIntercept(myXdouSlp, myXdouIntcpt, myZdouOrgX, myZdouOrgY)
+    If myXdouSlp = 0 Then Exit Function
+  Dim myXdouTmp As Double
+    myXdouTmp = (myXdouYCoord - myXdouIntcpt) / myXdouSlp
+    PincdouRegressionLineXCoordinate = myXdouTmp
+End Function
+
+ '定型Ｐ_配列計算-2つの回帰直線の交点
+Private Sub PincRegressionLinesIntersection( _
+            myXdouXIntrsct As Double, myXdouYIntrsct As Double, _
+            ByRef myZdouOrgXA() As Double, ByRef myZdouOrgYA() As Double, _
+            ByRef myZdouOrgXB() As Double, ByRef myZdouOrgYB() As Double)
+'Includes PfixSlopeIntercept
+'myZdouOrgXA(i) : 直線AのX軸用データ配列
+'myZdouOrgYA(i) : 直線AのY軸用データ配列
+'myZdouOrgXB(i) : 直線BのX軸用データ配列
+'myZdouOrgYB(i) : 直線BのY軸用データ配列
+    myXdouXIntrsct = Empty: myXdouYIntrsct = Empty
+  Dim myXdouSlpA As Double, myXdouIntcptA As Double
+  Dim myXdouSlpB As Double, myZdouIntcptB As Double
+    Call PfixSlopeIntercept(myXdouSlpA, myXdouIntcptA, myZdouOrgXA, myZdouOrgYA)
+    Call PfixSlopeIntercept(myXdouSlpB, myZdouIntcptB, myZdouOrgXB, myZdouOrgYB)
+  Dim myXdouXSlpDev As Double, myXdouXIntcptDev As Double, myXdouXCal As Double
+    myXdouXSlpDev = myXdouSlpA - myXdouSlpB
+    If myXdouXSlpDev = 0 Then Exit Sub
+    myXdouXIntcptDev = myZdouIntcptB - myXdouIntcptA
+    myXdouXCal = myXdouSlpA * myZdouIntcptB - myXdouSlpB * myXdouIntcptA
+    myXdouXIntrsct = myXdouXIntcptDev / myXdouXSlpDev
+    myXdouYIntrsct = myXdouXCal / myXdouXSlpDev
+    Erase myZdouSlp: Erase myZdouIntcpt
+End Sub
+
+ '定型Ｆ_配列計算-LowPassFilter
+Private Function PfncdouLowPassFilter( _
+            ByVal myXdouYnm1 As Double, ByVal myXdouXn As Double, _
+            ByVal myXdouTs As Double, ByVal myXdouFc As Double) As Double
+'//計算式
+    'Y[n]=1/(1+2*π*fc*Ts)*Y[n-1]+{1-1/(1+2*π*fc*Ts)}*X[n]
+'myXdouYnm1 : 計算値の前回値
+'myXdouXn   : 元データ今回値
+'myXdouTs[sec] : 元データ配列のサンプリング時間
+'myXdouFc[Hz]  : LowPassFilterのカットオフ周波数
+  Const myXdouPI As Double = 3.14159265358979
+'  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
+    PfncdouLowPassFilter = Empty
+  Dim myXdouTmpFc As Double
+    myXdouTmpFc = myXdouFc * myXdouTs
+    If myXdouTmpFc <= 0 Then Exit Function
+  Dim myXdouA As Double
+    myXdouA = 2 * myXdouPI * myXdouTmpFc
+    myXdouA = 1 / (1 + myXdouA)
+  Dim myXdouRet As Double, myXdouBuf1 As Double, myXdouBuf2 As Double
+    myXdouBuf1 = myXdouA * myXdouYnm1
+    myXdouBuf2 = (1 - myXdouA) * myXdouXn
+    myXdouRet = myXdouBuf1 + myXdouBuf2
+    PfncdouLowPassFilter = myXdouRet
+End Function
+
+ '定型Ｆ_配列計算-HighPassFilter
+Private Function PfncdouHighPassFilter( _
+            ByVal myXdouYnm1 As Double, ByVal myXdouXnm1 As Double, _
+            ByVal myXdouXn As Double, _
+            ByVal myXdouTs As Double, ByVal myXdouFc As Double) As Double
+'//計算式
+    'Y[n]=1/(1+2*π*fc*Ts)*{Y[n-1]-X[n-1]+X[n]}
+'myXdouYnm1 : 計算値の前回値
+'myXdouXnm1 : 元データ前回値
+'myXdouXn   : 元データ今回値
+'myXdouTs[sec] : 元データ配列のサンプリング時間
+'myXdouFc[Hz]  : HighPassFilterのカットオフ周波数
+  Const myXdouPI As Double = 3.14159265358979
+'  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
+    PfncdouHighPassFilter = Empty
+  Dim myXdouTmpFc As Double
+    myXdouTmpFc = myXdouFc * myXdouTs
+    If myXdouTmpFc <= 0 Then Exit Function
+  Dim myXdouRet As Double, myXdouA As Double
+    myXdouA = 2 * myXdouPI * myXdouTmpFc
+    myXdouA = 1 / (1 + myXdouA)
+    myXdouRet = myXdouA * (myXdouYnm1 - myXdouXnm1 + myXdouXn)
+    PfncdouHighPassFilter = myXdouRet
+End Function
+
+ '定型Ｆ_配列計算-共振器
+Private Function PfncdouResonator( _
+            ByVal myXdouYnm1 As Double, ByVal myXdouYnm2 As Double, _
+            ByVal myXdouXn As Double, _
+            ByVal myXdouTs As Double, _
+            ByVal myXdouFo As Double, ByVal myXdouBo As Double) As Double
+'//計算式
+    'Y[n]=a1*Y[n-1]+a2*Y[n-2]+(1-a1-a2)*X[n]
+    'a1=2*exp{(-1)*π*Bo*Ts}*cos(2*π*Fo*Ts)
+    'a2=(-1)*exp{(-2)*π*Bo*Ts}
+'myXdouYnm1 : 計算値の前回値
+'myXdouYnm2 : 計算値の前々回値
+'myXdouXn   : 元データ今回値
+'myXdouTs[sec] : 元データ配列のサンプリング時間
+'myXdouFo[Hz]  : 共振器の共振周波数
+'myXdouBo[Hz]  : 共振器の共振の帯域幅
+  Const myXdouPI As Double = 3.14159265358979
+'  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
+    PfncdouResonator = Empty
+    If myXdouBo > myXdouFo Then Exit Function
+  Dim myXdouTmpBo As Double, myXdouTmpFo As Double
+    myXdouTmpBo = myXdouBo * myXdouTs
+    myXdouTmpFo = myXdouFo * myXdouTs
+    If myXdouTmpBo * myXdouTmpFo <= 0 Then Exit Function
+    If myXdouTmpFo = 0.25 Then Exit Function
+  Dim myXdouA1 As Double, myXdouCal1 As Double, myXdouCal2 As Double
+    myXdouCal1 = (-1) * myXdouPI * myXdouTmpBo
+    myXdouCal1 = Exp(myXdouCal1)
+    myXdouCal2 = 2 * myXdouPI * myXdouTmpFo
+    myXdouCal2 = Cos(myXdouCal2)
+    myXdouA1 = 2 * myXdouCal1 * myXdouCal2
+  Dim myXdouA2 As Double
+    myXdouA2 = (-2) * myXdouPI * myXdouTmpBo
+    myXdouA2 = (-1) * Exp(myXdouA2)
+  Dim myXdouBuf1 As Double, myXdouBuf2 As Double, myXdouBuf3 As Double
+    myXdouBuf1 = myXdouA1 * myXdouYnm1
+    myXdouBuf2 = myXdouA2 * myXdouYnm2
+    myXdouBuf3 = (1 - myXdouA1 - myXdouA2) * myXdouXn
+  Dim myXdouRet As Double
+    myXdouRet = myXdouBuf1 + myXdouBuf2 + myXdouBuf3
+    PfncdouResonator = myXdouRet
+End Function
+
+ '定型Ｆ_配列計算-NotchFilter
+Private Function PfncdouNotchFilter( _
+            ByVal myXdouYnm1 As Double, ByVal myXdouYnm2 As Double, _
+            ByVal myXdouXn As Double, ByVal myXdouXnm1 As Double, ByVal myXdouXnm2 As Double, _
+            ByVal myXdouTs As Double, _
+            ByVal myXdouFo As Double, ByVal myXdouBo As Double) As Double
+'//計算式
+    'Y[n]=a1*Y[n-1]+a2*Y[n-2]+co*(X[n]+b1*X[n-1]+X[n-2])
+    'a1=2*exp{(-1)*π*Bo*Ts}*cos(2*π*Fo*Ts)
+    'a2=(-1)*exp{(-2)*π*Bo*Ts}
+    'b1=(-2)*cos(2*π*Fo*Ts)
+    'co=(1-a1-a2)/(2+b1)
+'myXdouYnm1 : 計算値の前回値
+'myXdouYnm2 : 計算値の前々回値
+'myXdouXn   : 元データ今回値
+'myXdouXnm1 : 元データ前回値
+'myXdouXnm2 : 元データ前々回値
+'myXdouTs[sec] : 元データ配列のサンプリング時間
+'myXdouFo[Hz]  : NotchFilterのノッチ周波数
+'myXdouBo[Hz]  : NotchFilterのノッチの帯域幅
+  Const myXdouPI As Double = 3.14159265358979
+'  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
+    PfncdouNotchFilter = Empty
+    If myXdouBo > myXdouFo Then Exit Function
+  Dim myXdouTmpBo As Double, myXdouTmpFo As Double
+    myXdouTmpBo = myXdouBo * myXdouTs
+    myXdouTmpFo = myXdouFo * myXdouTs
+    If myXdouTmpBo * myXdouTmpFo <= 0 Then Exit Function
+    If myXdouTmpFo = 0.25 Then Exit Function
+  Dim myXdouA1 As Double, myXdouCal1 As Double, myXdouCal2 As Double
+    myXdouCal1 = (-1) * myXdouPI * myXdouTmpBo
+    myXdouCal1 = Exp(myXdouCal1)
+    myXdouCal2 = 2 * myXdouPI * myXdouTmpFo
+    myXdouCal2 = Cos(myXdouCal2)
+    myXdouA1 = 2 * myXdouCal1 * myXdouCal2
+  Dim myXdouA2 As Double
+    myXdouA2 = (-2) * myXdouPI * myXdouTmpBo
+    myXdouA2 = (-1) * Exp(myXdouA2)
+  Dim myXdouB1 As Double
+    myXdouB1 = (-2) * myXdouCal2
+  Dim myXdouCo As Double
+    myXdouCo = (1 - myXdouA1 - myXdouA2) / (2 + myXdouB1)
+  Dim myXdouBuf1 As Double, myXdouBuf2 As Double, myXdouBuf3 As Double
+    myXdouBuf1 = myXdouA1 * myXdouYnm1
+    myXdouBuf2 = myXdouA2 * myXdouYnm2
+    myXdouBuf3 = myXdouCo * (myXdouXn + myXdouB1 * myXdouXnm1 + myXdouXnm2)
+  Dim myXdouRet As Double
+    myXdouRet = myXdouBuf1 + myXdouBuf2 + myXdouBuf3
+    PfncdouNotchFilter = myXdouRet
+End Function
+
+ '定型Ｆ_データ配列の相加平均値を導出する(データ範囲指定)
+Private Function PincdouDataArithmeticMean( _
+            ByRef myZdouOrgData() As Double, ByVal myXlonCalRC As Long, _
+            ByVal myXlonBgnRC As Long, ByVal myXlonEndRC As Long, _
+            Optional ByVal coXbisRowDrctn As Boolean = True, _
+            Optional ByVal coXlonCalStep As Long = 1) As Double
+'Includes PfixArrayPartColumnNumeric
+'Includes PfixArrayPartRowNumeric
+'Includes PfncdouArithmeticMean
+'myZdouOrgData(i, j) : 元データ配列
+'coXbisRowDrctn = True  : 行方向のデータを処理
+'coXbisRowDrctn = False : 列方向のデータを処理
+    PincdouDataArithmeticMean = Empty
+'//計算するデータを抜き出し
+  Dim myXlonTmpCnt As Long, myZdouTmp() As Double
+    If coXbisRowDrctn = True Then
+        Call PfixArrayPartColumnNumeric(myXlonTmpCnt, myZdouTmp, _
+                myZdouOrgData, myXlonCalRC, myXlonBgnRC, myXlonEndRC, coXlonCalStep)
+    Else
+        Call PfixArrayPartRowNumeric(myXlonTmpCnt, myZdouTmp, _
+                myZdouOrgData, myXlonCalRC, myXlonBgnRC, myXlonEndRC, coXlonCalStep)
+    End If
+    If myXlonTmpCnt <= 0 Then Exit Function
+'//計算実行
+    PincdouDataArithmeticMean = PfncdouArithmeticMean(myZdouTmp)
+    Erase myZdouTmp
+End Function
+
+ '定型Ｐ_データ配列の指定列を相加平均したデータ配列を取得する
+Private Sub PincVDataListArithmeticMean( _
+            myXlonStrtRow As Long, myXlonLastRow As Long, _
+            myXlonMvAveRowCnt As Long, myXlonMvAveColCnt As Long, _
+            myZdouMvAveData() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonCalCol As Long, _
+            ByVal myXlonCalSmplQnt As Long, _
+            Optional ByVal coXlonBgnRow As Long = 1, _
+            Optional ByVal coXlonEndRow As Long = 0, _
+            Optional ByVal coXlonCalRng As Long = 0, _
+            Optional ByVal coXlonCalStep As Long = 1)
+'Includes PfixArrayPartColumnNumeric
+'Includes PfncdouArithmeticMean
+'myZdouMvAveData(i, j) : 移動平均後データ配列
+'myZdouOrgData(i, j) : 元データ配列
+'coXlonCalRng = -1 : 今回値より前のデータで平均化
+'coXlonCalRng = 0  : 今回値の前後のデータで平均化
+'coXlonCalRng = 1  : 今回値より後のデータで平均化
+    myXlonStrtRow = Empty: myXlonLastRow = Empty
+    myXlonMvAveRowCnt = Empty: myXlonMvAveColCnt = Empty: Erase myZdouMvAveData
+  Dim myXdouTmp As Double, L As Long, U As Long
+    On Error GoTo ExitPath
+    L = LBound(myZdouOrgData, 1): U = UBound(myZdouOrgData, 1)
+    If myXlonCalSmplQnt <= 0 Or myXlonCalSmplQnt > U Then Exit Sub
+    If coXlonBgnRow < L Then coXlonBgnRow = L
+    If coXlonEndRow > U Then coXlonEndRow = U
+    If coXlonEndRow < coXlonBgnRow Then coXlonEndRow = U
+    If coXlonCalStep <= 0 Or coXlonCalStep > U Then coXlonCalStep = 1
+    myXdouTmp = myZdouOrgData(coXlonBgnRow, myXlonCalCol)
+    On Error GoTo 0
+'//計算する最初のデータ位置と最後のデータ位置を設定
+  Dim myXlonPreOfst As Long, myXlonPstOfst As Long
+    If coXlonCalRng = -1 Then
+        myXlonPreOfst = (myXlonCalSmplQnt - 1) * coXlonCalStep
+        myXlonPstOfst = 0
+    ElseIf coXlonCalRng = 1 Then
+        myXlonPreOfst = 0
+        myXlonPstOfst = (myXlonCalSmplQnt - 1) * coXlonCalStep
+    Else
+        myXlonPreOfst = Int(myXlonCalSmplQnt / 2) * coXlonCalStep
+        myXlonPstOfst = Int(myXlonCalSmplQnt / 2) * coXlonCalStep
+    End If
+'//出力する配列サイズを設定
+    On Error GoTo ExitPath
+    myXlonStrtRow = L + myXlonPreOfst
+    myXlonLastRow = U - myXlonPstOfst
+    If myXlonStrtRow < coXlonBgnRow Then myXlonStrtRow = coXlonBgnRow
+    If myXlonLastRow > coXlonEndRow Then myXlonLastRow = coXlonEndRow
+    myXlonMvAveRowCnt = myXlonLastRow - myXlonStrtRow + 1
+    myXlonMvAveColCnt = UBound(myZdouOrgData, 2) - LBound(myZdouOrgData, 2) + 1
+    On Error GoTo 0
+'//計算実行
+  Dim i As Long, j As Long, n As Long: n = L - 1
+    i = myXlonMvAveRowCnt - (1 - L): j = myXlonMvAveColCnt - (1 - L)
+    ReDim myZdouMvAveData(i, j) As Double
+  Dim myXlonBgnNo As Long, myXlonEndNo As Long
+  Dim myXlonTmpCnt As Long, myZdouTmp() As Double
+    For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
+        n = 0
+        If j = myXlonCalCol Then
+            For i = myXlonStrtRow To myXlonLastRow
+                n = n + 1
+                myXlonBgnNo = i - myXlonPreOfst
+                myXlonEndNo = i + myXlonPstOfst
+                Call PfixArrayPartColumnNumeric(myXlonTmpCnt, myZdouTmp, _
+                        myZdouOrgData, myXlonCalCol, _
+                        myXlonBgnNo, myXlonEndNo, coXlonCalStep)
+                If myXlonTmpCnt > 0 Then _
+                    myZdouMvAveData(n, j) = PfncdouArithmeticMean(myZdouTmp)
+            Next i
+        Else
+            For i = myXlonStrtRow To myXlonLastRow
+                n = n + 1: myZdouMvAveData(n, j) = myZdouOrgData(i, j)
+            Next i
+        End If
+    Next j
+    Exit Sub
+    Erase myZdouTmp
+ExitPath:
+End Sub
+
+ '定型Ｐ_データ配列の指定行を相加平均したデータ配列を取得する
+Private Sub PincHDataListArithmeticMean( _
+            myXlonStrtCol As Long, myXlonLastCol As Long, _
+            myXlonMvAveRowCnt As Long, myXlonMvAveColCnt As Long, _
+            myZdouMvAveData() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonCalRow As Long, _
+            ByVal myXlonCalSmplQnt As Long, _
+            Optional ByVal coXlonBgnCol As Long = 1, _
+            Optional ByVal coXlonEndCol As Long = 0, _
+            Optional ByVal coXlonCalRng As Long = 0, _
+            Optional ByVal coXlonCalStep As Long = 1)
+'Includes PfixArrayPartRowNumeric
+'Includes PfncdouArithmeticMean
+'myZdouMvAveData(i, j) : 移動平均後データ配列
+'myZdouOrgData(i, j) : 元データ配列
+'coXlonCalRng = -1 : 今回値より前のデータで平均化
+'coXlonCalRng = 0  : 今回値の前後のデータで平均化
+'coXlonCalRng = 1  : 今回値より後のデータで平均化
+  Const coXbisRowDrctn As Boolean = False
+    myXlonStrtCol = Empty: myXlonLastCol = Empty
+    myXlonMvAveRowCnt = Empty: myXlonMvAveColCnt = Empty: Erase myZdouMvAveData
+  Dim myXdouTmp As Double, L As Long, U As Long
+    On Error GoTo ExitPath
+    L = LBound(myZdouOrgData, 2): U = UBound(myZdouOrgData, 2)
+    If myXlonCalSmplQnt <= 0 Or myXlonCalSmplQnt > U Then Exit Sub
+    If coXlonBgnCol < L Then coXlonBgnCol = L
+    If coXlonEndCol > U Then coXlonEndCol = U
+    If coXlonEndCol < coXlonBgnCol Then oXlonEndCol = U
+    If coXlonCalStep <= 0 Or coXlonCalStep > U Then coXlonCalStep = 1
+    myXdouTmp = myZdouOrgData(myXlonCalRow, coXlonBgnCol)
+    On Error GoTo 0
+'//計算する最初のデータ位置と最後のデータ位置を設定
+  Dim myXlonPreOfst As Long, myXlonPstOfst As Long
+    If coXlonCalRng = -1 Then
+        myXlonPreOfst = (myXlonCalSmplQnt - 1) * coXlonCalStep
+        myXlonPstOfst = 0
+    ElseIf coXlonCalRng = 1 Then
+        myXlonPreOfst = 0
+        myXlonPstOfst = (myXlonCalSmplQnt - 1) * coXlonCalStep
+    Else
+        myXlonPreOfst = Int(myXlonCalSmplQnt / 2) * coXlonCalStep
+        myXlonPstOfst = Int(myXlonCalSmplQnt / 2) * coXlonCalStep
+    End If
+'//出力する配列サイズを設定
+    On Error GoTo ExitPath
+    myXlonStrtCol = L + myXlonPreOfst
+    myXlonLastCol = U - myXlonPstOfst
+    If myXlonStrtCol < coXlonBgnCol Then myXlonStrtCol = coXlonBgnCol
+    If myXlonLastCol > coXlonEndCol Then myXlonLastCol = coXlonEndCol
+    myXlonMvAveRowCnt = UBound(myZdouOrgData, 1)
+    myXlonMvAveColCnt = myXlonLastCol - myXlonStrtCol + 1
+    On Error GoTo 0
+'//計算実行
+  Dim i As Long, j As Long, n As Long: n = 0
+    i = myXlonMvAveRowCnt - (1 - L): j = myXlonMvAveColCnt - (1 - L)
+    ReDim myZdouMvAveData(i, j) As Double
+  Dim myXlonBgnNo As Long, myXlonEndNo As Long
+  Dim myXlonTmpCnt As Long, myZdouTmp() As Double
+    For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+        n = 0
+        If i = myXlonCalRow Then
+            For j = myXlonStrtCol To myXlonLastCol
+                n = n + 1
+                myXlonBgnNo = j - myXlonPreOfst
+                myXlonEndNo = j + myXlonPstOfst
+                Call PfixArrayPartRowNumeric(myXlonTmpCnt, myZdouTmp, _
+                        myZdouOrgData, myXlonCalRow, _
+                        myXlonBgnNo, myXlonEndNo, coXlonCalStep)
+                If myXlonTmpCnt > 0 Then _
+                    myZdouMvAveData(i, n) = PfncdouArithmeticMean(myZdouTmp)
+            Next j
+        Else
+            For j = myXlonStrtCol To myXlonLastCol
+                n = n + 1: myZdouMvAveData(i, n) = myZdouOrgData(i, j)
+            Next j
+        End If
+    Next i
+    Exit Sub
+ExitPath:
+End Sub
+
+ '定型Ｆ_単純移動平均処理のカットオフ周波数を導出する
+Private Function PfncdouMovingAverageFt( _
+            ByVal myXdouTs As Double, ByVal myXlonM As Long) As Double
+'myXdouTs : サンプルリング時間[sec]
+'myXdouM  : 移動平均点数
+    PfncdouMovingAverageFt = Empty
+    If myXdouTs <= 0 Then Exit Function
+    If myXlonM <= 0 Then Exit Function
+    PfncdouMovingAverageFt = 0.443 / myXdouTs / myXlonM
+End Function
+
+ '定型Ｆ_単純移動平均処理の移動平均点数を導出する
+Private Function PfnclonMovingAverageQuantity( _
+            ByVal myXdouTs As Double, ByVal myXdouFc As Double) As Double
+'myXdouTs : サンプルリング時間[sec]
+'myXdouFc : カットオフ周波数[Hz]
+    PfnclonMovingAverageQuantity = Empty
+    If myXdouTs <= 0 Then Exit Function
+    If myXdouFc <= 0 Then Exit Function
+  Dim myXdouM As Double, myXlonM As Long
+    myXdouM = 0.443 / myXdouTs / myXdouFc
+    myXlonM = Int(myXdouM)
+    If myXlonM <= 0 Then
+        Exit Function
+    ElseIf myXlonM Mod 2 = 0 Then
+        myXlonM = myXlonM - 1
+    End If
+    PfnclonMovingAverageQuantity = myXlonM
+End Function
+
+ '定型Ｐ_データ配列の回帰直線を導出する(データ範囲指定)
+Private Sub PincDataRegressionLine( _
+            myXlonRgrsnLnCnt As Long, myZdouRgrsnLnData() As Double, _
+            ByRef myZdouOrgData() As Double, _
+            ByVal myXlonXCalRC As Long, ByVal myXlonYCalRC As Long, _
+            ByVal myXlonBgnRC As Long, ByVal myXlonEndRC As Long, _
+            Optional ByVal coXbisRowDrctn As Boolean = True, _
+            Optional ByVal coXlonCalStep As Long = 1)
+'Includes PfixArrayPartColumnNumeric
+'Includes PfixArrayPartRowNumeric
+Includes PincRegressionLineYArray
+'myZdouRgrsnLnData(i, 1) or myZdouRgrsnLnData(1, j) : 回帰直線データ配列
+'myZdouOrgData(i, j) : 元データ配列
+'//計算するデータを抜き出し
+  Dim myXlonOrgXCnt As Long, myZdouOrgX() As Double
+  Dim myXlonOrgYCnt As Long, myZdouOrgY() As Double
+    If coXbisRowDrctn = True Then
+        Call PfixArrayPartColumnNumeric(myXlonOrgXCnt, myZdouOrgX, _
+                myZdouOrgData, myXlonXCalRC, myXlonBgnRC, myXlonEndRC, coXlonCalStep)
+        Call PfixArrayPartColumnNumeric(myXlonOrgYCnt, myZdouOrgY, _
+                myZdouOrgData, myXlonYCalRC, myXlonBgnRC, myXlonEndRC, coXlonCalStep)
+    Else
+        Call PfixArrayPartRowNumeric(myXlonOrgXCnt, myZdouOrgX, _
+                myZdouOrgData, myXlonXCalRC, myXlonBgnRC, myXlonEndRC, coXlonCalStep)
+        Call PfixArrayPartRowNumeric(myXlonOrgYCnt, myZdouOrgY, _
+                myZdouOrgData, myXlonYCalRC, myXlonBgnRC, myXlonEndRC, coXlonCalStep)
+    End If
+    If myXlonOrgXCnt <= 0 Or myXlonOrgYCnt <= 0 Then Exit Sub
+'//計算実行
+  Dim myZdouTmp() As Double, i As Long
+    Call PincRegressionLineYArray(myXlonRgrsnLnCnt, myZdouTmp, myZdouOrgX, myZdouOrgY)
+    If myXlonRgrsnLnCnt <= 0 Then Exit Sub
+'//1次元配列を2次元配列に入れ替え
+  Dim L As Long: L = LBound(myZdouOrgData, 1)
+    If coXbisRowDrctn = True Then
+        ReDim myZdouRgrsnLnData(myXlonRgrsnLnCnt, L) As Double
+        For i = LBound(myZdouTmp) To UBound(myZdouTmp)
+            myZdouRgrsnLnData(i, L) = myZdouTmp(i)
+        Next i
+    Else
+        ReDim myZdouRgrsnLnData(L, myXlonRgrsnLnCnt) As Double
+        For i = LBound(myZdouTmp) To UBound(myZdouTmp)
+            myZdouRgrsnLnData(L, i) = myZdouTmp(i)
+        Next i
+    End If
+    Erase myZdouOrgX: Erase myZdouOrgY: Erase myZdouTmp
+End Sub
+
+ '定型Ｐ_2つの回帰直線の交点を導出する(データ範囲指定)
+Private Sub PincDataRegressionLinesIntersection( _
+            myXdouXIntrsct As Double, myXdouYIntrsct As Double, _
+            ByRef myZdouOrgDataA() As Double, _
+            ByVal myXlonXCalRCA As Long, ByVal myXlonYCalRCA As Long, _
+            ByVal myXlonBgnRCA As Long, ByVal myXlonEndRCA As Long, _
+            ByRef myZdouOrgDataB() As Double, _
+            ByVal myXlonXCalRCB As Long, ByVal myXlonYCalRCB As Long, _
+            ByVal myXlonBgnRCB As Long, ByVal myXlonEndRCB As Long, _
+            Optional ByVal coXbisRowDrctn As Boolean = True, _
+            Optional ByVal coXlonCalStepA As Long = 1, _
+            Optional ByVal coXlonCalStepB As Long = 1)
+'Includes PfixArrayPartColumnNumeric
+'Includes PfixArrayPartRowNumeric
+Includes PincRegressionLinesIntersection
+'myZdouOrgDataA(i, j) : 直線Aの元データ配列
+'myZdouOrgDataB(i, j) : 直線Bの元データ配列
+'//計算するデータを抜き出し
+  Dim myXlonOrgXACnt As Long, myZdouOrgXA() As Double
+  Dim myXlonOrgYACnt As Long, myZdouOrgYA() As Double
+  Dim myXlonOrgXBCnt As Long, myZdouOrgXB() As Double
+  Dim myXlonOrgYBCnt As Long, myZdouOrgYB() As Double
+    If coXbisRowDrctn = True Then
+        Call PfixArrayPartColumnNumeric(myXlonOrgXACnt, myZdouOrgXA, _
+                myZdouOrgDataA, myXlonXCalRCA, myXlonBgnRCA, myXlonEndRCA, coXlonCalStepA)
+        Call PfixArrayPartColumnNumeric(myXlonOrgYACnt, myZdouOrgYA, _
+                myZdouOrgDataA, myXlonYCalRCA, myXlonBgnRCA, myXlonEndRCA, coXlonCalStepA)
+        Call PfixArrayPartColumnNumeric(myXlonOrgXBCnt, myZdouOrgXB, _
+                myZdouOrgDataA, myXlonXCalRCB, myXlonBgnRCB, myXlonEndRCB, coXlonCalStepB)
+        Call PfixArrayPartColumnNumeric(myXlonOrgYBCnt, myZdouOrgYB, _
+                myZdouOrgDataA, myXlonYCalRCB, myXlonBgnRCB, myXlonEndRCB, coXlonCalStepB)
+    Else
+        Call PfixArrayPartRowNumeric(myXlonOrgXACnt, myZdouOrgXA, _
+                myZdouOrgDataB, myXlonXCalRCA, myXlonBgnRCA, myXlonEndRCA, coXlonCalStepA)
+        Call PfixArrayPartRowNumeric(myXlonOrgYACnt, myZdouOrgYA, _
+                myZdouOrgDataB, myXlonYCalRCA, myXlonBgnRCA, myXlonEndRCA, coXlonCalStepA)
+        Call PfixArrayPartRowNumeric(myXlonOrgXBCnt, myZdouOrgXB, _
+                myZdouOrgDataB, myXlonXCalRCB, myXlonBgnRCB, myXlonEndRCB, coXlonCalStepB)
+        Call PfixArrayPartRowNumeric(myXlonOrgYBCnt, myZdouOrgYB, _
+                myZdouOrgDataB, myXlonYCalRCB, myXlonBgnRCB, myXlonEndRCB, coXlonCalStepB)
+    End If
+    If myXlonOrgXACnt <= 0 Or myXlonOrgYACnt <= 0 Then Exit Sub
+    If myXlonOrgXBCnt <= 0 Or myXlonOrgYBCnt <= 0 Then Exit Sub
+'//計算実行
+    Call PincRegressionLinesIntersection(myXdouXIntrsct, myXdouYIntrsct, _
+            myZdouOrgXA, myZdouOrgYA, myZdouOrgXB, myZdouOrgYB)
+    Erase myZdouOrgXA: Erase myZdouOrgYA: Erase myZdouOrgXB: Erase myZdouOrgYB
+End Sub
+
+ '定型Ｐ_データ配列の回帰直線と傾きと切片を指定した直線との交点を導出する(データ範囲指定)
+Private Sub PincDataRegressionLineStraightLineIntersection( _
+            myXdouXIntrsct As Double, myXdouYIntrsct As Double, _
+            ByRef myZdouOrgDataA() As Double, _
+            ByVal myXlonXCalRCA As Long, ByVal myXlonYCalRCA As Long, _
+            ByVal myXlonBgnRCA As Long, ByVal myXlonEndRCA As Long, _
+            ByVal myXdouSlpB As Double, ByVal myXdouIntcptB As Double, _
+            Optional ByVal coXbisRowDrctn As Boolean = True, _
+            Optional ByVal coXlonCalStepA As Long = 1, _
+            Optional ByVal coXlonCalStepB As Long = 1)
+'Includes PfixArrayPartColumnNumeric
+'Includes PfixArrayPartRowNumeric
+'Includes PfixSlopeIntercept
+'Includes PfixIntersection
+'myZdouOrgDataA(i, j) : 直線Aの元データ配列
+'myXdouSlpB    : 直線Bの傾き
+'myXdouIntcptB : 直線Bの切片
+'//計算するデータを抜き出し
+  Dim myXlonOrgXACnt As Long, myZdouOrgXA() As Double
+  Dim myXlonOrgYACnt As Long, myZdouOrgYA() As Double
+    If coXbisRowDrctn = True Then
+        Call PfixArrayPartColumnNumeric(myXlonOrgXACnt, myZdouOrgXA, _
+                myZdouOrgDataA, myXlonXCalRCA, myXlonBgnRCA, myXlonEndRCA, coXlonCalStepA)
+        Call PfixArrayPartColumnNumeric(myXlonOrgYACnt, myZdouOrgYA, _
+                myZdouOrgDataA, myXlonYCalRCA, myXlonBgnRCA, myXlonEndRCA, coXlonCalStepA)
+    Else
+        Call PfixArrayPartRowNumeric(myXlonOrgXACnt, myZdouOrgXA, _
+                myZdouOrgDataB, myXlonXCalRCA, myXlonBgnRCA, myXlonEndRCA, coXlonCalStepA)
+        Call PfixArrayPartRowNumeric(myXlonOrgYACnt, myZdouOrgYA, _
+                myZdouOrgDataB, myXlonYCalRCA, myXlonBgnRCA, myXlonEndRCA, coXlonCalStepA)
+    End If
+    If myXlonOrgXACnt <= 0 Or myXlonOrgYACnt <= 0 Then Exit Sub
+'//2配列の傾き＆切片
+  Dim myXdouSlpA As Double, myXdouIntcptA As Double
+    Call PfixSlopeIntercept(myXdouSlpA, myXdouIntcptA, myZdouOrgXA, myZdouOrgYA)
+'//2直線の傾きと切片を指定して交点の座標位置を取得
+    Call PfixIntersection(myXdouXIntrsct, myXdouYIntrsct, _
+            myXdouSlpA, myXdouIntcptA, myXdouSlpB, myXdouIntcptB)
+    Erase myZdouOrgXA: Erase myZdouOrgYA
+End Sub
+
+ '定型Ｐ_整数で台形波形を生成する
+Private Sub PfixTrapezoidWaveLong( _
+            myXlonCalDataCnt As Long, myZlonCalData() As Long, _
+            ByVal myXlonDataQnt As Long, _
+            ByVal myXlonInflctPntBgn As Long, ByVal myXlonInflctPntEnd As Long, _
+            Optional ByVal coXlonStrtStp As Long = -1, _
+            Optional ByVal coXlonLastStp As Long = 1, _
+            Optional ByVal coXlonCnstVal As Long = 0)
+'myZlonCalData(i) : 取得データ配列
+'myXlonDataQnt : 必要なデータ数
+'myXlonInflctPntBgn : 開始側の変曲点
+'myXlonInflctPntEnd : 終了側の変曲点
+'coXlonStrtStp : 開始側のデータ変化ステップ
+'coXlonLastStp : 終了側のデータ変化ステップ
+'coXlonCnstVal : 一定状態の値
+    myXlonCalDataCnt = Empty:  Erase myZlonCalData
+    If myXlonDataQnt <= 0 Then Exit Sub
+    If myXlonInflctPntBgn < 1 Then Exit Sub
+    If myXlonInflctPntEnd > myXlonDataQnt Then Exit Sub
+    If myXlonInflctPntBgn > myXlonInflctPntEnd Then Exit Sub
+    On Error GoTo ExitPath
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    Erase myZlonTmp
+    On Error GoTo 0
+  Dim i As Long, n As Long
+    myXlonCalDataCnt = myXlonDataQnt
+    i = myXlonCalDataCnt + L - 1: ReDim myZlonCalData(i) As Long
+    If myXlonInflctPntBgn = 1 Then GoTo JumpPath1
+    n = myXlonInflctPntBgn
+    For i = 1 To myXlonInflctPntBgn - 1
+        n = n - 1
+        myZlonCalData(i) = coXlonCnstVal - coXlonStrtStp * n
+    Next i
+JumpPath1:
+    If coXlonCnstVal = 0 Then GoTo JumpPath2
+    For i = myXlonInflctPntBgn To myXlonInflctPntEnd
+        myZlonCalData(i) = coXlonCnstVal
+    Next i
+JumpPath2:
+    If myXlonInflctPntEnd = 1 Then Exit Sub
+    n = 0
+    For i = myXlonInflctPntEnd + 1 To myXlonDataQnt
+        n = n + 1
+        myZlonCalData(i) = coXlonCnstVal + coXlonLastStp * n
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｆ_乱数系列を初期化する
+Private Function PfncbisRandomize() As Boolean
+    PfncbisRandomize = False
+    Randomize
+    PfncbisRandomize = True
+End Function
+
+ '定型Ｆ_指定範囲内の整数のランダム値を生成する
+Private Function PfncvarRandomNumberInteger( _
+            ByVal myXlonBgn As Long, ByVal myXlonEnd As Long) As Variant
+    PfncvarRandomNumberInteger = Empty
+    If myXlonEnd <= myXlonBgn Then Exit Function
+  Dim myXlonRnd As Long
+    myXlonRnd = myXlonBgn + Rnd() * (myXlonEnd - myXlonBgn)
+    myXlonRnd = Round(myXlonRnd, 0)
+'    myXlonRnd = Int(myXlonBgn + Rnd() * (myXlonEnd - myXlonBgn + 1))
+    PfncvarRandomNumberInteger = myXlonRnd
+End Function
+
+ '定型Ｆ_指定範囲内の小数のランダム値を生成する
+Private Function PfncvarRandomNumberDecimal( _
+            ByVal myXdouBgn As Double, ByVal myXdouEnd As Double, _
+            Optional ByVal coXlonDcml As Long = 22) As Variant
+    PfncvarRandomNumberDecimal = Empty
+    If myXdouEnd <= myXdouBgn Then Exit Function
+    If coXlonDcml > 22 Then Exit Function
+  Dim myXdouRnd As Double
+    myXdouRnd = myXdouBgn + Rnd() * (myXdouEnd - myXdouBgn)
+    myXdouRnd = Round(myXdouRnd, coXlonDcml)
+    PfncvarRandomNumberDecimal = myXdouRnd
+End Function
+
+ '定型Ｆ_一様乱数を生成する
+Private Function PfncvarUniformRandomNumber( _
+            ByVal myXdouMean As Double, ByVal myXdouDev As Double, _
+            Optional ByVal coXlonDcml As Long = 22) As Variant
+    PfncvarUniformRandomNumber = Empty
+    If coXlonDcml > 22 Then Exit Function
+  Dim myXdouBgn As Double, myXdouEnd As Double
+    myXdouBgn = myXdouMean - myXdouDev
+    myXdouEnd = myXdouMean + myXdouDev
+  Dim myXdouRnd As Double
+    myXdouRnd = myXdouBgn + Rnd() * (myXdouEnd - myXdouBgn)
+    myXdouRnd = Round(myXdouRnd, coXlonDcml)
+    PfncvarUniformRandomNumber = myXdouRnd
+End Function
+
+ '定型Ｆ_標準正規乱数を生成する
+Private Function PfncvarStandardNormalRandomNumber( _
+            Optional ByVal coXlonDcml As Long = 22) As Variant
+    PfncvarStandardNormalRandomNumber = Empty
+    If coXlonDcml > 22 Then Exit Function
+  Dim myXdouRnd As Double
+    On Error GoTo ExitPath
+    myXdouRnd = Application.WorksheetFunction.NormSInv(Rnd())
+    myXdouRnd = Round(myXdouRnd, coXlonDcml)
+    PfncvarStandardNormalRandomNumber = myXdouRnd
+ExitPath:
+End Function
+
+ '定型Ｆ_正規乱数を生成する
+Private Function PfncvarNormalRandomNumber( _
+            ByVal myXdouMean As Double, ByVal myXdouStdev As Double, _
+            Optional ByVal coXlonDcml As Long = 22) As Variant
+    PfncvarNormalRandomNumber = Empty
+    If coXlonDcml > 22 Then Exit Function
+  Dim myXdouRnd As Double
+    On Error GoTo ExitPath
+    myXdouRnd = Application.WorksheetFunction _
+                    .NormInv(Rnd(), myXdouMean, myXdouStdev)
+'    myXdouRnd = Application.WorksheetFunction.NormSInv(Rnd())
+'    myXdouRnd = myXdouMean + myXdouStDev * myXdouRnd
+    myXdouRnd = Round(myXdouRnd, coXlonDcml)
+    PfncvarNormalRandomNumber = myXdouRnd
+ExitPath:
+End Function
+
+ '定型Ｆ_指定範囲内の正規乱数を生成する
+Private Function PfncvarRangeNormalRandomNumber( _
+            ByVal myXdouMean As Double, ByVal myXdouStdev As Double, _
+            ByVal myXdouLSL As Double, ByVal myXdouUSL As Double, _
+            Optional ByVal coXlonDcml As Long = 22) As Variant
+    PfncvarRangeNormalRandomNumber = Empty
+    If myXdouUSL <= myXdouLSL Then Exit Function
+    If coXlonDcml > 22 Then Exit Function
+  Dim myXdouRnd As Double
+  Dim myXbisExitLpFlag As Boolean: myXbisExitLpFlag = False
+    On Error GoTo ExitPath
+    Do While myXbisExitLpFlag = False
+        myXdouRnd = Application.WorksheetFunction _
+                        .NormInv(Rnd(), myXdouMean, myXdouStdev)
+'        myXdouRnd = Application.WorksheetFunction.NormSInv(Rnd())
+'        myXdouRnd = myXdouMean + myXdouStDev * myXdouRnd
+        myXdouRnd = Round(myXdouRnd, coXlonDcml)
+        If myXdouRnd >= myXdouLSL And myXdouRnd <= myXdouUSL Then _
+            myXbisExitLpFlag = True
+    Loop
+    PfncvarRangeNormalRandomNumber = myXdouRnd
+ExitPath:
+End Function
+
+ '定型Ｐ_単純累積法により期待値と公差を計算する
+Private Sub PfixSimpleCumulativeMethod( _
+            myXdouTtlTyp As Double, myXdouTtlTol As Double, _
+            ByRef myZdouTypTol() As Double)
+'myXdouTtlTyp : 総合基準値
+'myXdouTtlTol : 総合公差
+'myZdouTypTol(i, 1) : 元データ配列-個別基準値
+'myZdouTypTol(i, 2) : 元データ配列-個別公差
+    myXdouTtlTyp = Empty: myXdouTtlTol = Empty
+  Dim myXdouTmp As Double, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZdouTypTol, 1)
+    myXdouTmp = myZdouTypTol(L, L + 0): myXdouTmp = myZdouTypTol(L, L + 1)
+    On Error GoTo 0
+  Dim n As Long
+    n = UBound(myZdouTypTol, 1) - LBound(myZdouTypTol, 1) + 1
+    If n <= 0 Then Exit Sub
+  Dim i As Long
+    For i = LBound(myZdouTypTol, 1) To UBound(myZdouTypTol, 1)
+        myXdouTtlTyp = myXdouTtlTyp + myZdouTypTol(i, L + 0)
+        myXdouTtlTol = myXdouTtlTol + myZdouTypTol(i, L + 1)
+    Next i
+ExitPath:
+End Sub
+
+ '定型ＷＳＦ_指定セル範囲の値から単純累積法により公差を計算する
+Public Function PincdouSimpleCumulativeInRange( _
+            ByVal myXbisGetTyp As Boolean, _
+            ByVal myXstrDataRng As Object) As Double
+'Includes PfixSimpleCumulativeMethod
+'myXbisGetTyp = True  : 総合基準値を取得
+'myXbisGetTyp = False : 総合公差を取得
+    PincdouSimpleCumulativeInRange = Empty
+  Dim myXlonRngCnt As Long
+    myXlonRngCnt = myXstrDataRng.Count
+    If myXlonRngCnt <= 0 Then Exit Function
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim k As Long: k = 0: If myXbisGetTyp = False Then k = 1
+'//シート上の指定範囲の元データ取得
+  Dim myZdouTypTol() As Double, n As Long
+    n = myXlonRngCnt - (1 - L): ReDim myZdouTypTol(n, L + 1) As Double
+  Dim myXvarTmp As Variant
+    n = L - 1
+    On Error Resume Next
+    For Each myXvarTmp In myXstrDataRng
+        n = n + 1
+        myZdouTypTol(n, L + k) = CDbl(myXvarTmp)
+    Next myXvarTmp
+    On Error GoTo 0
+'//単純累積法により期待値と公差を計算
+  Dim myXdouTtlTyp As Double, myXdouTtlTol As Double
+    Call PfixSimpleCumulativeMethod(myXdouTtlTyp, myXdouTtlTol, myZdouTypTol)
+    Select Case myXbisGetTyp
+        Case True: PincdouSimpleCumulativeInRange = myXdouTtlTyp
+        Case Else: PincdouSimpleCumulativeInRange = myXdouTtlTol
+    End Select
+    Erase myZdouTypTol
+ExitPath:
+End Function
+
+ '定型ＷＳＦ_指定個別セルの値から単純累積法により公差を計算する
+Public Function PincdouSimpleCumulativeInEachRanges( _
+            ByVal myXbisGetTyp As Boolean, _
+            ParamArray myZvarDataRng() As Variant) As Double
+'Includes PfixSimpleCumulativeMethod
+'myXbisGetTyp = True  : 総合基準値を取得
+'myXbisGetTyp = False : 総合公差を取得
+    PincdouSimpleCumulativeInEachRanges = Empty
+    On Error GoTo ExitPath
+  Dim myXlonRngCnt As Long
+    myXlonRngCnt = UBound(myZvarDataRng) - LBound(myZvarDataRng) + 1
+    On Error GoTo 0
+    If myXlonRngCnt <= 0 Then Exit Function
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim k As Long: k = 0: If myXbisGetTyp = False Then k = 1
+'//シート上の指定範囲の元データ取得
+  Dim myZdouTypTol() As Double, n As Long
+    n = myXlonRngCnt - (1 - L): ReDim myZdouTypTol(n, L + 1) As Double
+  Dim myXvarTmp As Variant
+    n = L - 1
+    On Error Resume Next
+    For Each myXvarTmp In myZvarDataRng
+        n = n + 1
+        myZdouTypTol(n, L + k) = CDbl(myXvarTmp)
+    Next myXvarTmp
+    On Error GoTo 0
+'//単純累積法により期待値と公差を計算
+  Dim myXdouTtlTyp As Double, myXdouTtlTol As Double
+    Call PfixSimpleCumulativeMethod(myXdouTtlTyp, myXdouTtlTol, myZdouTypTol)
+    Select Case myXbisGetTyp
+        Case True: PincdouSimpleCumulativeInEachRanges = myXdouTtlTyp
+        Case Else: PincdouSimpleCumulativeInEachRanges = myXdouTtlTol
+    End Select
+    Erase myZdouTypTol
+ExitPath:
+End Function
+
+ '定型Ｐ_矩形分布累積法により期待値と公差を計算する
+Private Sub PfixRectangularDistributionCumulativeMethod( _
+            myXdouTtlTyp As Double, myXdouTtlTol As Double, _
+            ByRef myZdouTypTol() As Double)
+'myXdouTtlTyp : 総合基準値
+'myXdouTtlTol : 総合公差
+'myZdouTypTol(i, 1) : 元データ配列-個別基準値
+'myZdouTypTol(i, 2) : 元データ配列-個別公差
+    myXdouTtlTyp = Empty: myXdouTtlTol = Empty
+  Dim myZdouCompCoef(20) As Double, i As Long: i = 1
+    i = i + 1: myZdouCompCoef(i) = 0.9447   'i = 2
+    i = i + 1: myZdouCompCoef(i) = 0.8515   'i = 3
+    i = i + 1: myZdouCompCoef(i) = 0.7759   'i = 4
+    i = i + 1: myZdouCompCoef(i) = 0.7139   'i = 5
+    i = i + 1: myZdouCompCoef(i) = 0.6623   'i = 6
+    i = i + 1: myZdouCompCoef(i) = 0.6188   'i = 7
+    i = i + 1: myZdouCompCoef(i) = 0.5819   'i = 8
+    i = i + 1: myZdouCompCoef(i) = 0.5502   'i = 9
+    i = i + 1: myZdouCompCoef(i) = 0.5231   'i = 10
+    i = i + 1: myZdouCompCoef(i) = 0.4997   'i = 11
+    i = i + 1: myZdouCompCoef(i) = 0.4795   'i = 12
+    i = i + 1: myZdouCompCoef(i) = 0.462    'i = 13
+    i = i + 1: myZdouCompCoef(i) = 0.4465   'i = 14
+    i = i + 1: myZdouCompCoef(i) = 0.4325   'i = 15
+    i = i + 1: myZdouCompCoef(i) = 0.4197   'i = 16
+    i = i + 1: myZdouCompCoef(i) = 0.4075   'i = 17
+    i = i + 1: myZdouCompCoef(i) = 0.3969   'i = 18
+    i = i + 1: myZdouCompCoef(i) = 0.3854   'i = 19
+    i = i + 1: myZdouCompCoef(i) = 0.3763   'i = 20
+  Dim myXdouTmp As Double, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZdouTypTol, 1)
+    myXdouTmp = myZdouTypTol(L, L + 0): myXdouTmp = myZdouTypTol(L, L + 1)
+    On Error GoTo 0
+  Dim n As Long
+    n = UBound(myZdouTypTol, 1) - LBound(myZdouTypTol, 1) + 1
+    If n <= 0 Then Exit Sub
+  Dim i As Long, myXdouEqvlntTol As Double
+    For i = LBound(myZdouTypTol, 1) To UBound(myZdouTypTol, 1)
+        myXdouTtlTyp = myXdouTtlTyp + myZdouTypTol(i, L + 0)
+        myXdouEqvlntTol = myXdouEqvlntTol + myZdouTypTol(i, L + 1) ^ 2
+    Next i
+    myXdouEqvlntTol = myXdouEqvlntTol / n
+    myXdouEqvlntTol = myXdouEqvlntTol ^ (0.5)
+    myXdouTtlTol = n * myZdouCompCoef(n) * myXdouEqvlntTol
+ExitPath:
+End Sub
+
+ '定型ＷＳＦ_指定セル範囲の値から矩形分布累積法により公差を計算する
+Public Function PincdouRectangularDistributionCumulativeInRange( _
+            ByVal myXbisGetTyp As Boolean, _
+            ByVal myXstrDataRng As Object) As Double
+'Includes PfixRectangularDistributionCumulativeMethod
+'myXbisGetTyp = True  : 総合基準値を取得
+'myXbisGetTyp = False : 総合公差を取得
+    PincdouRectangularDistributionCumulativeInRange = Empty
+  Dim myXlonRngCnt As Long
+    myXlonRngCnt = myXstrDataRng.Count
+    If myXlonRngCnt <= 0 Then Exit Function
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim k As Long: k = 0: If myXbisGetTyp = False Then k = 1
+'//シート上の指定範囲の元データ取得
+  Dim myZdouTypTol() As Double, n As Long
+    n = myXlonRngCnt - (1 - L): ReDim myZdouTypTol(n, L + 1) As Double
+  Dim myXvarTmp As Variant
+    n = L - 1
+    On Error Resume Next
+    For Each myXvarTmp In myXstrDataRng
+        n = n + 1
+        myZdouTypTol(n, L + k) = CDbl(myXvarTmp)
+    Next myXvarTmp
+    On Error GoTo 0
+'//単純累積法により期待値と公差を計算
+  Dim myXdouTtlTyp As Double, myXdouTtlTol As Double
+    Call PfixRectangularDistributionCumulativeMethod( _
+            myXdouTtlTyp, myXdouTtlTol, _
+            myZdouTypTol)
+    Select Case myXbisGetTyp
+        Case True: PincdouRectangularDistributionCumulativeInRange = myXdouTtlTyp
+        Case Else: PincdouRectangularDistributionCumulativeInRange = myXdouTtlTol
+    End Select
+    Erase myZdouTypTol
+ExitPath:
+End Function
+
+ '定型ＷＳＦ_指定個別セルの値から矩形分布累積法により公差を計算する
+Public Function PincdouRectangularDistributionCumulativeInEachRanges( _
+            ByVal myXbisGetTyp As Boolean, _
+            ParamArray myZvarDataRng() As Variant) As Double
+'Includes PfixRectangularDistributionCumulativeMethod
+'myXbisGetTyp = True  : 総合基準値を取得
+'myXbisGetTyp = False : 総合公差を取得
+    PincdouRectangularDistributionCumulativeInEachRanges = Empty
+    On Error GoTo ExitPath
+  Dim myXlonRngCnt As Long
+    myXlonRngCnt = UBound(myZvarDataRng) - LBound(myZvarDataRng) + 1
+    On Error GoTo 0
+    If myXlonRngCnt <= 0 Then Exit Function
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim k As Long: k = 0: If myXbisGetTyp = False Then k = 1
+'//シート上の指定範囲の元データ取得
+  Dim myZdouTypTol() As Double, n As Long
+    n = myXlonRngCnt - (1 - L): ReDim myZdouTypTol(n, L + 1) As Double
+  Dim myXvarTmp As Variant
+    n = L - 1
+    On Error Resume Next
+    For Each myXvarTmp In myZvarDataRng
+        n = n + 1
+        myZdouTypTol(n, L + k) = CDbl(myXvarTmp)
+    Next myXvarTmp
+    On Error GoTo 0
+'//単純累積法により期待値と公差を計算
+  Dim myXdouTtlTyp As Double, myXdouTtlTol As Double
+    Call PfixRectangularDistributionCumulativeMethod( _
+            myXdouTtlTyp, myXdouTtlTol, _
+            myZdouTypTol)
+    Select Case myXbisGetTyp
+        Case True: PincdouRectangularDistributionCumulativeInEachRanges = myXdouTtlTyp
+        Case Else: PincdouRectangularDistributionCumulativeInEachRanges = myXdouTtlTol
+    End Select
+    Erase myZdouTypTol
+ExitPath:
+End Function
+
+ '定型Ｐ_正規分布累積法により期待値と公差を計算する
+Private Sub PfixNormalDistributionCumulativeMethod( _
+            myXdouTtlTyp As Double, myXdouTtlTol As Double, _
+            ByRef myZdouTypTol() As Double)
+'myXdouTtlTyp : 総合基準値
+'myXdouTtlTol : 総合公差
+'myZdouTypTol(i, 1) : 元データ配列-個別基準値
+'myZdouTypTol(i, 2) : 元データ配列-個別公差
+    myXdouTtlTyp = Empty: myXdouTtlTol = Empty
+  Dim myXdouTmp As Double, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZdouTypTol, 1)
+    myXdouTmp = myZdouTypTol(L, L + 0): myXdouTmp = myZdouTypTol(L, L + 1)
+    On Error GoTo 0
+  Dim n As Long
+    n = UBound(myZdouTypTol, 1) - LBound(myZdouTypTol, 1) + 1
+    If n <= 0 Then Exit Sub
+  Dim i As Long
+    For i = LBound(myZdouTypTol, 1) To UBound(myZdouTypTol, 1)
+        myXdouTtlTyp = myXdouTtlTyp + myZdouTypTol(i, L + 0)
+        myXdouTtlTol = myXdouTtlTol + myZdouTypTol(i, L + 1) ^ 2
+    Next i
+    myXdouTtlTol = myXdouTtlTol ^ (0.5)
+ExitPath:
+End Sub
+
+ '定型ＷＳＦ_指定セル範囲の値から正規分布累積法により公差を計算する
+Public Function PincdouNormalDistributionCumulativeInRange( _
+            ByVal myXbisGetTyp As Boolean, _
+            ByVal myXstrDataRng As Object) As Double
+'Includes PfixNormalDistributionCumulativeMethod
+'myXbisGetTyp = True  : 総合基準値を取得
+'myXbisGetTyp = False : 総合公差を取得
+    PincdouNormalDistributionCumulativeInRange = Empty
+  Dim myXlonRngCnt As Long
+    myXlonRngCnt = myXstrDataRng.Count
+    If myXlonRngCnt <= 0 Then Exit Function
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim k As Long: k = 0: If myXbisGetTyp = False Then k = 1
+'//シート上の指定範囲の元データ取得
+  Dim myZdouTypTol() As Double, n As Long
+    n = myXlonRngCnt - (1 - L): ReDim myZdouTypTol(n, L + 1) As Double
+  Dim myXvarTmp As Variant
+    n = L - 1
+    On Error Resume Next
+    For Each myXvarTmp In myXstrDataRng
+        n = n + 1
+        myZdouTypTol(n, L + k) = CDbl(myXvarTmp)
+    Next myXvarTmp
+    On Error GoTo 0
+'//単純累積法により期待値と公差を計算
+  Dim myXdouTtlTyp As Double, myXdouTtlTol As Double
+    Call PfixNormalDistributionCumulativeMethod( _
+            myXdouTtlTyp, myXdouTtlTol, _
+            myZdouTypTol)
+    Select Case myXbisGetTyp
+        Case True: PincdouNormalDistributionCumulativeInRange = myXdouTtlTyp
+        Case Else: PincdouNormalDistributionCumulativeInRange = myXdouTtlTol
+    End Select
+    Erase myZdouTypTol
+ExitPath:
+End Function
+
+ '定型ＷＳＦ_指定個別セルの値から正規分布累積法により公差を計算する
+Public Function PincdouNormalDistributionCumulativeInEachRanges( _
+            ByVal myXbisGetTyp As Boolean, _
+            ParamArray myZvarDataRng() As Variant) As Double
+'Includes PfixNormalDistributionCumulativeMethod
+'myXbisGetTyp = True  : 総合基準値を取得
+'myXbisGetTyp = False : 総合公差を取得
+    PincdouNormalDistributionCumulativeInEachRanges = Empty
+    On Error GoTo ExitPath
+  Dim myXlonRngCnt As Long
+    myXlonRngCnt = UBound(myZvarDataRng) - LBound(myZvarDataRng) + 1
+    On Error GoTo 0
+    If myXlonRngCnt <= 0 Then Exit Function
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim k As Long: k = 0: If myXbisGetTyp = False Then k = 1
+'//シート上の指定範囲の元データ取得
+  Dim myZdouTypTol() As Double, n As Long
+    n = myXlonRngCnt - (1 - L): ReDim myZdouTypTol(n, L + 1) As Double
+  Dim myXvarTmp As Variant
+    n = L - 1
+    On Error Resume Next
+    For Each myXvarTmp In myZvarDataRng
+        n = n + 1
+        myZdouTypTol(n, L + k) = CDbl(myXvarTmp)
+    Next myXvarTmp
+    On Error GoTo 0
+'//単純累積法により期待値と公差を計算
+  Dim myXdouTtlTyp As Double, myXdouTtlTol As Double
+    Call PfixNormalDistributionCumulativeMethod( _
+            myXdouTtlTyp, myXdouTtlTol, _
+            myZdouTypTol)
+    Select Case myXbisGetTyp
+        Case True: PincdouNormalDistributionCumulativeInEachRanges = myXdouTtlTyp
+        Case Else: PincdouNormalDistributionCumulativeInEachRanges = myXdouTtlTol
+    End Select
+    Erase myZdouTypTol
+ExitPath:
+End Function
+
+ '定型Ｆ_分布特性データの指定特性(確率変数)位置での累積確率を取得する
+Private Function PincdouDistributionAtRandomVariable( _
+            ByRef myZdouDstrbtData() As Double, _
+            ByVal myXdouRndVrbl As Double, _
+            Optional ByVal coXlonOrder As Long = 1) As Double
+'Includes PfixQuickSortOfNumeric1DArray
+PincdouDistributionAtRandomVariable:  累積確率 [%]
+'myXdouRndVrbl : 検索する特性(確率変数)
+'myZdouDstrbtData(i) : 元分布特性データ配列
+'coXlonOrder = 1  : 昇順 (Ascending Order)
+'coXlonOrder = -1 : 降順 (Descending Order)
+    PincdouDistributionAtRandomVariable = Empty
+    If Abs(coXlonOrder) <> 1 Then Exit Function
+  Dim myXdouTmp As Double, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZdouDstrbtData): myXdouTmp = myZdouDstrbtData(L)
+    On Error GoTo 0
+'//データ配列のクイックソート
+  Dim myXlonLbnd As Long, myXlonUbnd As Long
+    myXlonLbnd = LBound(myZdouDstrbtData)
+    myXlonUbnd = UBound(myZdouDstrbtData)
+    Call PfixQuickSortOfNumeric1DArray( _
+            myZdouDstrbtData, myXlonLbnd, myXlonUbnd, coXlonOrder)
+'//指定特性(確率変数)位置での累積確率を取得
+  Dim myXlonDstrbtCnt As Long
+    myXlonDstrbtCnt = UBound(myZdouDstrbtData) - LBound(myZdouDstrbtData) + 1
+  Dim myXdouDist As Double, i As Long, n As Long: n = 0
+    If coXlonOrder = 1 Then
+        For i = LBound(myZdouDstrbtData) To UBound(myZdouDstrbtData)
+            myXdouTmp = myZdouDstrbtData(i)
+            If myXdouTmp > myXdouRndVrbl Then
+                n = i - L
+                myXdouDist = n / myXlonDstrbtCnt * 100
+                Exit For
+            End If
+        Next i
+    Else
+        For i = LBound(myZdouDstrbtData) To UBound(myZdouDstrbtData)
+            myXdouTmp = myZdouDstrbtData(i)
+            If myXdouTmp < myXdouRndVrbl Then
+                n = i - L
+                myXdouDist = (1 - n / myXlonDstrbtCnt) * 100
+                Exit For
+            End If
+        Next i
+    End If
+    PincdouDistributionAtRandomVariable = myXdouDist
+ExitPath:
+End Function
+
+ '定型Ｆ_分布特性データの指定累積確率となる特性(確率変数)位置を取得する
+Private Function PincdouRandomVariableAtDistribution( _
+            ByRef myZdouDstrbtData() As Double, _
+            ByVal myXdouDist As Double, _
+            Optional ByVal coXlonOrder As Long = 1) As Double
+'Includes PfixQuickSortOfNumeric1DArray
+PincdouRandomVariableAtDistribution:  特性 (確率変数)
+'myXdouDist : 検索する累積確率[%]
+'myZdouDstrbtData(i) : 元分布特性データ配列
+'coXlonOrder = 1  : 昇順 (Ascending Order)
+'coXlonOrder = -1 : 降順 (Descending Order)
+    PincdouRandomVariableAtDistribution = Empty
+    If Abs(coXlonOrder) <> 1 Then Exit Function
+  Dim myXdouTmp As Double, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZdouDstrbtData): myXdouTmp = myZdouDstrbtData(L)
+    On Error GoTo 0
+'//データ配列のクイックソート
+  Dim myXlonLbnd As Long, myXlonUbnd As Long
+    myXlonLbnd = LBound(myZdouDstrbtData)
+    myXlonUbnd = UBound(myZdouDstrbtData)
+    Call PfixQuickSortOfNumeric1DArray( _
+            myZdouDstrbtData, myXlonLbnd, myXlonUbnd, coXlonOrder)
+'//指定特性(確率変数)位置での累積確率を取得
+  Dim myXlonDstrbtCnt As Long
+    myXlonDstrbtCnt = UBound(myZdouDstrbtData) - LBound(myZdouDstrbtData) + 1
+  Dim myXdouRndVrbl As Double, i As Long, n As Long: n = 0
+    If coXlonOrder = 1 Then
+        For i = LBound(myZdouDstrbtData) To UBound(myZdouDstrbtData)
+            n = i + (1 - L)
+            myXdouTmp = n / myXlonDstrbtCnt * 100
+            If myXdouTmp > myXdouDist Then
+                If i = LBound(myZdouDstrbtData) Then Exit Function
+                myXdouRndVrbl = myZdouDstrbtData(i - 1)
+                Exit For
+            End If
+        Next i
+    Else
+        For i = LBound(myZdouDstrbtData) To UBound(myZdouDstrbtData)
+            n = i + (1 - L)
+            myXdouTmp = (1 - n / myXlonDstrbtCnt) * 100
+            If myXdouTmp < myXdouDist Then
+                If i = LBound(myZdouDstrbtData) Then Exit Function
+                myXdouRndVrbl = myZdouDstrbtData(i - 1)
+                Exit For
+            End If
+        Next i
+    End If
+    PincdouRandomVariableAtDistribution = myXdouRndVrbl
+ExitPath:
+End Function
+
+ '定型Ｐ_分布データ一覧から度数分布表データを生成する
+Private Sub PincMakeHistogramArray( _
+            myXlonHstCnt As Long, myZdouHstData() As Double, _
+            ByRef myZdouOrgData() As Double, _
+            ByVal myXdouHstBgnVal As Double, ByVal myXdouHstEndVal As Double, _
+            ByVal myXdouHstStpVal As Double)
+'Includes PfixQuickSortOfNumeric1DArray
+'myZdouHstData(i, j) : 度数分布データ配列
+'myZdouOrgData(i) : 分布データ配列
+    myXlonHstCnt = Empty: Erase myZdouHstData
+  Dim myXdouTmp As Double, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZdouOrgData): myXdouTmp = myZdouOrgData(L)
+    On Error GoTo 0
+    If myXdouHstEndVal < myXdouHstBgnVal Then Exit Sub
+    If (myXdouHstEndVal - myXdouHstBgnVal) < myXdouHstStpVal Then Exit Sub
+'//分布データ配列のクイックソート
+  Dim myXlonLbnd As Long, myXlonUbnd As Long
+    myXlonLbnd = LBound(myZdouOrgData): myXlonUbnd = UBound(myZdouOrgData)
+    Call PfixQuickSortOfNumeric1DArray(myZdouOrgData, myXlonLbnd, myXlonUbnd, 1)
+'//度数分布データ配列の設定
+    myXlonHstCnt = Round((myXdouHstEndVal - myXdouHstBgnVal) / myXdouHstStpVal, 0)
+  Dim k As Long
+    k = myXlonHstCnt + L - 1
+    ReDim myZdouHstData(k, L + 1) As Double
+'//分布データ範囲を指定
+  Dim i As Long, myXlonStrt As Double, myXlonLast As Double
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        If myZdouOrgData(i) >= myXdouHstBgnVal Then
+            myXlonStrt = i: Exit For
+        End If
+    Next i
+    For i = UBound(myZdouOrgData) To LBound(myZdouOrgData) Step -1
+        If myZdouOrgData(i) <= myXdouHstEndVal Then
+            myXlonLast = i: Exit For
+        End If
+    Next i
+'//度数を配列に格納
+  Dim myXdouCntr As Double, myXdouThrsh As Double, m As Long, n As Long
+    m = myXlonStrt
+    For k = 1 To myXlonHstCnt
+        n = 0
+        myXdouCntr = myXdouHstBgnVal + myXdouHstStpVal * (k - 1 / 2)
+        myXdouThrsh = myXdouCntr + myXdouHstStpVal / 2
+        If m = myXlonLast + 1 Then GoTo NextPath
+        For i = m To myXlonLast
+            If myZdouOrgData(i) > myXdouThrsh Then
+                n = (i - 1) - m + 1
+                m = i
+                Exit For
+            End If
+            If i = myXlonLast Then
+                n = myXlonLast - m + 1
+                m = myXlonLast + 1
+            End If
+        Next i
+NextPath:
+        myZdouHstData(k, L + 0) = myXdouCntr
+        myZdouHstData(k, L + 1) = n
+    Next k
+ExitPath:
+End Sub
+
+ '定型Ｐ_分布データから度数分布表のデータ範囲とステップ値を設定する
+Private Sub PincSetHistogramRangeStep( _
+            myXdouHstBgnVal As Double, myXdouHstEndVal As Double, _
+            myXdouHstStpVal As Double, _
+            ByRef myZdouOrgData() As Double, _
+            Optional ByVal coXlonXSigma As Long = 6, _
+            Optional ByVal coXlonSpltVal As Long = 40, _
+            Optional ByVal coXbisBgnEqlEnd As Boolean = True)
+'Includes PfnclonGetMaximumDecimalDigit
+'myXdouHstBgnVal : 度数分布表のデータ範囲の最初の値
+'myXdouHstEndVal : 度数分布表のデータ範囲の最後の値
+'myXdouHstStpVal : 度数分布表のデータ分割値
+'myZdouOrgData(i) : 元の分布データ
+    myXdouHstBgnVal = Empty: myXdouHstEndVal = Empty: myXdouHstStpVal = Empty
+    On Error GoTo ExitPath
+  Dim L As Long, myXvarTmp As Variant
+    L = LBound(myZdouOrgData): myXvarTmp = myZdouOrgData(L)
+    On Error GoTo 0
+    If coXlonXSigma <= 0 Or coXlonSpltVal <= 0 Then Exit Sub
+'//分布データの平均値と標準偏差を取得
+  Dim myXdouAvrg As Double, myXdouStdev As Double
+    With Application.WorksheetFunction
+        myXdouAvrg = .Average(myZdouOrgData)
+        myXdouStdev = .StDev_S(myZdouOrgData)
+    End With
+'//度数分布表のデータ範囲を設定
+    myXdouHstBgnVal = myXdouAvrg - myXdouStdev * coXlonXSigma
+    myXdouHstEndVal = myXdouAvrg + myXdouStdev * coXlonXSigma
+  Dim myXlonDigit As Long
+    myXlonDigit = PfnclonGetMaximumDecimalDigit(myXdouHstEndVal)
+    myXdouHstBgnVal = Round(myXdouHstBgnVal, myXlonDigit)
+    myXdouHstEndVal = Round(myXdouHstEndVal, myXlonDigit)
+    If coXbisBgnEqlEnd = False Then GoTo JumpPath
+    If Abs(myXdouHstEndVal) >= Abs(myXdouHstBgnVal) Then
+        myXdouHstBgnVal = (-1) * myXdouHstEndVal
+        myXdouHstEndVal = myXdouHstEndVal
+    Else
+        myXdouHstBgnVal = myXdouHstBgnVal
+        myXdouHstEndVal = (-1) * myXdouHstBgnVal
+    End If
+JumpPath:
+'//度数分布表のステップ値を設定
+    myXdouHstStpVal = (myXdouHstEndVal - myXdouHstBgnVal) / coXlonSpltVal
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
