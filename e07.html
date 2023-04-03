@@ -1,1 +1,642 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
 
+
+ '定型Ｐ_Outlookを起動して受信ボックスを開く
+Private Sub PfixOpenOutlook()
+'//Outlookインスタンス生成
+  Dim myXobjOutLkApp As Object
+    Set myXobjOutLkApp = CreateObject("Outlook.Application")
+'//受信トレイを開く
+  Dim myXobjMapi As Object, myXobjInbox As Object
+    Set myXobjMapi = myXobjOutLkApp.GetNamespace("MAPI")
+    Set myXobjInbox = myXobjMapi.GetDefaultFolder(olFolderInbox)
+    myXobjInbox.display
+    Set myXobjInbox = Nothing: Set myXobjMapi = Nothing: Set myXobjOutLkApp = Nothing
+End Sub
+
+ '定型Ｐ_Outlookを起動してオブジェクトを取得する
+Private Sub PfixOpenGetOutlook(myXobjOutLkApp As Object, _
+            myXobjMapi As Object, myXobjInbox As Object)
+    Set myXobjOutLkApp = Nothing: Set myXobjMapi = Nothing: Set myXobjInbox = Nothing
+'olFolderInbox = 6 : 受信トレイフォルダー
+'//Outlookインスタンス生成
+    Set myXobjOutLkApp = CreateObject("Outlook.Application")
+'//受信トレイを開く
+    Set myXobjMapi = myXobjOutLkApp.GetNamespace("MAPI")
+    Set myXobjInbox = myXobjMapi.GetDefaultFolder(olFolderInbox)
+    myXobjInbox.display
+End Sub
+
+ '定型Ｐ_Outlookの受信トレイを取得する
+Private Function PfncobjGetOutlookInbox(myXobjOutLkApp As Object) As Object
+'olFolderInbox = 6 : 受信トレイフォルダー
+    Set PfncobjGetOutlookInbox = Nothing
+    If myXobjOutLkApp Is Nothing Then Exit Function
+  Dim myXobjMapi As Object
+    Set myXobjMapi = myXobjOutLkApp.GetNamespace("MAPI")
+    Set PfncobjGetOutlookInbox = myXobjMapi.GetDefaultFolder(olFolderInbox)
+    Set myXobjMapi = Nothing
+End Function
+
+ '定型Ｐ_Outlookの連絡先フォルダーを取得する
+Private Function PfncobjGetOutlookContacts(myXobjOutLkApp As Object) As Object
+'olFolderContacts = 10 : 連絡先フォルダー
+    Set PfncobjGetOutlookContacts = Nothing
+    If myXobjOutLkApp Is Nothing Then Exit Function
+  Dim myXobjMapi As Object
+    Set myXobjMapi = myXobjOutLkApp.GetNamespace("MAPI")
+    Set PfncobjGetOutlookContacts = myXobjMapi.GetDefaultFolder(olFolderContacts)
+    Set myXobjMapi = Nothing
+End Function
+
+ '定型Ｐ_Outlookの予定表フォルダーを取得する
+Private Function PfncobjGetOutlookCalendar(myXobjOutLkApp As Object) As Object
+'olFolderCalendar = 9 : 予定表フォルダー
+    Set PfncobjGetOutlookCalendar = Nothing
+    If myXobjOutLkApp Is Nothing Then Exit Function
+  Dim myXobjMapi As Object
+    Set myXobjMapi = myXobjOutLkApp.GetNamespace("MAPI")
+    Set PfncobjGetOutlookCalendar = myXobjMapi.GetDefaultFolder(olFolderCalendar)
+    Set myXobjMapi = Nothing
+End Function
+
+ '定型Ｐ_Outlookの起動が完了するまで待機する
+Private Sub PfixWaitOutlookOpen(myXobjOutLkApp As Object, _
+            Optional coXdouPauseTime As Double = 0.01, _
+            Optional coXdouExitTime As Double = 0)
+    On Error Resume Next
+    Set myXobjOutLkApp = getObject(, "Outlook.Application")
+    On Error GoTo 0
+    If Not myXobjOutLkApp Is Nothing Then Exit Sub
+  Dim myXdatBgn As Date: myXdatBgn = Timer
+  Dim myXdatStart As Date: myXdatStart = Timer
+    Do While myXobjOutLkApp Is Nothing
+        If coXdouExitTime > 0 Then _
+            If Timer > myXdatBgn + coXdouExitTime Then Exit Sub
+        Do While Timer < myXdatStart + coXdouPauseTime
+            DoEvents
+        Loop
+        On Error Resume Next
+        Set myXobjOutLkApp = getObject(, "Outlook.Application")
+        On Error GoTo 0
+    Loop
+End Sub
+
+ '定型Ｆ_Outlookが既に起動しているかをチェックする
+Private Function PfncbisCheckOutlookOpening() As Boolean
+    PfncbisCheckOutlookOpening = False
+  Dim myXobjOutLkApp As Object
+    On Error Resume Next
+    Set myXobjOutLkApp = getObject(, "Outlook.Application")
+    On Error GoTo 0
+    If myXobjOutLkApp Is Nothing Then Exit Function
+    PfncbisCheckOutlookOpening = True
+    Set myXobjOutLkApp = Nothing
+End Function
+
+ '定型Ｆ_Outlookが既に起動していればOutlookオブジェクトを取得する
+Private Function PfncobjGetOutlook() As Object
+    Set PfncobjGetOutlook = Nothing
+  Dim myXobjOutLkApp As Object
+    On Error Resume Next
+    Set myXobjOutLkApp = getObject(, "Outlook.Application")
+    On Error GoTo 0
+    If myXobjOutLkApp Is Nothing Then Exit Function
+    Set PfncobjGetOutlook = myXobjOutLkApp
+    Set myXobjOutLkApp = Nothing
+End Function
+
+ '定型Ｐ_Outlookの新規メールを作成する
+Private Sub PfixCreateOutlookMailItem(myXobjMailItm As Object, myXobjOutLkApp As Object)
+    Set myXobjMailItm = Nothing
+    If myXobjOutLkApp Is Nothing Then Exit Sub
+    Set myXobjMailItm = myXobjOutLkApp.CreateItem(olMailItem)
+    myXobjMailItm.display
+End Sub
+
+ '定型Ｐ_Outlookメールの本文を作成する
+Private Sub PfixMakeOutlookMail(myXbisExitFlag As Boolean, _
+            myXobjMailItm As Object, myXstrSbjct As String, myXstrBody As String, _
+            myXstrToAdrs As String, myXstrCcAdrs As String)
+    myXbisExitFlag = False
+    If myXobjMailItm Is Nothing Then GoTo ExitPath
+    With myXobjMailItm
+        .Subject = myXstrSbjct  'メールタイトル
+        .body = myXstrBody      '本文(改行はvbCrLf)
+        .To = myXstrToAdrs      '宛先(区切りはセミコロン;)
+        .CC = myXstrCcAdrs      'CC(区切りはセミコロン;)
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_Outlookメールに指定ファイルを添付する
+Private Sub PfixAttachFileOutlookMail(myXbisExitFlag As Boolean, _
+            myXobjMailItm As Object, myZstrAtchFilePathAry() As String)
+    myXbisExitFlag = False
+    If myXobjMailItm Is Nothing Then GoTo ExitPath
+    On Error GoTo ExitPath
+    If UBound(myZstrAtchFilePathAry) <= 0 Then GoTo ExitPath
+    On Error GoTo 0
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXobjAtchFile As Object: Set myXobjAtchFile = myXobjMailItm.Attachments
+  Dim myXvarTmp As Variant
+    For Each myXvarTmp In myZstrAtchFilePathAry
+        If myXobjFSO.FileExists(myXvarTmp) = True Then Call myXobjAtchFile.Add(myXvarTmp)
+    Next
+    Set myXobjAtchFile = Nothing: Set myXobjFSO = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_宛先用メールアドレスリストを作成する
+Private Function PfncstrSetMailAddressListOutlookMail( _
+                    myZstrMailAdrsAry() As String) As String
+    PfncstrSetMailAddressListOutlookMail = Empty
+  Dim myXstrAdrsLst As String, i As Long, n As Long: n = 0
+    For i = LBound(myZstrMailAdrsAry) To UBound(myZstrMailAdrsAry)
+        If myZstrMailAdrsAry(i) = "" Then GoTo NextPath
+        n = n + 1
+        Select Case n
+            Case 1: myXstrAdrsLst = myZstrMailAdrsAry(i)
+            Case Else: myXstrAdrsLst = myXstrAdrsLst & "; " & myZstrMailAdrsAry(i)
+        End Select
+NextPath:
+    Next i
+    PfncstrSetMailAddressListOutlookMail = myXstrAdrsLst
+End Function
+
+ '定型Ｐ_メールを送信する
+Private Sub PfixSendOutlookMail(myXbisExitFlag As Boolean, _
+            myXobjMailItm As Object)
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    myXobjMailItm.send
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_メールの下書きを保存する
+Private Sub PfixSaveDraftMailOutlook(myXbisExitFlag As Boolean, _
+            myXobjMailItm As Object)
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    myXobjMailItm.Save
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_Outlookを閉じる
+Private Sub PfixCloseOutlook(myXobjOutLkApp As Object)
+    If myXobjOutLkApp Is Nothing Then Exit Sub
+    myXobjOutLkApp.Quit
+End Sub
+
+ '定型Ｐ_Outlookの連絡先フォルダ内のデフォルトフォルダ内の連絡先を取得する
+Private Sub PfixGetDefaultFolderContactsItem( _
+            myXlonItmCnt As Long, myZobjCntctItm() As Object, _
+            myXobjOutLkCntcts As Object)
+    myXlonItmCnt = Empty: Erase myZobjCntctItm
+    If myXobjOutLkCntcts Is Nothing Then Exit Sub
+    If myXobjOutLkCntcts.Items.Count <= 0 Then Exit Sub
+  Dim myXvarTmp As Variant, n As Long: n = 0
+    For Each myXvarTmp In myXobjOutLkCntcts.Items
+        n = n + 1: ReDim Preserve myZobjCntctItm(n) As Object
+        Set myZobjCntctItm(n) = myXvarTmp
+    Next
+    myXlonItmCnt = n
+    myXvarTmp = Empty
+ExitPath:
+End Sub
+
+ '定型Ｐ_Outlookの連絡先フォルダ内の個別フォルダを取得する
+Private Sub PfixGetContactsFolder( _
+            myXlonFldrCnt As Long, myZobjCntctFldr() As Object, _
+            myXobjOutLkCntcts As Object)
+    myXlonFldrCnt = Empty: Erase myZobjCntctFldr
+    If myXobjOutLkCntcts Is Nothing Then Exit Sub
+    If myXobjOutLkCntcts.Folders.Count <= 0 Then Exit Sub
+  Dim myXvarTmp As Variant, n As Long: n = 0
+    For Each myXvarTmp In myXobjOutLkCntcts.Folders
+        n = n + 1: ReDim Preserve myZobjCntctFldr(n) As Object
+        Set myZobjCntctFldr(n) = myXvarTmp
+    Next
+    myXlonFldrCnt = n
+    myXvarTmp = Empty
+ExitPath:
+End Sub
+
+ '定型Ｐ_Outlookの連絡先フォルダ内の個別フォルダ内の連絡先を取得する
+Private Sub PfixGetFolderContactsItem( _
+            myXlonItmCnt As Long, myZobjCntctItm() As Object, _
+            myXobjCntctFldr As Object)
+    myXlonItmCnt = Empty: Erase myZobjCntctItm
+    If myXobjCntctFldr Is Nothing Then Exit Sub
+    If myXobjCntctFldr.Items.Count <= 0 Then Exit Sub
+  Dim myXvarTmp As Variant, n As Long: n = 0
+    For Each myXvarTmp In myXobjCntctFldr.Items
+        n = n + 1: ReDim Preserve myZobjCntctItm(n) As Object
+        Set myZobjCntctItm(n) = myXvarTmp
+    Next
+    myXlonItmCnt = n
+    myXvarTmp = Empty
+End Sub
+
+ '定型Ｐ_Outlookの連絡先内の連絡先情報を取得する
+Private Sub PfixGetContactsItemInformation( _
+            myXlonInfoCnt As Long, myZstrLastName() As String, _
+            myZstrFirstName() As String, myZstrCompanyName() As String, _
+            myZstrDepartment() As String, myZstrFullName() As String, _
+            myZstrEMail1Adrs() As String, myZstrEmail1DisplayName() As String, _
+            myZobjCntctItm() As Object)
+    myXlonInfoCnt = Empty
+    Erase myZstrLastName: Erase myZstrFirstName: Erase myZstrCompanyName
+    Erase myZstrDepartment: Erase myZstrFullName: Erase myZstrEMail1Adrs
+    Erase myZstrEmail1DisplayName
+    On Error GoTo ExitPath
+    If UBound(myZobjCntctItm) <= 0 Then GoTo ExitPath
+    On Error GoTo 0
+  Dim myXvarTmp As Variant, n As Long: n = 0
+    For Each myXvarTmp In myZobjCntctItm
+        If myXvarTmp Is Nothing Then GoTo NextPath
+        n = n + 1
+        ReDim Preserve myZstrLastName(n) As String
+        ReDim Preserve myZstrFirstName(n) As String
+        ReDim Preserve myZstrCompanyName(n) As String
+        ReDim Preserve myZstrDepartment(n) As String
+        ReDim Preserve myZstrFullName(n) As String
+        ReDim Preserve myZstrEMail1Adrs(n) As String
+        ReDim Preserve myZstrEmail1DisplayName(n) As String
+        With myXvarTmp
+            myZstrLastName(n) = .LastName
+            myZstrFirstName(n) = .FirstName
+            myZstrCompanyName(n) = .CompanyName
+            myZstrDepartment(n) = .Department
+            myZstrFullName(n) = .FullName
+            myZstrEMail1Adrs(n) = .Email1Address
+            myZstrEmail1DisplayName(n) = .Email1DisplayName
+        End With
+NextPath:
+    Next
+    myXlonInfoCnt = n
+    myXvarTmp = Empty
+ExitPath:
+End Sub
+
+ '定型Ｐ_Outlookの連絡先フォルダ内の全連絡先一覧を取得する
+Private Sub PincGetAllContactsItem( _
+            myXlonInfoCnt As Long, myZstrLastName() As String, _
+            myZstrFirstName() As String, myZstrCompanyName() As String, _
+            myZstrDepartment() As String, myZstrFullName() As String, _
+            myZstrEMail1Adrs() As String, myZstrEmail1DisplayName() As String, _
+            myXobjOutLkApp As Object)
+'Includes PfixGetDefaultFolderContactsItem
+'Includes PfixGetContactsFolder
+'Includes PfixGetFolderContactsItem
+'Includes PfixGetContactsItemInformation
+  Dim myXlonItmCnt As Long, myZobjCntctItm() As Object
+  Dim myXobjDfltFldrCntcts As Object
+    On Error GoTo ExitPath
+    Set myXobjDfltFldrCntcts = myXobjOutLkApp.GetNamespace("MAPI") _
+                                    .GetDefaultFolder(olFolderContacts)
+    On Error GoTo 0
+'//連絡先フォルダ内のデフォルトフォルダ内の連絡先を取得
+  Dim myXlonItmCnt1 As Long, myZobjCntctItm1() As Object
+    Call PfixGetDefaultFolderContactsItem(myXlonItmCnt1, myZobjCntctItm1, _
+                                            myXobjDfltFldrCntcts)
+    If myXlonItmCnt1 <= 0 Then GoTo FldrPath
+  Dim myXvarTmpItm As Variant, n As Long: n = 0
+    For Each myXvarTmpItm In myZobjCntctItm1
+        n = n + 1: ReDim Preserve myZobjCntctItm(n) As Object
+        Set myZobjCntctItm(n) = myXvarTmpItm
+    Next
+    myXvarTmpItm = Empty: Erase myZobjCntctItm1
+FldrPath:
+'//連絡先フォルダ内の個別フォルダを取得
+  Dim myXlonFldrCnt As Long, myZobjCntctFldr() As Object
+    Call PfixGetContactsFolder(myXlonFldrCnt, myZobjCntctFldr, myXobjDfltFldrCntcts)
+    If myXlonFldrCnt <= 0 Then GoTo InfoPath
+'//連絡先フォルダ内の個別フォルダ内の連絡先を取得
+  Dim myXlonItmCnt2 As Long, myZobjCntctItm2() As Object
+  Dim myXvarTmpFldr As Variant, myXobjTmpFldr As Object
+    For Each myXvarTmpFldr In myZobjCntctFldr
+        Set myXobjTmpFldr = myXvarTmpFldr
+        Call PfixGetFolderContactsItem(myXlonItmCnt2, myZobjCntctItm2, myXobjTmpFldr)
+        If myXlonItmCnt2 <= 0 Then GoTo NextPath
+        For Each myXvarTmpItm In myZobjCntctItm2
+            n = n + 1: ReDim Preserve myZobjCntctItm(n) As Object
+            Set myZobjCntctItm(n) = myXvarTmpItm
+        Next
+NextPath:
+    Next
+    myXlonItmCnt = n
+    myXvarTmpFldr = Empty: myXvarTmpItm = Empty
+    Erase myZobjCntctFldr: Erase myZobjCntctItm2
+InfoPath:
+'//連絡先内の連絡先情報を取得
+    Call PfixGetContactsItemInformation( _
+            myXlonInfoCnt, myZstrLastName, myZstrFirstName, myZstrCompanyName, _
+            myZstrDepartment, myZstrFullName, myZstrEMail1Adrs, myZstrEmail1DisplayName, _
+            myZobjCntctItm)
+    Erase myZobjCntctItm
+ExitPath:
+End Sub
+
+ '定型Ｐ_Outlookの連絡先一覧を取得する
+Private Sub PfixGetAddressEntry( _
+            myZstrName() As String, myZstrAdrs() As String, _
+            myXobjOutLkApp As Object)
+    Erase myZstrName: Erase myZstrAdrs
+    If myXobjOutLkApp Is Nothing Then Exit Sub
+  Dim myXobjMapi As Object
+    Set myXobjMapi = myXobjOutLkApp.GetNamespace("MAPI")
+  Dim myXvarTmpLst As Variant, myXvarTmpEntry As Variant, n As Long: n = 0
+    For Each myXvarTmpLst In myXobjMapi.AddressLists
+        For Each myXvarTmpEntry In myXvarTmpLst.AddressEntries
+            n = n + 1
+            ReDim Preserve myZstrName(n) As String
+            ReDim Preserve myZstrAdrs(n) As String
+            With myXvarTmpEntry
+                myZstrName(n) = .Name
+                myZstrAdrs(n) = .Address
+            End With
+        Next
+    Next
+End Sub
+
+ '定型Ｐ_Outlookの予定表フォルダ内の指定期間内の全予定表を検索して取得する
+Private Sub PfixFindCalenderItemInRestrictPeriod( _
+            myXlonPrdItmCnt As Long, myZobjPrdItm() As Object, _
+            myXobjOutLkClndr As Object, _
+            myXdatStrtDateTime As Date, myXdatEndDateTime As Date, _
+            Optional myXbisRcrr As Boolean = True)
+'myZobjPrdItm(i) : 予定表
+'myXdatStrtDateTime : "yyyy/mm/dd hh:nn"
+'myXdatEndDateTime  : "yyyy/mm/dd hh:nn"
+'myXbisRcrr = True  : 定期的な予定を取得する
+'myXbisRcrr = False : 定期的な予定を取得しない
+    myXlonPrdItmCnt = Empty: Erase myZobjPrdItm
+    If myXobjOutLkClndr Is Nothing Then Exit Sub
+    If myXdatStrtDateTime = CDate("0:00:00") Then Exit Sub
+    If myXdatEndDateTime = CDate("0:00:00") Then Exit Sub
+  Dim myXstrStrt As String, myXstrEnd As String, myXstrPrdCndtn As String
+    myXstrStrt = Format(myXdatStrtDateTime, "'yyyy/mm/dd hh:nn'")
+    myXstrEnd = Format(myXdatEndDateTime, "'yyyy/mm/dd hh:nn'")
+    myXstrPrdCndtn = "([Start] >=" & myXstrStrt & " And [End] <" & myXstrEnd & ")"
+  Dim myXobjCldrItms As Object
+    Set myXobjCldrItms = myXobjOutLkClndr.Items
+    If myXobjCldrItms Is Nothing Then Exit Sub
+    myXobjCldrItms.Sort "[Start]"
+    myXobjCldrItms.IncludeRecurrences = True
+    If myXobjCldrItms Is Nothing Then Exit Sub
+  Dim myXobjTmpItm As Object, n As Long: n = 0
+    Set myXobjTmpItm = myXobjCldrItms.Find(myXstrPrdCndtn)
+    Do While Not myXobjTmpItm Is Nothing
+        n = n + 1: ReDim Preserve myZobjPrdItm(n) As Object
+        Set myZobjPrdItm(n) = myXobjTmpItm
+        Set myXobjTmpItm = myXobjCldrItms.FindNext
+    Loop
+    myXlonPrdItmCnt = n
+    Set myXobjCldrItms = Nothing: Set myXobjTmpItm = Nothing
+End Sub
+
+ '定型Ｐ_Outlookの予定表フォルダ内の指定日の全予定表を検索して取得する
+Private Sub PfixFindCalenderDayItem( _
+            myXlonDayItmCnt As Long, myZobjDayItm() As Object, _
+            myXobjOutLkClndr As Object, myXdatDateTime As Date)
+'myZobjDayItm(i) : 予定表
+'myXdatDateTime : "yyyy/mm/dd"
+    myXlonDayItmCnt = Empty: Erase myZobjDayItm
+    If myXobjOutLkClndr Is Nothing Then Exit Sub
+    If myXdatDateTime = CDate("0:00:00") Then Exit Sub
+  Dim myXdatEnd As Date: myXdatEnd = DateAdd("d", 1, myXdatDateTime)
+  Dim myXstrStrt As String, myXstrEnd As String, myXstrPrdCndtn As String
+    myXstrStrt = Format(myXdatDateTime, "'yyyy/mm/dd hh:nn'")
+    myXstrEnd = Format(myXdatEnd, "'yyyy/mm/dd hh:nn'")
+    myXstrPrdCndtn = "([Start] >=" & myXstrStrt & " And [End] <" & myXstrEnd & ")"
+  Dim myXobjCldrItms As Object
+    Set myXobjCldrItms = myXobjOutLkClndr.Items
+    If myXobjCldrItms Is Nothing Then Exit Sub
+    myXobjCldrItms.Sort "[Start]"
+    myXobjCldrItms.IncludeRecurrences = True
+    If myXobjCldrItms Is Nothing Then Exit Sub
+  Dim myXobjTmpItm As Object, n As Long: n = 0
+    Set myXobjTmpItm = myXobjCldrItms.Find(myXstrPrdCndtn)
+    Do While Not myXobjTmpItm Is Nothing
+        n = n + 1: ReDim Preserve myZobjDayItm(n) As Object
+        Set myZobjDayItm(n) = myXobjTmpItm
+        Set myXobjTmpItm = myXobjCldrItms.FindNext
+    Loop
+    myXlonDayItmCnt = n
+    Set myXobjCldrItms = Nothing: Set myXobjTmpItm = Nothing
+End Sub
+
+ '定型Ｐ_Outlookの予定表一覧から非定期的もしくは定期的な予定表のみを取得する
+Private Sub PfixExcerptCalenderDayItemRecurringOrNot( _
+            myXlonExcrptItmCnt As Long, myZobjExcrptItm() As Object, _
+            myZobjDayItm() As Object, _
+            Optional myXbisRcrr As Boolean = False)
+'myZobjExcrptItm(i) : 非定期的or定期的な予定表
+'myZobjDayItm(i) : 予定表
+'myXbisRcrr = False : 非定期的な予定のみを取得する
+'myXbisRcrr = True  : 定期的な予定のみを取得する
+    myXlonExcrptItmCnt = Empty: Erase myZobjExcrptItm
+    On Error GoTo ExitPath
+    If UBound(myZobjDayItm) <= 0 Then GoTo ExitPath
+    On Error GoTo 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZobjDayItm) To UBound(myZobjDayItm)
+        If myZobjDayItm(i).IsRecurring <> myXbisRcrr Then GoTo NextPath
+        n = n + 1: ReDim Preserve myZobjExcrptItm(n) As Object
+        Set myZobjExcrptItm(n) = myZobjDayItm(i)
+NextPath:
+    Next i
+    myXlonExcrptItmCnt = n
+ExitPath:
+End Sub
+
+ '定型Ｐ_Outlookの予定表フォルダ内の指定日の終日の予定表を検索して取得する
+Private Sub PfixFindCalenderItemAllDayEvent( _
+            myXlonAllDayEvntItmCnt As Long, myZobjAllDayEvntItm() As Object, _
+            myXobjOutLkClndr As Object, myXdatDateTime As Date)
+'myZobjAllDayEvntItm(i) : 終日の予定表
+'myXdatDateTime : "yyyy/mm/dd"
+    myXlonAllDayEvntItmCnt = Empty: Erase myZobjAllDayEvntItm
+    If myXobjOutLkClndr Is Nothing Then Exit Sub
+    If myXdatDateTime = CDate("0:00:00") Then Exit Sub
+  Dim myXstrStrt As String, myXstrPrdCndtn As String
+    myXstrStrt = Format(myXdatDateTime, "'yyyy/mm/dd 0:00'")
+    myXstrPrdCndtn = "([Start] =" & myXstrStrt & " AND [AllDayEvent] = True)"
+  Dim myXobjCldrItms As Object
+    Set myXobjCldrItms = myXobjOutLkClndr.Items
+    If myXobjCldrItms Is Nothing Then Exit Sub
+    myXobjCldrItms.Sort "[Start]"
+    myXobjCldrItms.IncludeRecurrences = True
+    If myXobjCldrItms Is Nothing Then Exit Sub
+  Dim myXobjTmpItm As Object, n As Long: n = 0
+    Set myXobjTmpItm = myXobjCldrItms.Find(myXstrPrdCndtn)
+    Do While Not myXobjTmpItm Is Nothing
+        n = n + 1: ReDim Preserve myZobjAllDayEvntItm(n) As Object
+    Set myZobjAllDayEvntItm(n) = myXobjTmpItm
+        Set myXobjTmpItm = myXobjCldrItms.FindNext
+    Loop
+    myXlonAllDayEvntItmCnt = n
+    Set myXobjCldrItms = Nothing: Set myXobjTmpItm = Nothing
+End Sub
+
+ '定型Ｐ_Outlookの予定表内の予定情報を取得する
+Private Sub PfixGetCalendrItemInformation( _
+            myXlonInfoCnt As Long, _
+            myZstrStrtDate() As String, myZstrStrtTime() As String, _
+            myZstrEndDate() As String, myZstrEndTime() As String, _
+            myZstrSbjct() As String, myZstrLctn() As String, myZstrBody() As String, _
+            myZobjClndrItm() As Object)
+'myZstrStrtDate(i) : 開始日
+'myZstrStrtTime(i) : 開始時間
+'myZstrEndDate(i)  : 終了日
+'myZstrEndTime(i)  : 終了時間
+'myZstrSbjct(i) : 表題
+'myZstrLctn(i)  : 場所
+'myZstrBody(i)  : 内容
+'myZobjClndrItm(i) : 予定表
+    myXlonInfoCnt = Empty
+    Erase myZstrStrtDate: Erase myZstrStrtTime
+    Erase myZstrEndDate: Erase myZstrEndTime
+    Erase myZstrSbjct: Erase myZstrLctn: Erase myZstrBody
+    On Error GoTo ExitPath
+    If UBound(myZobjClndrItm) <= 0 Then GoTo ExitPath
+    On Error GoTo 0
+  Dim myXvarTmp As Variant, n As Long: n = 0
+    For Each myXvarTmp In myZobjClndrItm
+        If myXvarTmp Is Nothing Then GoTo NextPath
+        n = n + 1
+        ReDim Preserve myZstrStrtDate(n) As String
+        ReDim Preserve myZstrStrtTime(n) As String
+        ReDim Preserve myZstrEndDate(n) As String
+        ReDim Preserve myZstrEndTime(n) As String
+        ReDim Preserve myZstrSbjct(n) As String
+        ReDim Preserve myZstrLctn(n) As String
+        ReDim Preserve myZstrBody(n) As String
+        With myXvarTmp
+            myZstrStrtDate(n) = FormatDateTime(.Start, vbShortDate)
+            myZstrStrtTime(n) = FormatDateTime(.Start, vbShortTime)
+            myZstrEndDate(n) = FormatDateTime(.End, vbShortDate)
+            myZstrEndTime(n) = FormatDateTime(.End, vbShortTime)
+            myZstrSbjct(n) = .Subject
+            myZstrLctn(n) = .Location
+            myZstrBody(n) = .body
+        End With
+NextPath:
+    Next
+    myXlonInfoCnt = n
+    myXvarTmp = Empty
+ExitPath:
+End Sub
+
+ '定型Ｐ_Outlookの予定表フォルダ内の指定日の終日の予定を含めた全予定表を検索して取得する
+Private Sub PincFindCalenderItemIncludeAllDayEventInDay( _
+            myXlonAllDayEvntItmCnt As Long, myZobjAllDayEvntItm() As Object, _
+            myXlonDayItmCnt As Long, myZobjDayItm() As Object, _
+            myXobjOutLkClndr As Object, myXdatTrgtDate As Date)
+'Includes PfixFindCalenderItemAllDayEvent
+'Includes PfixFindCalenderDayItem
+'myZobjAllDayEvntItm(i) : 終日の予定表
+'myZobjDayItm(i) : 予定表
+'myXdatTrgtDate : "yyyy/mm/dd"
+    myXlonAllDayEvntItmCnt = Empty: Erase myZobjDayItm
+    myXlonDayItmCnt = Empty: Erase myZstrDayTimeSbjct
+    If myXobjOutLkClndr Is Nothing Then Exit Sub
+    If myXdatTrgtDate = CDate("0:00:00") Then Exit Sub
+  Dim myXstrTrgtDay As String, myXdatTrgtDay As Date
+    myXstrTrgtDay = Format(myXdatTrgtDate, "yyyy/mm/dd")
+    myXdatTrgtDay = CDate(myXstrTrgtDay)
+//終日の予定表を取得
+    Call PfixFindCalenderItemAllDayEvent(myXlonAllDayEvntItmCnt, myZobjAllDayEvntItm, _
+                                            myXobjOutLkClndr, myXdatTrgtDay)
+'//全予定表を取得
+    Call PfixFindCalenderDayItem(myXlonDayItmCnt, myZobjDayItm, _
+                                     myXobjOutLkClndr, myXdatTrgtDay)
+End Sub
+
+ '定型Ｐ_Outlookの予定表フォルダ内の指定日の全予定情報を検索して取得する
+Private Sub PincFindCalenderItemInformationInDay( _
+            myXlonAllDayEvntInfoCnt As Long, myZstrAllDayEvntTimeSbjct() As String, _
+            myXlonDayInfoCnt As Long, myZstrDayTimeSbjct() As String, _
+            myXobjOutLkClndr As Object, myXdatTrgtDate As Date)
+'Includes PfixFindCalenderItemAllDayEvent
+'Includes PfixFindCalenderDayItem
+'Includes PfixGetCalendrItemInformation
+'myZstrTimeSbjct(i, 1) = StartTime
+'myZstrTimeSbjct(i, 2) = EndTime
+'myZstrTimeSbjct(i, 3) = Subject
+'myXdatTrgtDate : "yyyy/mm/dd"
+  Const coXlonDatePerMnth As Long = 31
+    myXlonAllDayEvntInfoCnt = Empty: Erase myZstrAllDayEvntTimeSbjct
+    myXlonDayInfoCnt = Empty: Erase myZstrDayTimeSbjct
+    If myXobjOutLkClndr Is Nothing Then Exit Sub
+    If myXdatTrgtDate = CDate("0:00:00") Then Exit Sub
+  Dim myXstrTrgtDay As String, myXdatTrgtDay As Date
+    myXstrTrgtDay = Format(myXdatTrgtDate, "yyyy/mm/dd")
+    myXdatTrgtDay = CDate(myXstrTrgtDay)
+'//終日の予定表を取得
+  Dim myXlonAllDayEvntItmCnt As Long, myZobjAllDayEvntItm() As Object
+    Call PfixFindCalenderItemAllDayEvent(myXlonAllDayEvntItmCnt, myZobjAllDayEvntItm, _
+                                            myXobjOutLkClndr, myXdatTrgtDay)
+'//全予定表を取得
+  Dim myXlonDayItmCnt As Long, myZobjDayItm() As Object
+    Call PfixFindCalenderDayItem(myXlonDayItmCnt, myZobjDayItm, _
+                                     myXobjOutLkClndr, myXdatTrgtDay)
+'//予定情報を取得
+  Dim myZstrStrtDate() As String, myZstrStrtTime() As String, _
+        myZstrEndDate() As String, myZstrEndTime() As String, _
+        myZstrSbjct() As String, myZstrLctn() As String, myZstrBody() As String
+  Dim i As Long
+    If myXlonAllDayEvntItmCnt > 0 Then
+        Call PfixGetCalendrItemInformation( _
+                myXlonAllDayEvntInfoCnt, myZstrStrtDate, myZstrStrtTime, _
+                myZstrEndDate, myZstrEndTime, myZstrSbjct, myZstrLctn, myZstrBody, _
+                myZobjAllDayEvntItm)
+        ReDim myZstrAllDayEvntTimeSbjct(myXlonAllDayEvntInfoCnt, 3) As String
+        For i = 1 To myXlonAllDayEvntInfoCnt
+            myZstrAllDayEvntTimeSbjct(i, 1) = myZstrStrtTime(i)
+            myZstrAllDayEvntTimeSbjct(i, 2) = myZstrEndTime(i)
+            myZstrAllDayEvntTimeSbjct(i, 3) = myZstrSbjct(i)
+        Next i
+    End If
+    If myXlonDayItmCnt > 0 Then
+        Call PfixGetCalendrItemInformation( _
+                myXlonDayInfoCnt, myZstrStrtDate, myZstrStrtTime, _
+                myZstrEndDate, myZstrEndTime, myZstrSbjct, myZstrLctn, myZstrBody, _
+                myZobjDayItm)
+        ReDim myZstrDayTimeSbjct(myXlonDayInfoCnt, 3) As String
+        For i = 1 To myXlonDayInfoCnt
+            myZstrDayTimeSbjct(i, 1) = myZstrStrtTime(i)
+            myZstrDayTimeSbjct(i, 2) = myZstrEndTime(i)
+            myZstrDayTimeSbjct(i, 3) = myZstrSbjct(i)
+        Next i
+    End If
+    Erase myZobjAllDayEvntItm: Erase myZobjDayItm
+    Erase myZstrStrtDate: Erase myZstrStrtTime
+    Erase myZstrEndDate: Erase myZstrEndTime
+    Erase myZstrSbjct: Erase myZstrLctn: Erase myZstrBody
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
