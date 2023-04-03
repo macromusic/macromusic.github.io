@@ -1,1 +1,2054 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'
+'
+''■ファイル --------------------------------------------------------------------------------------
+'
+' '定型Ｐ_[API]既存のファイルをコピーする
+'Private Sub apiPfixCopyFile(myXbisExitFlag As Boolean, _
+'                myXstrOrgFile As String, myXstrNewFile As String, _
+'                Optional coXlonOptn As Long = 1)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_既存のファイルをコピーする
+''  Private Declare Function CopyFile Lib "KERNEL32" Alias "CopyFileA" ( _
+''        ByVal lpExistingFileName As String, ByVal lpNewFileName As String, _
+''        ByVal bFailIfExists As Long) As Long
+''←EndDeclaration
+''myXlonRet = CopyFile(既存ファイルパス, 新ファイルパス, エラー1or上書き0):正常終了は0以外
+''coXlonOptn = 0 : 同一ファイル名があるときファイルを上書き
+''coXlonOptn = 1 : 同一ファイル名があるときエラーを表示
+'    myXbisExitFlag = False
+'    If myXstrOrgFile = "" Or myXstrNewFile = "" Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = CopyFile(myXstrOrgFile, myXstrNewFile, coXlonOptn)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ファイルコピーに失敗"   'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ディレクトリを作成する
+'Private Sub apiPfixCreateDirectoryEx(myXbisExitFlag As Boolean, _
+'                myXsteOrgDir As String, myXstrNewDir As String)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ディレクトリを作成する
+''  Private Declare Function CreateDirectoryEx Lib "KERNEL32" Alias "CreateDirectoryExA" ( _
+''        ByVal lpTemplateDirectory As String, ByVal lpNewDirectory As String, _
+''        lpSecurityAttributes As SECURITY_ATTRIBUTES) As Long
+''←EndDeclaration
+''myXlonRet = CreateDirectoryEx(元ディレクトリ, 新ディレクトリ,
+''                                'SECURITY_ATTRIBUTES構造体):正常終了は1
+'    myXbisExitFlag = False
+'    If myXsteOrgDir = "" Or myXstrNewDir = "" Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'  Dim myXScrtyAttrbt As SECURITY_ATTRIBUTES
+'    myXlonRet = CreateDirectoryEx(myXsteOrgDir, myXstrNewDir, myXScrtyAttrbt)
+'    If myXlonRet <> 1 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ディレクトリ作成に失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ファイルを削除する
+'Private Sub apiPfixDeleteFile(myXbisExitFlag As Boolean, myXstrFullName As String)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ファイルを削除する
+''  Private Declare Function DeleteFile Lib "KERNEL32" Alias "DeleteFileA" ( _
+''        ByVal lpFileName As String) As Long
+''←EndDeclaration
+''myXlonRet = DeleteFile(削除するファイルのフルパス):正常終了は0以外
+'    myXbisExitFlag = False
+'    If myXstrFullName = "" Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = DeleteFile(myXstrFullName)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ファイル削除に失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｆ_[API]指定のファイル、ディレクトリの属性を取得する
+'Private Function apiPfncstrGetFileAttributes(myXstrFullName As String) As String
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_指定のファイル、ディレクトリの属性を取得する
+''  Private Declare Function GetFileAttributes Lib "KERNEL32" Alias "GetFileAttributesA" ( _
+''        ByVal lpFileName$) As Long
+''←EndDeclaration
+''myXlonRet = GetFileAttributes(ファイルのフルパス):正常終了は-1以外
+''&H20=32dec, &H1=16dec, &H2=2dec, &H80=128dec, &H1=1dec, &H4=4dec
+'    apiPfncstrGetFileAttributes = Empty
+'    If myXstrFullName = "" Then GoTo ExitPath
+'  Dim myXstrAtrbt As String, myXlonRet As Long
+'    myXlonRet = GetFileAttributes(myXstrFullName)
+'    Select Case myXlonRet
+'        Case -1: GoTo ExitPath
+'        Case &H20: myXstrAtrbt = "アーカイブ属性"
+'        Case &H10: myXstrAtrbt = "ディレクトリ属性"
+'        Case &H2: myXstrAtrbt = "隠しファイル属性"
+'        Case &H80: myXstrAtrbt = "ファイル属性無し"
+'        Case &H1: myXstrAtrbt = "読み込み専用属性"
+'        Case &H4: myXstrAtrbt = "システムファイル属性"
+'    End Select
+'    apiPfncstrGetFileAttributes = myXstrAtrbt
+'    Exit Function
+'ExitPath:
+''    MsgBox "属性取得に失敗"     'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]パスからファイル名を取得する
+'Private Function apiPfncstrGetFileTitle(myXstrFullName As String, _
+'                Optional coXlonBuf As Long = 255) As String
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_パスからファイル名を取得する
+''  Private Declare Function GetFileTitle Lib "comdlg32.dll" Alias "GetFileTitleA" ( _
+''        ByVal lpszFile As String, ByVal lpszTitle As String, _
+''        ByVal cbBuf As Integer) As Integer
+''←EndDeclaration
+''myXlonRet = GetFileTitle(ファイルのパス, ファイル名, ファイル名の文字数):正常終了は0
+'    apiPfncstrGetFileTitle = Empty
+'    If myXstrFullName = "" Then GoTo ExitPath
+''//ファイル名の文字列を取得
+'  Dim myXstrTitle As String, myXstrTitleLen As Long
+'    myXstrTitle = String(coXlonBuf, vbNullChar) 'バッファを確保
+'    myXstrTitleLen = Len(myXstrTitle)           'バッファを確保
+'  Dim myXlonRet As Long
+'    myXlonRet = GetFileTitle(myXstrFullName, myXstrTitle, myXstrTitleLen)
+'    If myXlonRet <> 0 Then GoTo ExitPath
+''//取得した文字列からバッファのNullを除去
+'    If Right(myXstrTitle, 1) <> vbNullChar Then GoTo ExitPath
+'  Dim i As Long, n As Long
+'    For i = Len(myXstrTitle) To 1 Step -1
+'        If Mid(myXstrTitle, i, 1) <> vbNullChar Then
+'            n = i: Exit For
+'        End If
+'    Next i
+'    apiPfncstrGetFileTitle = Left(myXstrTitle, n)
+'    Exit Function
+'ExitPath:
+''    MsgBox "ファイル名取得に失敗"   'Debug.Print
+'End Function
+'
+' '定型Ｐ_[API]既存のファイル／フォルダを移動する
+'Private Sub apiPfixMoveFile(myXbisExitFlag As Boolean, _
+'                myXstrOrgFullName As String, myXNewFullName As String)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_既存のファイルを移動する
+''  Private Declare Function MoveFile Lib "KERNEL32" Alias "MoveFileA" ( _
+''        ByVal lpExistingFileName As String, ByVal lpNewFileName As String) As Long
+''←EndDeclaration
+''myXlonRet = MoveFile(元ファイル/フォルダパス, 新ファイル/フォルダパス):正常終了0以外
+'    myXbisExitFlag = False
+'    If myXstrOrgFullName = "" Or myXNewFullName = "" Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = GetFileTitle(myXstrOrgFullName, myXNewFullName)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    'MsgBox "ファイル/フォルダ移動完了"      'Debug.Print
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ファイル/フォルダ移動に失敗"    'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ファイル／フォルダ属性を変更する
+'Private Sub apiPfixSetFileAttributes(myXbisExitFlag As Boolean, _
+'                myXstrOrgFullName As String, myXstrNewAtrbt As Long, _
+'                Optional coXlonOptn As Long = 16)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ファイル属性を変更する
+''  Private Declare Function SetFileAttributes Lib "KERNEL32" Alias "SetFileAttributesA" ( _
+''        ByVal lpFileName As String, ByVal dwFileAttributes As Long) As Long
+''←EndDeclaration
+''myXlonRet = SetFileAttributes(元ファイル/フォルダパス, 新ファイル/フォルダ属性):正常終了1
+'    myXbisExitFlag = False
+'    If myXstrOrgFullName = "" Or myXNewFullName = "" Then GoTo ExitPath
+'    Select Case coXlonOptn
+'        Case 32: myXstrNewAtrbt = &H20    '=アーカイブ属性
+'        Case 16: myXstrNewAtrbt = &H10    'ディレクトリ属性
+'        Case 2: myXstrNewAtrbt = &H2      '隠しファイル属性
+'        Case 128: myXstrNewAtrbt = &H80   'ファイル属性無し
+'        Case 1: myXstrNewAtrbt = &H1      '読み込み専用属性
+'        Case 4: myXstrNewAtrbt = &H4      'システムファイル属性
+'    End Select
+'  Dim myXlonRet As Long
+'    myXlonRet = SetFileAttributes(myXstrOrgFullName, myXstrNewAtrbt)
+'    If myXlonRet <> 1 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ファイル/フォルダ属性変更に失敗"    'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ファイル／フォルダを検索する
+'Private Sub apiPfixSearchPath(myXbisExitFlag As Boolean, _
+'                myXstrPath As String, myXstrFileName As String, _
+'                myXstrExtsn As String, _
+'                Optional coXlonBuf As Long = 255)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ファイル/フォルダを検索する
+''  Private Declare Function SearchPath Lib "KERNEL32" Alias "SearchPathA" ( _
+''        ByVal lpPath As String, ByVal lpFileName As String, _
+''        ByVal lpExtension As String, ByVal nBufferLength As Long, _
+''        ByVal lpBuffer As String, ByVal lpFilePart As String) As Long
+''←EndDeclaration
+''myXlonRet = SearchPath(ファイル/フォルダパス,ファイル/フォルダ名,拡張子,
+''                        '文字列の文字数,文字列,意味無):存在する場合0以外
+'    myXbisExitFlag = False
+'    If myXstrPath = "" Or myXstrFileName = "" _
+'        Or myXstrExtsn = "" Then GoTo ExitPath
+'  Dim myXlonTxtLen As Long, myXstrTxt As String, myXstrPart As String
+'    myXstrTxt = String(coXlonBuf, vbNullChar)   'バッファを確保
+'    myXlonTxtLen = Len(myXstrTxt)               'バッファを確保
+'    myXstrPart = String(coXlonBuf, vbNullChar)  'バッファを確保
+'  Dim myXlonRet As Long
+'    myXlonRet = SearchPath(myXstrPath, myXstrFileName, myXstrExtsn, _
+'                    myXlonTxtLen, myXstrTxt, myXstrPart)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ファイル/ファイル無し"  'Debug.Print
+'End Sub
+'
+''■マウス --------------------------------------------------------------------------------------
+'
+' '定型Ｐ_[API]マウスの位置座標を取得する
+'Private Sub apiPfixGetCursorPos(myXlonPointX As Long, myXlonPointY As Long)
+'''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_マウスの位置座標を取得する
+''  Private Declare Function GetCursorPos Lib "USER32" (lpPoint As POINTAPI) As Long
+''  Public Type POINTAPI
+''    typlonPointX As Long
+''    typlonPointY As Long
+''  End Type
+''←EndDeclaration
+''myXlonRet = GetCursorPos(POINTAPI構造体):ハンドルが戻る
+'    myXlonPointX = Empty: myXlonPointY = Empty
+'  Dim myXPOINTAPI As POINTAPI
+'    Call GetCursorPos(myXPOINTAPI)
+'    myXlonPointX = myXPOINTAPI.typlonPointX
+'    myXlonPointY = myXPOINTAPI.typlonPointY
+'End Sub
+'
+' '定型Ｐ_[API]マウスカーソルの位置を変更する
+'Private Sub apiPfixSetCursorPos(myXbisExitFlag As Boolean, _
+'                myXlonPointX As Long, myXlonPointY As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_マウスカーソルの位置を変更する
+''  Private Declare Function SetCursorPos Lib "USER32" (ByVal X As Long, ByVal Y As Long) As Long
+''←EndDeclaration
+''myXlonRet = SetCursorPos(X水平位置,Y垂直位置):正常終了0以外
+'    myXbisExitFlag = False
+'    If myXlonPointX = 0 Or myXlonPointY = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = SetCursorPos(myXlonPointX, myXlonPointY)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "マウスカーソルの位置変更に失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]マウスポインタの画面表示を変更する
+'Private Sub apiPfixShowCursor(myXlonCnt As Long, _
+'                            Optional coXlonOptn As Long = 0)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_マウスポインタの画面表示を変更する
+''  Private Declare Function ShowCursor Lib "USER32" (ByVal bShow As Long) As Long
+''←EndDeclaration
+''myXlonRet = ShowCursor(0:非表示or1:表示):表示で+1/非表示で-1
+''coXlonOptn = 0 : マウスポインタを非表示
+''coXlonOptn = 1 : マウスポインタを表示
+'  Dim myXlonRet As Long
+'    myXlonRet = ShowCursor(coXlonOptn)
+'    myXlonCnt = myXlonCnt + myXlonRet
+'End Sub
+'
+' '定型Ｐ_[API]マウスの移動範囲を限定する
+'Private Sub apiPfixClipCursor(myXbisExitFlag As Boolean, _
+'                myXlonLeft As Long, myXlonTop As Long, _
+'                myXlonRight As Long, myXlonBottom As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_マウスの移動範囲を限定する
+''  Private Declare Function ClipCursor Lib "USER32" (lpRect As Any) As Long
+''  Private Type RECT
+''    typlonLeft As Long
+''    typlonTop As Long
+''    typlonRight As Long
+''    typlonBottom As Long
+''  End Type
+''←EndDeclaration
+''myXlonRet = ClipCursor(RECT構造体):正常終了0以外
+'    myXbisExitFlag = False
+'    If myXlonLeft = 0 Or myXlonTop = 0 Or _
+'        myXlonRight = 0 Or myXlonBottom = 0 Then GoTo ExitPath
+'  Dim myXRECT As rect
+'    myXRECT.typlonLeft = myXlonLeft
+'    myXRECT.typlonTop = myXlonTop
+'    myXRECT.typlonRight = myXlonRight
+'    myXRECT.typlonBottom = myXlonBottom
+'  Dim myXlonRet As Long
+'    myXlonRet = ClipCursor(myXRECT)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "マウス移動範囲限定に失敗"   'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]マウスの移動範囲をスクリーン全体に設定する
+'Private Sub apiPfixClipCursorFullScreen(myXbisExitFlag As Boolean)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_マウスの移動範囲を限定する
+''  Private Declare Function ClipCursor Lib "USER32" (lpRect As Any) As Long
+''myXlonRet = ClipCursor(RECT構造体):正常終了0以外
+''←EndDeclaration
+'    myXbisExitFlag = False
+'  Dim myXlonRet As Long
+'    myXlonRet = ClipCursor(ByVal 0&)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "マウス移動範囲の全スクリーン化に失敗"  　'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]マウスのクリック操作をする
+'Private Sub apiPfixMouseEvent(myXbisExitFlag As Boolean, _
+'            Optional myXbisRightClick As Boolean = False)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_マウスイベントを実行する
+''  Private Declare Sub mouse_event Lib "user32" ( _
+''        ByVal dwFlags As Long, ByVal dx As Long, ByVal dy As Long, _
+''        ByVal cButtons As Long, ByVal dwExtraInfo As Long)
+''←EndDeclaration
+'  Const MOUSEEVENTF_LEFTDOWN = &H2
+'  Const MOUSEEVENTF_LEFTUP = &H4
+'  Const MOUSEEVENTF_RIGHTDOWN = &H8
+'  Const MOUSEEVENTF_RIGHTUP = &H10
+'    On Error GoTo ExitPath
+'    If myXbisRightClick = False Then
+'    '//左クリック
+'        Call mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+'        Call mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+'    Else
+'    '//右クリック
+'        Call mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0)
+'        Call mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0)
+'    End If
+'    On Error GoTo 0
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "マウスカーソルのクリックに失敗"     'Debug.Print
+'End Sub
+'
+''■ウインドウ : Office2011以前で使用可能 -------------------------------------------------------
+'
+' '定型Ｆ_[API]ウインドウタイトルバーの文字列の長さを取得する1
+'Private Function apiPfnclonGetWindowTextLength1(myXlonhWnd As Long) As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウタイトルバーの文字列の長さを取得する
+''  Private Declare Function GetWindowTextLength Lib "USER32" Alias "GetWindowTextLengthA" ( _
+''        ByVal hWnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = GetWindowTextLength(ウィンドウのハンドル):文字列の文字数
+'    apiPfnclonGetWindowTextLength1 = Empty
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'  Dim myXTxtLngth As Long
+'    myXTxtLngth = GetWindowTextLength(myXlonhWnd)
+'    If myXTxtLngth = 0 Then GoTo ExitPath
+'    apiPfnclonGetWindowTextLength1 = myXTxtLngth
+'    Exit Function
+'ExitPath:
+''    MsgBox "タイトルバーの文字数取得無し"   'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]ウインドウのタイトルバーの文字列を取得する1
+'Private Function apiPfncstrGetWindowText1(myXlonhWnd As Long, _
+'                Optional coXlonBuf As Long = 255) As String
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウのタイトルバーの文字列を取得する
+''  Private Declare Function GetWindowText Lib "USER32" Alias "GetWindowTextA" ( _
+''        ByVal hWnd&, ByVal lpString$, ByVal cch&) As Long
+''←EndDeclaration
+''myXlonRet = GetWindowText(ウィンドウのハンドル,文字列,文字列の文字数):文字列のバイト数
+'    apiPfncstrGetWindowText1 = Empty
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+''//ウインドウのタイトルバーの文字列を取得
+'  Dim myXstrWndwTtlName As String, myXlonLen As Long
+'    myXstrWndwTtlName = String(coXlonBuf, vbNullChar)   'バッファを確保
+'    myXlonLen = Len(myXstrWndwTtlName)
+'  Dim myXlonRet As Long
+'    myXlonRet = GetWindowText(myXlonhWnd, myXstrWndwTtlName, myXlonLen)
+'    If myXlonRet = 0 Then GoTo ExitPath
+''//取得した文字列からバッファのNullを除去
+'    If Right(myXstrWndwTtlName, 1) <> vbNullChar Then GoTo ExitPath
+'  Dim i As Long, n As Long
+'    For i = Len(myXstrWndwTtlName) To 1 Step -1
+'        If Mid(myXstrWndwTtlName, i, 1) <> vbNullChar Then
+'            n = i: Exit For
+'        End If
+'    Next i
+'    apiPfncstrGetWindowText1 = Left(myXstrWndwTtlName, n)
+'    Exit Function
+'ExitPath:
+''    MsgBox "タイトルバーの文字列取得無し"   'Debug.Print
+'End Function
+'
+' '定型Ｐ_[API]ウインドウのタイトルを変更する1
+'Private Sub apiPfixSetWindowText1(myXbisExitFlag As Boolean, _
+'                myXlonhWnd As Long, myXstrWndwName As String)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウのタイトルを変更する
+''  Private Declare Function SetWindowText Lib "USER32" Alias "SetWindowTextA" ( _
+''        ByVal hWnd As Long, ByVal lpString As String) As Long
+''←EndDeclaration
+''myXlonRet = SetWindowText(ウインドウのハンドル,文字列):正常終了0以外
+'    myXbisExitFlag = False
+'    If myXlonhWnd = 0 Or myXstrWndwName = "" Then GoTo ExitPath
+'    myXlonRet = SetWindowText(myXlonhWnd, myXstrWndwName)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウのタイトル変更が失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウのタイトルバーを点滅させる1
+'Private Sub apiPfixFlashWindow1(myXbisExitFlag As Boolean, _
+'                myXlonhWnd As Long, _
+'                Optional coXlonOptn As Long = 1)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウのタイトルバーを点滅させる
+''  Private Declare Function FlashWindow Lib "USER32" ( _
+''        ByVal hWnd As Long, ByVal bInvert As Long) As Long
+''←EndDeclaration
+''myXlonRet = FlashWindow(ウィンドウのハンドル, フラッシュ1or初期状態0):アクティブではない時0
+''coXlonOptn = 0 : ウィンドウを初期化
+''coXlonOptn = 1 : ウインドウのタイトルバーを点滅
+'    myXbisExitFlag = False
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = FlashWindow(myXlonhWnd, coXlonOptn)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウィンドウがアクティブでは無く、タイトルバーの点滅設定に失敗"   'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウの外側のサイズを取得する1
+'Private Sub apiPfixGetWindowRect1( _
+'                myXlonLeft As Long, myXlonTop As Long, _
+'                myXlonRight As Long, myXlonBottom As Long, _
+'                myXlonhWnd As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウの外側のサイズを取得する
+''  Private Declare Function GetWindowRect Lib "USER32" (ByVal hWnd As Long, lpRect As RECT) As Long
+''  Private Type RECT
+''    typlonLeft As Long
+''    typlonTop As Long
+''    typlonRight As Long
+''    typlonBottom As Long
+''  End Type
+''←EndDeclaration
+''Call GetWindowTextLength(ウィンドウのハンドル,RECT構造体):-
+'    myXlonLeft = Empty: myXlonTop = Empty: myXlonRight = Empty: myXlonBottom = Empty
+'    If myXlonhWnd = 0 Then Exit Sub
+'  Dim myXRECT As rect
+'    Call GetWindowRect(myXlonhWnd, myXRECT)
+'    myXlonLeft = myXRECT.typlonLeft
+'    myXlonTop = myXRECT.typlonTop
+'    myXlonRight = myXRECT.typlonRight
+'    myXlonBottom = myXRECT.typlonBottom
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウの位置とサイズを変更する1
+'Private Sub apiPfixMoveWindow1(myXbisExitFlag As Boolean, _
+'                myXlonhWnd As Long, myXlonLeft As Long, myXlonTop As Long, _
+'                myXlonWidth As Long, myXlonHeight As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウの位置とサイズを変更する
+''  Private Declare Function MoveWindow Lib "USER32" ( _
+''        ByVal hWnd As Long, ByVal X As Long, ByVal Y As Long, _
+''        ByVal nWidth As Long, ByVal nHeight As Long, ByVal bRepaint As Long) As Long
+''←EndDeclaration
+''myXlonRet = MoveWindow(ウインドウのハンドル, X座標, Y座標, 幅, 高さ, 1):正常終了0以外
+'    myXbisExitFlag = False
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    If myXlonLeft = 0 Or myXlonTop = 0 Or _
+'        myXlonWidth = 0 Or myXlonHeight = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = MoveWindow(myXlonhWnd, _
+'                myXlonLeft, myXlonTop, myXlonWidth, myXlonHeight, 1)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの位置とサイズ変更が失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｆ_[API]ウインドウがアイコン化されているか判別する1
+'Private Function apiPfncbisIsIconic1(ByVal myXlonhWnd As Long) As Boolean
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウがアイコン化されているか判別する
+''  Private Declare PtrSafe Function IsIconic Lib "USER32" (ByVal hWnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = IsIconic(ウィンドウのハンドル):最小化されている時=1
+'    apiPfncbisIsIconic1 = False
+'    If myXlonhWnd = 0 Then Exit Function
+'  Dim myXlonRet As Long: myXlonRet = IsIconic(myXlonhWnd)
+'    If myXlonRet <> 1 Then Exit Function
+'    apiPfncbisIsIconic1 = True
+''    MsgBox "ウインドウは最小化状態"     'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]ウインドウが最大化されているか判別する1
+'Private Function apiPfncbisIsZoomed1(myXlonhWnd As Long) As Boolean
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウが最大化されているか判別する
+''  Private Declare Function IsZoomed Lib "USER32" (ByVal hWnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = IsZoomed(ウィンドウのハンドル):最大化されているとき0以外
+'    apiPfncbisIsZoomed1 = False
+'    If myXlonhWnd = 0 Then Exit Function
+'  Dim myXlonRet As Long: myXlonRet = IsZoomed(myXlonhWnd)
+'    If myXlonRet = 0 Then Exit Function
+'    apiPfncbisIsZoomed1 = True
+''    MsgBox "ウインドウは最大化状態"     'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]ウインドウが表示されているか判別する1
+'Private Function apiPfncbisIsWindowVisible1(myXlonhWnd As Long) As Boolean
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウが表示されているか判別する
+''  Private Declare Function IsWindowVisible Lib "USER32" (ByVal hWnd&) As Long
+''←EndDeclaration
+''myXlonRet = IsWindowVisible(ウィンドウのハンドル):表示されている場合1
+'    apiPfncbisIsWindowVisible1 = False
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long: myXlonRet = IsWindowVisible(myXlonhWnd)
+'    If myXlonRet <> 1 Then Exit Function
+'    apiPfncbisIsWindowVisible1 = True
+''    MsgBox "ウインドウは表示状態"   'Debug.Print
+'End Function
+'
+' '定型Ｐ_[API]一時的にウインドウを手前にする1
+'Private Sub apiPfixBringWindowToTop1(myXbisExitFlag As Boolean, myXlonhWnd As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_一時的にウインドウを手前にする
+''  Private Declare Function BringWindowToTop Lib "USER32" (ByVal hWnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = BringWindowToTop(ウインドウのハンドル):正常終了0以外
+'    myXbisExitFlag = False
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = BringWindowToTop(myXlonhWnd)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウが未表示"     'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウをアクティブにさせる1
+'Private Sub apiPfixSetActiveWindow1(myXbisExitFlag As Boolean, myXlonhWnd As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウをアクティブにさせる
+''  Private Declare Function SetActiveWindow Lib "USER32" (ByVal hWnd&) As Long
+''←EndDeclaration
+''myXlonRet = SetActiveWindow(ウインドウのハンドル):直前にアクティブだったウインドウのハンドル
+'    myXbisExitFlag = False
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = SetActiveWindow(myXlonhWnd)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウのアクティブ化失敗"   'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウ(コントロール)にフォーカスを与える1
+'Private Sub apiPfixSetFocusAPI1(myXbisExitFlag As Boolean, myXlonhWnd As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウ(コントロール)にフォーカスを与える
+''  Private Declare Function SetFocusAPI Lib "USER32" Alias "SetFocus" (ByVal hWnd&) As Long
+''←EndDeclaration
+''myXlonRet = SetFocusAPI(ウインドウのハンドル):直前にフォーカースがあったウインドウのハンドル
+'    myXbisExitFlag = False
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = SetFocusAPI(myXlonhWnd)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウのフォーカス化失敗"   'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウを最小化する1
+'Private Sub apiPfixCloseWindow1(myXbisExitFlag As Boolean, myXlonhWnd As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウを最小化する
+''  Private Declare Function CloseWindow Lib "USER32" (ByVal hWnd&) As Long
+''←EndDeclaration
+''myXlonRet = CloseWindow(ウインドウのハンドル):正常終了1
+'    myXbisExitFlag = False
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = CloseWindow(myXlonhWnd)
+'    If myXlonRet <> 1 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの最小化失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウの表示状態を設定する1
+'Private Sub apiPfixShowWindowAsync1(myXbisExitFlag As Boolean, _
+'            ByVal myXlonhWnd As Long, _
+'            Optional ByVal coXlonCmdShow As Long = 1)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_指定されたウインドウの表示状態を設定する
+''  Private Declare PtrSafe Function ShowWindowAsync Lib "user32.dll" ( _
+''        ByVal hWnd As Long, ByVal nCmdShow As Long) As Long
+''←EndDeclaration
+''myXlonRet = ShowWindowAsync(ウインドウのハンドル,ウィンドウの表示方法):正常終了0以外
+''coXlonCmdShow = 0 '=&H0 : SW_HIDE            :ウィンドウを非表示にして他のウィンドウをアクティブ
+''coXlonCmdShow = 1 '=&H1 : SW_SHOWNORMAL      :ウインドウをアクティブにして元のサイズと位置で表示
+''coXlonCmdShow = 2 '=&H2 : SW_SHOWMINIMIZED   :ウインドウをアクティブにして最小化
+''coXlonCmdShow = 3 '=&H3 : SW_SHOWMAXIMIZED   :ウインドウをアクティブにして最大化
+''coXlonCmdShow = 4 '=&H4 : SW_SHOWNOACTIVATE  :ウインドウをアクティブにせずに元のサイズと位置で表示
+''coXlonCmdShow = 5 '=&H5 : SW_SHOW            :ウインドウをアクティブにして現在のサイズと位置で表示
+''coXlonCmdShow = 6 '=&H6 : SW_MINIMIZE        :ウインドウを最小化しZオーダーが次のトップレベルウインドウをアクティブにする
+''coXlonCmdShow = 7 '=&H7 : SW_SHOWMINNOACTIVE :ウインドウをアクティブにせずに最小化
+''coXlonCmdShow = 8 '=&H8 : SW_SHOWNA          :ウインドウをアクティブにせずに現在のサイズと位置で表示
+''coXlonCmdShow = 9 '=&H9 : SW_RESTORE         :ウインドウをアクティブにして表示し最小化または最大化の場合は位置とサイズを元に戻す
+'    myXbisExitFlag = False
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long: myXlonRet = ShowWindowAsync(myXlonhWnd, coXlonCmdShow)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの表示設定に失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウィンドウを最前面に表示する1
+'Private Sub apiPfixSetForegroundWindow1(myXbisExitFlag As Boolean, _
+'            ByVal myXlonhWnd As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_指定したウィンドウを最前面に表示する
+''  Private Declare PtrSafe Function SetForegroundWindow Lib "USER32" ( _
+''        ByVal hWnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = SetForegroundWindow(ウインドウのハンドル):正常終了0以外
+'    myXbisExitFlag = False
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long: myXlonRet = SetForegroundWindow(myXlonhWnd)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの最前面化が失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウの位置やサイズ、表示を設定する1
+'Private Sub apiPfixSetWindowPos1(myXbisExitFlag As Boolean, _
+'                myXlonhWnd As Long, myXlonLeft As Long, myXlonTop As Long, _
+'                myXlonWidth As Long, myXlonHeight As Long, _
+'                Optional coXlonOptn1 As Long = 0, _
+'                Optional coXlonOptn2 As Long = 64)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウの位置やサイズ、表示を設定する
+''  Private Declare Function SetWindowPos Lib "USER32" ( _
+''        ByVal hWnd As Long, ByVal hWndInsertAfter As Long, _
+''        ByVal X As Long, ByVal Y As Long, ByVal cx As Long, ByVal cy As Long, _
+''        ByVal wFlags As Long) As Long
+''myXlonRet = SetWindowPos(ウインドウのハンドル, ウインドウ処理1,
+''                X座標, Y座標, 幅, 高さ, ウインドウ処理2):成功1、失敗0
+''←EndDeclaration
+''coXlonOptn1 = 0  =&H0     :ウィンドウを手前にセット
+''coXlonOptn1 = 1  =&H1     :ウィンドウを後ろにセット
+''coXlonOptn1 = -1 =&HFFFF  :ウィンドウを常に手前にセット
+''coXlonOptn1 = -2 =&HFFFE  :ウィンドウの常に手前を解除
+''coXlonOptn2 = 64 =&H40    :ウィンドウを表示する
+''coXlonOptn2 = 1  =&H1     :ウィンドウサイズを設定しない
+''coXlonOptn2 = 2  =&H2     :ウィンドウ位置を設定しない
+'    myXbisExitFlag = False
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'    If myXlonLeft = 0 Or myXlonTop = 0 Or _
+'        myXlonWidth = 0 Or myXlonHeight = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = SetWindowPos(myXlonhWnd, coXlonOptn1, _
+'                myXlonLeft, myXlonTop, myXlonWidth, myXlonHeight, coXlonOptn2)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの位置やサイズ、表示を設定が失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｆ_[API]ウインドウへのキー入力が受け取れるかを判別する1
+'Private Function apiPfncbisIsWindowEnabled1(myXlonhWnd As Long) As Boolean
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウへのキー入力が受け取れるかを判別する
+''  Private Declare Function IsWindowEnabled Lib "USER32" (ByVal hWnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = IsWindowEnabled(ウィンドウのハンドル):有効のとき1
+'    apiPfncbisIsWindowEnabled1 = False
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = IsWindowEnabled(myXlonhWnd)
+'    If myXlonRet <> 1 Then Exit Function
+'    apiPfncbisIsWindowEnabled1 = True
+''    MsgBox "ウインドウへのキー入力が有効"   'Debug.Print
+'End Function
+'
+' '定型Ｐ_[API]ウインドウのマウス入力とキーボード入力を無効にする1
+'Private Sub apiPfixEnableWindow1(myXbisExitFlag As Boolean, myXlonhWnd As Long, _
+'                Optional coXlonOptn As Long = 1)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウのマウス入力とキーボード入力を無効にする
+''  Private Declare Function EnableWindow Lib "USER32" ( _
+''        ByVal hWnd As Long, ByVal fEnable As Long) As Long
+''←EndDeclaration
+''myXlonRet = EnableWindow(ウインドウのハンドル,無効0or有効1):正常終了0以外
+''coXlonOptn = 0 : マウス入力とキーボード入力を無効化
+''coXlonOptn = 1 : マウス入力とキーボード入力を有効化
+'    myXbisExitFlag = False
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = EnableWindow(myXlonhWnd, coXlonOptn)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "マウス入力とキーボード入力の有効化/無効化に失敗"    'Debug.Print
+'End Sub
+'
+' '定型Ｐ_指定ウィンドウを最前面に表示する1(最小化チェック含む)
+'Private Sub PincSetForegroundWindowWithIconicCheck1(myXbisExitFlag As Boolean, _
+'            ByVal myXlonhWnd As Long)
+''Includes apiPfncbisIsIconic1
+''Includes apiPfixShowWindowAsync1
+''Includes apiPfixSetForegroundWindow1
+'    myXbisExitFlag = False
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'  Const coXlonCmdShow As Long = &H9
+''//ウインドウがアイコン化されているか判別
+'    myXbisExitFlag = apiPfncbisIsIconic1(myXlonhWnd)
+'    If myXbisExitFlag = True Then _
+'    '//ウインドウの最小化表示を元に戻す
+'        Call apiPfixShowWindowAsync1(myXbisExitFlag, myXlonhWnd, coXlonCmdShow)
+'        If myXbisExitFlag = True Then GoTo ExitPath
+'    End If
+''//指定したウィンドウを最前面に表示
+'    Call apiPfixSetForegroundWindow1(myXbisExitFlag, myXlonhWnd)
+'    If myXbisExitFlag = True Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの最前面化が失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｐ_指定エクセルブックのウィンドウの外側のサイズを取得する1
+'Private Sub PincGetExcelBookWindowSize1( _
+'            myXbisExitFlag As Boolean, _
+'            myXlonWndwLft As Long, myXlonWndwTop As Long, _
+'            myXlonWndwRght As Long, myXlonWndwBttm As Long, _
+'            ByVal myXstrBookName As String)
+''Includes PfnclonGetExcelApplicationWindowHandle
+''Includes apiPfixShowWindowAsync1
+''Includes PfixWait
+''Includes apiPfixGetWindowRect1
+'    myXbisExitFlag = False
+'    myXlonWndwLft = Empty: myXlonWndwTop = Empty
+'    myXlonWndwRght = Empty: myXlonWndwBttm = Empty
+'  Dim myXlonhWnd As Long, myXbisZoomed As Boolean, myXlonCmdShow As Long
+''//指定エクセルブックのウィンドウハンドルを取得
+'    Windows(myXstrBookName).Activate
+'    myXlonhWnd = PfnclonGetExcelApplicationWindowHandle()
+''//ウインドウが最大化されているか判別
+'    myXbisZoomed = apiPfncbisIsZoomed1(myXlonhWnd)
+''//指定ウインドウをアクティブにして最大化
+'    myXlonCmdShow = 3
+'    Call apiPfixShowWindowAsync1(myXbisExitFlag, myXlonhWnd, myXlonCmdShow)
+'    If myXbisExitFlag = True Then Exit Sub
+''//ウインドウの外側のサイズを取得
+'    Call PfixWait(0.1)
+'    Call apiPfixGetWindowRect1( _
+'            myXlonWndwLft, myXlonWndwTop, myXlonWndwRght, myXlonWndwBttm, _
+'            myXlonhWnd)
+''//指定ウインドウをアクティブにして元のサイズと位置で表示
+'    If myXbisZoomed = False Then
+'        myXlonCmdShow = 1
+'        Call apiPfixShowWindowAsync1(myXbisExitFlag, myXlonhWnd, myXlonCmdShow)
+'        If myXbisExitFlag = True Then Exit Sub
+'    End If
+'End Sub
+'
+''■ウインドウ : Office2013以降で使用可能 -------------------------------------------------------
+'
+' '定型Ｆ_ウィンドウハンドルを取得する
+'Private Function PfixGetWindowHandle(myXobjWindow As Object) As Long
+''Office2013～_ウィンドウハンドルを取得する
+''   →Windowオブジェクトのハンドルを取得するhWndプロパティが追加
+'    PfixGetWindowHandle = Empty
+'    PfixGetWindowHandle = myXobjWindow.Hwnd
+'End Function
+'
+' '定型Ｆ_[API]ウインドウタイトルバーの文字列の長さを取得する2
+'Private Function apiPfnclonGetWindowTextLength2(myXobjWindow As Object) As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウタイトルバーの文字列の長さを取得する
+''  Private Declare Function GetWindowTextLength Lib "USER32" Alias "GetWindowTextLengthA" ( _
+''        ByVal hWnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = GetWindowTextLength(ウィンドウのハンドル):文字列の文字数
+'    apiPfnclonGetWindowTextLength2 = Empty
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'  Dim myXlonTxtLngth As Long
+'    myXlonTxtLngth = GetWindowTextLength(myXobjWindow.Hwnd)
+'    If myXlonTxtLngth = 0 Then GoTo ExitPath
+'    apiPfnclonGetWindowTextLength2 = myXlonTxtLngth
+'    Exit Function
+'ExitPath:
+''    MsgBox "タイトルバーの文字数取得無し"   'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]ウインドウのタイトルバーの文字列を取得する2
+'Private Function apiPfncstrGetWindowText2(myXobjWindow As Object, _
+'                Optional myXlonBuf As Long = 255) As String
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウのタイトルバーの文字列を取得する
+''  Private Declare Function GetWindowText Lib "USER32" Alias "GetWindowTextA" ( _
+''        ByVal hWnd&, ByVal lpString$, ByVal cch&) As Long
+''←EndDeclaration
+''myXlonRet = GetWindowText(ウィンドウのハンドル,文字列,文字列の文字数):文字列のバイト数
+'    apiPfncstrGetWindowText2 = Empty
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+''//ウインドウのタイトルバーの文字列を取得
+'  Dim myXstrWndwTtlName As String, myXlonLen As Long
+'    myXstrWndwTtlName = String(myXlonBuf, vbNullChar)  'バッファを確保
+'    myXlonLen = Len(myXstrWndwTtlName)
+'  Dim myXlonRet As Long
+'    myXlonRet = GetWindowText(myXobjWindow.Hwnd, myXstrWndwTtlName, myXlonLen)
+'    If myXlonRet = 0 Then GoTo ExitPath
+''//取得した文字列からバッファのNullを除去
+'    If Right(myXstrWndwTtlName, 1) <> vbNullChar Then GoTo ExitPath
+'  Dim i As Long, n As Long
+'    For i = Len(myXstrWndwTtlName) To 1 Step -1
+'        If Mid(myXstrWndwTtlName, i, 1) <> vbNullChar Then
+'            n = i: Exit For
+'        End If
+'    Next i
+'    apiPfncstrGetWindowText2 = Left(myXstrWndwTtlName, n)
+'    Exit Function
+'ExitPath:
+''    MsgBox "タイトルバーの文字列取得無し"   'Debug.Print
+'End Function
+'
+' '定型Ｐ_[API]ウインドウのタイトルを変更する2
+'Private Sub apiPfixSetWindowText2(myXbisExitFlag As Boolean, _
+'                myXobjWindow As Object, myXstrWndwName As String)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウのタイトルを変更する
+''  Private Declare Function SetWindowText Lib "USER32" Alias "SetWindowTextA" ( _
+''        ByVal hWnd As Long, ByVal lpString As String) As Long
+''←EndDeclaration
+''myXlonRet = SetWindowText(ウインドウのハンドル,文字列):正常終了0以外
+'    myXbisExitFlag = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'    If myXstrWndwName = "" Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = SetWindowText(myXobjWindow.Hwnd, myXstrWndwName)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウのタイトル変更が失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウのタイトルバーを点滅させる2
+'Private Sub apiPfixFlashWindow1(myXbisExitFlag As Boolean, myXobjWindow As Object, _
+'                Optional coXlonOptn As Long = 1)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウのタイトルバーを点滅させる
+''  Private Declare Function FlashWindow Lib "USER32" ( _
+''        ByVal hWnd As Long, ByVal bInvert As Long) As Long
+''←EndDeclaration
+''myXlonRet = FlashWindow(ウィンドウのハンドル, フラッシュ1or初期状態0):アクティブではない時0
+''coXlonOptn = 0 : ウィンドウを初期化
+''coXlonOptn = 1 : ウインドウのタイトルバーを点滅
+'    myXbisExitFlag = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = FlashWindow(myXobjWindow.Hwnd, coXlonOptn)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウィンドウがアクティブでは無く、タイトルバーの点滅設定に失敗"   'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウの外側のサイズを取得する2
+'Private Sub apiPfixGetWindowRect2(myXlonLeft As Long, myXlonTop As Long, _
+'                myXlonRight As Long, myXlonBottom As Long, _
+'                myXobjWindow As Object)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウの外側のサイズを取得する
+''  Private Declare Function GetWindowRect Lib "USER32" (ByVal hWnd As Long, lpRect As RECT) As Long
+''  Private Type RECT
+''    typlonLeft As Long
+''    typlonTop As Long
+''    typlonRight As Long
+''    typlonBottom As Long
+''  End Type
+''←EndDeclaration
+''Call GetWindowTextLength(ウィンドウのハンドル,RECT構造体):-
+'    myXlonLeft = Empty: myXlonTop = Empty: myXlonRight = Empty: myXlonBottom = Empty
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'  Dim myXRECT As rect
+'    Call GetWindowRect(myXobjWindow.Hwnd, myXRECT)
+'    myXlonLeft = myXRECT.typlonLeft
+'    myXlonTop = myXRECT.typlonTop
+'    myXlonRight = myXRECT.typlonRight
+'    myXlonBottom = myXRECT.typlonBottom
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウの位置とサイズを変更する2
+'Private Sub apiPfixMoveWindow2(myXbisExitFlag As Boolean, _
+'                myXobjWindow As Object, myXlonLeft As Long, myXlonTop As Long, _
+'                myXlonWidth As Long, myXlonHeight As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウの位置とサイズを変更する
+''  Private Declare Function MoveWindow Lib "USER32" ( _
+''        ByVal hWnd As Long, ByVal X As Long, ByVal Y As Long, _
+''        ByVal nWidth As Long, ByVal nHeight As Long, ByVal bRepaint As Long) As Long
+''←EndDeclaration
+''myXlonRet = MoveWindow(ウインドウのハンドル, X座標, Y座標, 幅, 高さ, 1):正常終了0以外
+'    myXbisExitFlag = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'    If myXlonLeft = 0 Or myXlonTop = 0 Or _
+'        myXlonWidth = 0 Or myXlonHeight = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = MoveWindow(myXobjWindow.Hwnd, _
+'                    myXlonLeft, myXlonTop, myXlonWidth, myXlonHeight, 1)
+'    If myXlonRet <> 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの位置とサイズ変更が失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｆ_[API]ウインドウがアイコン化されているか判別する2
+'Private Function apiPfncbisIsIconic2(ByVal myXobjWindow As Object) As Boolean
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウがアイコン化されているか判別する
+''  Private Declare PtrSafe Function IsIconic Lib "USER32" (ByVal hWnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = IsIconic(ウィンドウのハンドル):最小化されている時1
+'    apiPfncbisIsIconic2 = False
+'    If myXobjWindow Is Nothing Then Exit Function
+'  Dim myXlonRet As Long
+'    myXlonRet = IsIconic(myXobjWindow.Hwnd)
+'    If myXlonRet <> 1 Then Exit Function
+'    apiPfncbisIsIconic2 = True
+''    MsgBox "ウインドウは最小化状態"     'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]ウインドウが最大化されているか判別する2
+'Private Function apiPfncbisIsZoomed2(myXobjWindow As Object) As Boolean
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウが最大化されているか判別する
+''  Private Declare Function IsZoomed Lib "USER32" (ByVal hWnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = IsZoomed(ウィンドウのハンドル):最大化されているとき0以外
+'    apiPfncbisIsZoomed2 = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = IsZoomed(myXobjWindow.Hwnd)
+'    If myXlonRet = 0 Then Exit Function
+'    apiPfncbisIsZoomed2 = True
+''    MsgBox "ウインドウは最大化状態"     'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]ウインドウが表示されているか判別する2
+'Private Function apiPfncbisIsWindowVisible2(myXobjWindow As Object) As Boolean
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウが表示されているか判別する
+''  Private Declare Function IsWindowVisible Lib "USER32" (ByVal hWnd&) As Long
+''←EndDeclaration
+''myXlonRet = IsWindowVisible(ウィンドウのハンドル):表示されている場合1
+'    apiPfncbisIsWindowVisible2 = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = IsWindowVisible(myXobjWindow.Hwnd)
+'    If myXlonRet <> 1 Then Exit Function
+'    apiPfncbisIsWindowVisible2 = True
+''    MsgBox "ウインドウは表示状態"   'Debug.Print
+'End Function
+'
+' '定型Ｐ_[API]一時的にウインドウを手前にする2
+'Private Sub apiPfixBringWindowToTop2(myXbisExitFlag As Boolean, myXobjWindow As Object)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_一時的にウインドウを手前にする
+''  Private Declare Function BringWindowToTop Lib "USER32" (ByVal hWnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = BringWindowToTop(ウインドウのハンドル):正常終了0以外
+'    myXbisExitFlag = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = BringWindowToTop(myXobjWindow.Hwnd)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの手前表示に失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウをアクティブにさせる2
+'Private Sub apiPfixSetActiveWindow2(myXlonhWnd As Long, myXobjWindow As Object)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウをアクティブにさせる
+''  Private Declare Function SetActiveWindow Lib "USER32" (ByVal hWnd&) As Long
+''←EndDeclaration
+''myXlonRet = SetActiveWindow(ウインドウのハンドル):直前にアクティブだったウインドウのハンドル
+'    myXlonhWnd = Empty
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'    myXlonhWnd = SetActiveWindow(myXobjWindow.Hwnd)
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウ(コントロール)にフォーカスを与える2
+'Private Sub apiPfixSetFocusAPI2(myXlonhWnd As Long, myXobjWindow As Object)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウ(コントロール)にフォーカスを与える
+''  Private Declare Function SetFocusAPI Lib "USER32" Alias "SetFocus" (ByVal hWnd&) As Long
+''←EndDeclaration
+''myXlonRet = SetFocusAPI(ウインドウのハンドル):直前にフォーカースがあったウインドウのハンドル
+'    myXlonhWnd = Empty
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'    myXlonhWnd = SetFocusAPI(myXobjWindow.Hwnd)
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウを最小化する2
+'Private Sub apiPfixCloseWindow2(myXbisExitFlag As Boolean, myXobjWindow As Object)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウを最小化する
+''  Private Declare Function CloseWindow Lib "USER32" (ByVal hWnd&) As Long
+''←EndDeclaration
+''myXlonRet = CloseWindow(ウインドウのハンドル):正常終了1
+'    myXbisExitFlag = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = CloseWindow(myXobjWindow.Hwnd)
+'    If myXlonRet <> 1 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの最小化に失敗"   'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウの表示状態を設定する2
+'Private Sub apiPfixShowWindowAsync2(myXbisExitFlag As Boolean, _
+'            ByVal myXobjWindow As Object, _
+'            Optional ByVal coXlonCmdShow As Long = 1)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_指定されたウインドウの表示状態を設定する
+''  Private Declare PtrSafe Function ShowWindowAsync Lib "user32.dll" ( _
+''        ByVal hWnd As Long, ByVal nCmdShow As Long) As Long
+''←EndDeclaration
+''myXlonRet = ShowWindowAsync(ウインドウのハンドル,ウィンドウの表示方法):正常終了0以外
+''coXlonCmdShow = 0 =&H0 : SW_HIDE            :ウィンドウを非表示にして他のウィンドウをアクティブ
+''coXlonCmdShow = 1 =&H1 : SW_SHOWNORMAL      :ウインドウをアクティブにして元のサイズと位置で表示
+''coXlonCmdShow = 2 =&H2 : SW_SHOWMINIMIZED   :ウインドウをアクティブにして最小化
+''coXlonCmdShow = 3 =&H3 : SW_SHOWMAXIMIZED   :ウインドウをアクティブにして最大化
+''coXlonCmdShow = 4 =&H4 : SW_SHOWNOACTIVATE  :ウインドウをアクティブにせずに元のサイズと位置で表示
+''coXlonCmdShow = 5 =&H5 : SW_SHOW            :ウインドウをアクティブにして現在のサイズと位置で表示
+''coXlonCmdShow = 6 =&H6 : SW_MINIMIZE        :ウインドウを最小化しZオーダーが次のトップレベルウインドウをアクティブにする
+''coXlonCmdShow = 7 =&H7 : SW_SHOWMINNOACTIVE :ウインドウをアクティブにせずに最小化
+''coXlonCmdShow = 8 =&H8 : SW_SHOWNA          :ウインドウをアクティブにせずに現在のサイズと位置で表示
+''coXlonCmdShow = 9 =&H9 : SW_RESTORE         :ウインドウをアクティブにして表示し最小化または最大化の場合は位置とサイズを元に戻す
+'    myXbisExitFlag = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = ShowWindowAsync(myXobjWindow.Hwnd, coXlonCmdShow)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの表示設定に失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウィンドウを最前面に表示する2
+'Private Sub apiPfixSetForegroundWindow2(myXbisExitFlag As Boolean, _
+'            ByVal myXobjWindow As Object)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_指定したウィンドウを最前面に表示する
+''  Private Declare PtrSafe Function SetForegroundWindow Lib "USER32" ( _
+''        ByVal hWnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = SetForegroundWindow(ウインドウのハンドル):正常終了0以外
+'    myXbisExitFlag = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'  Const coXlonCmdShow As Long = &H9
+'  Dim myXlonRet As Long
+'    myXlonRet = SetForegroundWindow(myXobjWindow.Hwnd)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの最前面化が失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ウインドウの位置やサイズ、表示を設定する2
+'Private Sub apiPfixSetWindowPos2(myXbisExitFlag As Boolean, _
+'                myXobjWindow As Object, myXlonLeft As Long, myXlonTop As Long, _
+'                myXlonWidth As Long, myXlonHeight As Long, _
+'                Optional coXlonOptn1 As Long = 0, _
+'                Optional coXlonOptn2 As Long = 64)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウの位置やサイズ、表示を設定する
+''  Private Declare Function SetWindowPos Lib "USER32" ( _
+''        ByVal hWnd As Long, ByVal hWndInsertAfter As Long, _
+''        ByVal X As Long, ByVal Y As Long, ByVal cx As Long, ByVal cy As Long, _
+''        ByVal wFlags As Long) As Long
+''←EndDeclaration
+''myXlonRet = SetWindowPos(ウインドウのハンドル, ウインドウ処理1,
+''                            X座標, Y座標, 幅, 高さ, ウインドウ処理2):成功1、失敗0
+''coXlonOptn1 = 0  =&H0     :ウィンドウを手前にセット
+''coXlonOptn1 = 1  =&H1     :ウィンドウを後ろにセット
+''coXlonOptn1 = -1 =&HFFFF  :ウィンドウを常に手前にセット
+''coXlonOptn1 = -2 =&HFFFE  :ウィンドウの常に手前を解除
+''coXlonOptn2 = 64 =&H40    :ウィンドウを表示する
+''coXlonOptn2 = 1  =&H1     :ウィンドウサイズを設定しない
+''coXlonOptn2 = 2  =&H2     :ウィンドウ位置を設定しない
+'    myXbisExitFlag = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'    If myXlonLeft = 0 Or myXlonTop = 0 Or _
+'        myXlonWidth = 0 Or myXlonHeight = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = SetWindowPos(myXobjWindow.Hwnd, coXlonOptn1, _
+'                myXlonLeft, myXlonTop, myXlonWidth, myXlonHeight, coXlonOptn2)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの位置やサイズ、表示を設定が失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｆ_[API]ウインドウへのキー入力が受け取れるかを判別する2
+'Private Function apiPfncbisIsWindowEnabled2(myXobjWindow As Object) As Boolean
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウへのキー入力が受け取れるかを判別する
+''  Private Declare Function IsWindowEnabled Lib "USER32" (ByVal hWnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = IsWindowEnabled(ウィンドウのハンドル):有効のとき1
+'    apiPfncbisIsWindowEnabled2 = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = IsWindowEnabled(myXobjWindow.Hwnd)
+'    If myXlonRet <> 1 Then Exit Function
+'    apiPfncbisIsWindowEnabled2 = True
+''    MsgBox "ウインドウへのキー入力が有効"   'Debug.Print
+'End Function
+'
+' '定型Ｐ_[API]ウインドウのマウス入力とキーボード入力を無効にする2
+'Private Sub apiPfixEnableWindow2(myXbisExitFlag As Boolean, myXobjWindow As Object, _
+'                Optional coXlonOptn As Long = 1)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウインドウのマウス入力とキーボード入力を無効にする
+''  Private Declare Function EnableWindow Lib "USER32" ( _
+''        ByVal hWnd As Long, ByVal fEnable As Long) As Long
+''←EndDeclaration
+''myXlonRet = EnableWindow(ウインドウのハンドル,無効0or有効1):正常終了0以外
+''coXlonOptn = 0 : マウス入力とキーボード入力を無効化
+''coXlonOptn = 1 : マウス入力とキーボード入力を有効化
+'    myXbisExitFlag = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = EnableWindow(myXobjWindow.Hwnd, coXlonOptn)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "マウス入力とキーボード入力の有効化/無効化に失敗"    'Debug.Print
+'End Sub
+'
+' '定型Ｐ_指定ウィンドウを最前面に表示する2(最小化チェック含む)
+'Private Sub PincSetForegroundWindowWithIconicCheck2(myXbisExitFlag As Boolean, _
+'            ByVal myXobjWindow As Object)
+''Includes apiPfncbisIsIconic2
+''Includes apiPfixShowWindowAsync2
+''Includes apiPfixSetForegroundWindow2
+'    myXbisExitFlag = False
+'    If myXobjWindow Is Nothing Then GoTo ExitPath
+'  Const coXlonCmdShow As Long = &H9
+''//ウインドウがアイコン化されているか判別
+'    myXbisExitFlag = apiPfncbisIsIconic2(myXobjWindow)
+'    If myXbisExitFlag = True Then _
+'    '//ウインドウの最小化表示を元に戻す
+'        Call apiPfixShowWindowAsync2(myXbisExitFlag, myXobjWindow, coXlonCmdShow)
+'        If myXbisExitFlag = True Then GoTo ExitPath
+'    End If
+''//指定したウィンドウを最前面に表示
+'    Call apiPfixSetForegroundWindow2(myXbisExitFlag, myXobjWindow)
+'    If myXbisExitFlag = True Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウの最前面化が失敗"     'Debug.Print
+'End Sub
+'
+''■文字 ----------------------------------------------------------------------------------------
+'
+' '定型Ｆ_[API]文字列を小文字に変換する
+'Private Function apiPfncstrCharLower(myXstrOrgTxt As String) As String
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_文字列を小文字に変換する
+''  Private Declare Function CharLower Lib "USER32" Alias "CharLowerA" ( _
+''        ByVal lpsz As String) As String
+''←EndDeclaration
+''myXlonRet = CharLower(変換対象の文字列):変換された文字列
+'    apiPfncstrCharLower = Empty
+'    If myXstrOrgTxt = "" Then Exit Function
+'    apiPfncstrCharLower = CharLower(myXstrOrgTxt)
+'End Function
+'
+' '定型Ｆ_[API]文字列を大文字に変換する
+'Private Function apiPfncstrCharUpper(myXstrOrgTxt As String) As String
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_文字列を大文字に変換する
+''  Private Declare Function CharUpper Lib "USER32" Alias "CharUpperA" ( _
+''        ByVal lpsz As String) As String
+''←EndDeclaration
+''myXlonRet = CharUpper(変換対象の文字列):変換された文字列
+'    apiPfncstrCharUpper = Empty
+'    If myXstrOrgTxt = "" Then Exit Function
+'    apiPfncstrCharUpper = CharUpper(myXstrOrgTxt)
+'End Function
+'
+''■時間 ----------------------------------------------------------------------------------------
+'
+' '定型Ｆ_[API]システムが起動してからの経過時間を取得する
+'Private Function apiPfnclonGetTickCount() As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_システムが起動してからの経過時間を取得する
+''  Private Declare Function GetTickCount Lib "KERNEL32" () As Long
+''←EndDeclaration
+''myXlonRet = GetTickCount():ミリ秒
+'    apiPfnclonGetTickCount = Empty
+'    apiPfnclonGetTickCount = GetTickCount
+'End Function
+'
+' '定型Ｆ_[API]システムが起動してからの起動時間を取得する
+'Private Function apiPfnclonTimeGetTime() As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_システムが起動してからの起動時間を取得する
+''  Private Declare Function timeGetTime Lib "winmm.dll" () As Long
+''←EndDeclaration
+''myXlonRet = timeGetTime():ミリ秒
+'    apiPfnclonTimeGetTime = Empty
+'    apiPfnclonTimeGetTime = timeGetTime
+'End Function
+'
+' '定型Ｐ_[API]システムの時間、日付を取得する
+'Private Sub apiPfixGetSystemTime(myZcolTimeCllctn As Collection)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_システムの時間、日付を取得する
+''  Declare Sub GetSystemTime Lib "KERNEL32" (lpSystemTime As SYSTEMTIME)
+''  Private Type SYSTEMTIME
+''    typlonYear As Long          '西暦
+''    typlonMonth As Long         '月
+''    typlonDayOfWeek As Long     '曜日
+''    typlonDay As Long           '日
+''    typlonHour As Long          '時間
+''    typlonMinute As Long        '分
+''    typlonSecond As Long        '秒
+''    typlonmseconds As Long      'ミリ秒
+''  End Type
+''←EndDeclaration
+''myXlonRet = GetSystemTime(SYSTEMTIME構造体):-
+'  Dim myXSYSTEMTIME As SYSTEMTIME
+'    Call GetSystemTime(myXSYSTEMTIME)
+'    Set myZcolTimeCllctn = New Collection
+'    With myXSYSTEMTIME
+'        Call myZcolTimeCllctn.Add(Item:=.typlonYear, Key:="年")
+'        Call myZcolTimeCllctn.Add(Item:=.typlonMonth, Key:="月")
+'        Call myZcolTimeCllctn.Add(Item:=.typlonDayOfWeek, Key:="曜日")
+'        Call myZcolTimeCllctn.Add(Item:=.typlonDay, Key:="日")
+'        Call myZcolTimeCllctn.Add(Item:=.typlonHour, Key:="時")
+'        Call myZcolTimeCllctn.Add(Item:=.typlonMinute, Key:="分")
+'        Call myZcolTimeCllctn.Add(Item:=.typlonSecond, Key:="秒")
+'        Call myZcolTimeCllctn.Add(Item:=.typlonmseconds, Key:="ミリ秒")
+'    End With
+'End Sub
+'
+' '定型Ｐ_[API]システムの時間、日付を変更する
+'Private Sub apiPfixSetSystemTime(myXExitFlag As Boolean, _
+'            myXlonYear As Long, myXlonMonth As Long, myXlonDayOfWeek As Long, _
+'            myXlonDay As Long, myXlonHour As Long, myXlonMinute As Long, _
+'            myXlonSecond As Long, myXlonmseconds As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_システムの時間、日付を変更する
+''  Private Declare Function SetSystemTime Lib "KERNEL32" ( _
+''    lpSystemTime As SYSTEMTIME) As Long
+''  Private Type SYSTEMTIME
+''    typlonYear As Long          '西暦
+''    typlonMonth As Long         '月
+''    typlonDayOfWeek As Long     '曜日
+''    typlonDay As Long           '日
+''    typlonHour As Long          '時間
+''    typlonMinute As Long        '分
+''    typlonSecond As Long        '秒
+''    typlonmseconds As Long      'ミリ秒
+''  End Type
+''←EndDeclaration
+''myXlonRet = SetSystemTime(SYSTEMTIME構造体):正常終了0以外
+'    myXExitFlag = False
+'  Dim myXSYSTEMTIME As SYSTEMTIME, myXlonRet As Long
+'    On Error GoTo ExitPath
+'    myXSYSTEMTIME.typlonYear = myXlonYear
+'    myXSYSTEMTIME.typlonMonth = myXlonMonth
+'    myXSYSTEMTIME.typlonDayOfWeek = myXlonDayOfWeek
+'    myXSYSTEMTIME.typlonDay = myXlonDay
+'    myXSYSTEMTIME.typlonHour = myXlonHour
+'    myXSYSTEMTIME.typlonMinute = myXlonMinute
+'    myXSYSTEMTIME.typlonSecond = myXlonSecond
+'    myXSYSTEMTIME.typlonmseconds = myXlonmseconds
+'    On Error GoTo 0
+'    myXlonRet = SetSystemTime(myXSYSTEMTIME)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "システムの時間/日付変更が失敗"      'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]指定した時間処理を停止する
+'Private Sub apiPfixSleep(myXSlpTime As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_Sleep関数を使用
+''  #If VBA7 Then
+''    Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal ms As LongPtr)
+''  #Else
+''    Private Declare Sub Sleep Lib "kernel32" (ByVal ms As Long)
+''  #End If
+''←EndDeclaration
+''Call Sleep(処理をとめる時間[msec]):-
+'    DoEvents    'Windowｓに処理を渡す
+'    Call Sleep(myXSlpTime)
+'End Sub
+'
+''■システム(それ以外も含む) --------------------------------------------------------------------
+'
+' '定型Ｆ_[API]コンピューター名を取得する
+'Private Function apiPfncstrGetComputerName(Optional coXlonBuf As Long = 255) As String
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_コンピューター名を取得する
+''  Private Declare Function GetComputerName Lib "KERNEL32" Alias "GetComputerNameA" ( _
+''        ByVal lpBuffer As String, nSize As Long) As Long
+''←EndDeclaration
+''myXlonRet = GetComputerName(コンピュータ名, コンピュータ名の文字数):正常終了0以外
+'    apiPfncstrGetComputerName = Empty
+'  Dim myXstrPCName As String, myXlonNameLen As Long
+'    myXstrPCName = String(coXlonBuf, vbNullChar)    'バッファを確保
+'    myXlonNameLen = Len(myXstrPCName)
+'  Dim myXlonRet As Long
+'    myXlonRet = GetComputerName(myXstrPCName, myXlonNameLen)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    apiPfncstrGetComputerName = myXstrPCName
+'    Exit Function
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "コンピューター名取得が失敗"     'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]ユーザー名を取得する
+'Private Function apiPfncstrGetUserName(Optional coXlonBuf As Long = 255) As String
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ユーザー名を取得する
+''  Private Declare Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" ( _
+''        ByVal lpBuffer As String, nSize As Long) As Long
+''←EndDeclaration
+''myXlonRet = GetUserName(ユーザー名,ユーザー名の文字数):正常終了0以外
+'    apiPfncstrGetUserName = Empty
+''//ユーザー名の文字列を取得
+'  Dim myXstrUserName As String, myXlonNameLen As Long
+'    myXstrUserName = String(coXlonBuf, vbNullChar)  'バッファを確保
+'    myXlonNameLen = Len(myXstrUserName)
+'  Dim myXlonRet As Long
+'    myXlonRet = GetUserName(myXstrUserName, myXlonNameLen)
+'    If myXlonRet = 0 Then GoTo ExitPath
+''//取得した文字列からバッファのNullを除去
+'    If Right(myXstrUserName, 1) <> vbNullChar Then GoTo ExitPath
+'  Dim i As Long, n As Long
+'    For i = Len(myXstrUserName) To 1 Step -1
+'        If Mid(myXstrUserName, i, 1) <> vbNullChar Then
+'            n = i: Exit For
+'        End If
+'    Next i
+'    apiPfncstrGetUserName = Left(myXstrUserName, n)
+'    Exit Function
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ユーザー名取得が失敗"   'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]カレントディレクトリを取得する
+'Private Function apiPfncstrGetCurrentDirectory( _
+'                Optional coXlonBuf As Long = 255) As String
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_カレントディレクトリを取得する
+''  Private Declare Function GetCurrentDirectory Lib "KERNEL32" Alias "GetCurrentDirectoryA" ( _
+''        ByVal nBufferLength As Long, ByVal lpBuffer As String) As Long
+''←EndDeclaration
+''myXlonRet = GetCurrentDirectory(文字数,カレントディレクトリ名):正常終了0以外
+'    apiPfncstrGetCurrentDirectory = Empty
+''//カレントディレクトリの文字列を取得
+'  Dim myXstrCurDirName As String, myXlonNameLen As Long
+'    myXstrCurDirName = String(coXlonBuf, vbNullChar)    'バッファを確保
+'    myXlonNameLen = Len(myXstrCurDirName)
+'  Dim myXlonRet As Long
+'    myXlonRet = GetCurrentDirectory(myXlonNameLen, myXstrCurDirName)
+'    If myXlonRet = 0 Then GoTo ExitPath
+''//取得した文字列からバッファのNullを除去
+'    If Right(myXstrCurDirName, 1) <> vbNullChar Then GoTo ExitPath
+'  Dim i As Long, n As Long
+'    For i = Len(myXstrCurDirName) To 1 Step -1
+'        If Mid(myXstrCurDirName, i, 1) <> vbNullChar Then
+'            n = i: Exit For
+'        End If
+'    Next i
+'    apiPfncstrGetCurrentDirectory = Left(myXstrCurDirName, n)
+'    Exit Function
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "カレントディレクトリ取得が失敗"     'Debug.Print
+'End Function
+'
+' '定型Ｐ_[API]ファイルのキャッシュを削除する
+'Private Sub apiPfixDeleteUrlCacheEntry(myXbisExitFlag As Boolean, _
+'                myXstrFileURL As String)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ファイルのキャッシュを削除する
+''  Private Declare Function DeleteUrlCacheEntry Lib "wininet" Alias "DeleteUrlCacheEntryA" ( _
+''        ByVal lpszUrlName As String) As Long
+''←EndDeclaration
+''myXlonRet = DeleteUrlCacheEntry(ファイルURL):正常終了0以外
+'    myXbisExitFlag = False
+'    If myXstrFileURL = "" Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = DeleteUrlCacheEntry(myXstrFileURL)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "キャッシュ削除に失敗"   'Debug.Print
+'End Sub
+'
+' '定型Ｐ_[API]ファイルをダウンロードする
+'Private Sub apiPfixDownloadFile(myXbisExitFlag As Boolean, _
+'                myXstrFileURL As String, myXstrSavePath As String)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ファイルをダウンロードする
+''  Private Declare Function URLDownloadToFile Lib "urlmon" Alias "URLDownloadToFileA" ( _
+''        ByVal pCaller As Long, ByVal szURL As String, ByVal szFileName As String, _
+''        ByVal dwReserved As Long, ByVal lpfnCB As Long) As Long
+''←EndDeclaration
+''myXlonRet = URLDownloadToFile(0,ファイルURL,保存場所のパス,0,0):正常終了0
+'    myXbisExitFlag = False
+'    If myXstrFileURL = "" Or myXstrSavePath = "" Then GoTo ExitPath
+'  Dim myXlonRet As Long
+'    myXlonRet = URLDownloadToFile(0, myXstrFileURL, myXstrSavePath, 0, 0)
+'    If myXlonRet <> 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ダウンロードに失敗"     'Debug.Print
+'End Sub
+'
+' '定型Ｆ_[API]既存のプロセスオブジェクトのハンドルを返す関数
+'Private Function apiPfnclonOpenProcess(myXlonPrcsID As Long) As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_既存のプロセスオブジェクトのハンドルを返す関数
+''  Private Declare Function OpenProcess Lib "kernel32" ( _
+''        ByVal dwDesiredAccess As Long, ByVal bInheritHandle As Long, _
+''        ByVal dwProcessId As Long) As Long
+''←EndDeclaration
+''myXlonRet = OpenProcess(アクセス方法のフラグ, 継承プロセス, プロセスID)
+''                :正常終了0以外;失敗=NULL
+'  Const PROCESS_QUERY_INFORMATION As Long = &H400
+'    apiPfnclonOpenProcess = Empty
+'    If myXlonPrcsID <= 0 Then Exit Function
+'  Dim myXlonPrcsHndl As Long
+'    myXlonPrcsHndl = OpenProcess(PROCESS_QUERY_INFORMATION, 1, myXlonPrcsID)
+'    If myXlonPrcsHndl <= 0 Then Exit Function
+'    apiPfnclonOpenProcess = myXlonPrcsHndl
+'End Function
+'
+' '定型Ｆ_[API]指定プロセスの終了状態を返す関数
+'Private Function apiPfnclonGetExitCodeProcess(myXlonPrcsHndl As Long) As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_指定プロセスの終了状態を返す関数
+''  Private Declare Function GetExitCodeProcess Lib "kernel32" ( _
+''        ByVal hProcess As Long, lpExitCode As Long) As Long
+''←EndDeclaration
+''myXlonRet = GetExitCodeProcess(プロセスのハンドル, 終了ステータス)
+''               :正常終了0以外;失敗=NULL
+'    apiPfnclonGetExitCodeProcess = Empty
+'    If myXlonPrcsHndl <= 0 Then Exit Function
+'  Dim myXlonExitCode As Long, myXlonRet As Long
+'    myXlonRet = GetExitCodeProcess(myXlonPrcsHndl, myXlonExitCode)
+'    If myXlonRet <= 0 Then Exit Function
+'    apiPfnclonGetExitCodeProcess = myXlonExitCode
+'End Function
+'
+' '定型Ｐ_[API]オープンしているオブジェクトハンドルをクローズする関数
+'Private Sub apiPfixCloseHandle(myXbisExitFlag As Boolean, myXlonPrcsHndl As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_オープンしているオブジェクトハンドルをクローズする関数
+''  Private Declare Function CloseHandle Lib "kernel32" (ByVal hObject As Long) As Long
+''←EndDeclaration
+''myXlonRet = CloseHandle(プロセスのハンドル):正常終了0以外;失敗=NULL
+'    myXbisExitFlag = False
+'    If myXlonPrcsHndl = 0 Then GoTo ExitPath
+'  Dim myXlonRet As Long: myXlonRet = CloseHandle(myXlonPrcsHndl)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "プロセスのクローズに失敗"   'Debug.Print
+'End Sub
+'
+''ウインドウハンドル : Office2011以前で使用可能 -------------------------------------------------
+'
+' '定型Ｆ_Excelの最上位のウィンドウハンドルを取得する
+'Private Function PfnclonGetExcelApplicationWindowHandle() As Long
+'   PfnclonGetExcelApplicationWindowHandle = Empty
+'  Dim myXlonhWnd As Long
+'   myXlonhWnd = Excel.Application.Hwnd
+'   PfnclonGetExcelApplicationWindowHandle = myXlonhWnd
+'End Function
+'
+' '定型Ｆ_[API]操作中のウインドウのハンドルを取得する
+'Private Function apiPfnclonGetForegroundWindowHandle() As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_操作中のウインドウのハンドルを取得する
+''  Private Declare Function GetForegroundWindow Lib "USER32" () As Long
+''←EndDeclaration
+''myXlonRet = GetForegroundWindow():ハンドル
+'    apiPfnclonGetForegroundWindowHandle = Empty
+'  Dim myXlonhWnd As Long
+'    myXlonhWnd = GetForegroundWindow
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'    apiPfnclonGetForegroundWindowHandle = myXlonhWnd
+'    Exit Function
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウハンドルの取得に失敗"     'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]アクティブウインドウのハンドルを取得する
+'Private Function apiPfnclonGetActiveWindowHandle() As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_アクティブウインドウのハンドルを取得する
+''  Private Declare Function GetActiveWindow Lib "USER32" () As Long
+''←EndDeclaration
+''myXlonRet = GetActiveWindow():アクティブウィンドウのハンドルorアクティブウィンドウ無し0
+'    apiPfnclonGetActiveWindowHandle = Empty
+'  Dim myXlonhWnd As Long
+'    myXlonhWnd = GetActiveWindow
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'    apiPfnclonGetActiveWindowHandle = myXlonhWnd
+'    Exit Function
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウハンドルの取得に失敗"     'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]最前面のウインドウのハンドルを取得する
+'Private Function apiPfnclonGetTopWindow() As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_操作中のウインドウのハンドルを取得する
+''  Private Declare Function GetTopWindow Lib "user32" (ByVal hwnd As Long) As Long
+''←EndDeclaration
+''myXlonRet = GetTopWindow(ハンドル):正常終了0以外;失敗=NULL
+'    apiPfnclonGetTopWindow = Empty
+'  Const ERROR_SUCCESS As Long = 0
+'  Dim myXlonhWnd As Long, myXlonRet As Long
+'    myXlonRet = GetTopWindow(myXlonhWnd)
+'    If myXlonRet = 0 Then GoTo ExitPath
+'    apiPfnclonGetTopWindow = myXlonhWnd
+'    Exit Function
+'ExitPath:
+'    'MsgBox "ウインドウハンドルの取得に失敗"
+'End Function
+'
+' '定型Ｆ_[API]デスクトップのハンドルを取得する
+'Private Function apiPfnclonGetDesktopWindowHandle(myXbisExitFlag As Boolean) As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_デスクトップのハンドルを取得する
+''  Private Declare Function GetDesktopWindow Lib "USER32" () As Long
+''←EndDeclaration
+''myXlonRet = GetDesktopWindow():ハンドル
+'    apiPfnclonGetDesktopWindowHandle = Empty
+'  Dim myXlonhWnd As Long
+'    myXlonhWnd = GetDesktopWindow
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'    apiPfnclonGetDesktopWindowHandle = myXlonhWnd
+'    Exit Function
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "デスクトップハンドルの取得に失敗"   'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]指定ウインドウクラス名とウインドウ名を持つウインドウのハンドルを取得する
+'Private Function apiPfnclonFindWindowHandle( _
+'                Optional coXstrClsName As String = "XLMAIN", _
+'                Optional coXstrWndwName As String = vbNullString) As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_指定ウインドウクラス名とウインドウ名を持つウインドウのハンドルを取得する
+''  Private Declare Function FindWindow Lib "user32.dll" Alias "FindWindowA" ( _
+''        ByVal lpClassName As String, ByVal lpWindowName As String) As Long
+''←EndDeclaration
+''myXlonRet = FindWindow(ウインドウクラス名, ウインドウ名):正常終了は0以外
+''◇coXstrClsName : クラス名
+''coXstrClsName = "XLMAIN"               ': Excel
+''coXstrClsName = "OpusApp"              ': Word
+''coXstrClsName = "PP10FrameClass"       ': PowerPoint
+''coXstrClsName = "Omain"                ': Access
+''coXstrClsName = "IEFrame"              ': Internet Explorer
+''coXstrClsName = "wndclass_desked_gsk"  ': Visual Basic Editor
+''coXstrClsName = "CabinetWClass"        ': エクスプローラ
+''coXstrClsName = "ExploreWClass"        ': エクスプローラ
+''coXstrClsName = "Notepad"              ': メモ帳
+''coXstrClsName = "SciCalc"              ': 電卓
+''coXstrClsName = "CalcFrame"            ': 電卓
+''coXstrClsName = "MSPaintApp"           ': ペイント
+''coXstrClsName = "WordPadClass"         ': ワードパット
+''coXstrClsName = vbNullString           ': 全ウィンドウ
+''◇coXstrWndwName : ウィンドウ名
+''coXstrWndwName = vbNullString          ': 全ウィンドウ
+''※coXstrClsName = vbNullString And coXstrWndwName = vbNullString の場合は最前面のWindowハンドルを取得
+'    apiPfnclonFindWindowHandle = Empty
+'  Dim myXlonhWnd As Long
+'    myXlonhWnd = FindWindow(coXstrClsName, coXstrWndwName)
+'    If myXlonhWnd <= 0 Then GoTo ExitPath
+'    apiPfnclonFindWindowHandle = myXlonhWnd
+'End Function
+'
+' '定型Ｆ_[API]親ウィンドウを基準に、クラスやウィンドウの名前から子ウィンドウのハンドルを取得
+'Private Function apiPfnclonFindWindowExHandle( _
+'                myXlonhWndPrnt As Long, myXlonhWndChildAfter As Long, _
+'                Optional coXstrClsName As String = "XLMAIN", _
+'                Optional coXstrWndwName As String = vbNullString) As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_親ウィンドウを基準に、クラスやウィンドウの名前から子ウィンドウのハンドルを取得
+''  Private Declare Function FindWindowEx Lib "user32" Alias "FindWindowExA" ( _
+''        ByVal hwndParent As Long, ByVal hwndChildAfter As Long, _
+''        ByVal lpClassName As String, ByVal lpWindowName As String) As Long
+''←EndDeclaration
+''XRet = FindWindowEx(親Windowのハンドル，検索を開始する子Windowのハンドル，
+''                       ウインドウクラス名, ウインドウ名):正常終了は0以外
+''◇coXstrClsName : クラス名
+''coXstrClsName = "XLMAIN"               ': Excel
+''coXstrClsName = "OpusApp"              ': Word
+''coXstrClsName = "PP10FrameClass"       ': PowerPoint
+''coXstrClsName = "Omain"                ': Access
+''coXstrClsName = "IEFrame"              ': Internet Explorer
+''coXstrClsName = "wndclass_desked_gsk"  ': Visual Basic Editor
+''coXstrClsName = "CabinetWClass"        ': エクスプローラ
+''coXstrClsName = "ExploreWClass"        ': エクスプローラ
+''coXstrClsName = "Notepad"              ': メモ帳
+''coXstrClsName = "SciCalc"              ': 電卓
+''coXstrClsName = "CalcFrame"            ': 電卓
+''coXstrClsName = "MSPaintApp"           ': ペイント
+''coXstrClsName = "WordPadClass"         ': ワードパット
+''coXstrClsName = vbNullString           ': 全ウィンドウ
+''◇coXstrWndwName : ウィンドウ名
+''coXstrWndwName = vbNullString          ': 全ウィンドウ
+''※coXstrClsName = vbNullString And coXstrWndwName = vbNullString の場合は最前面のWindowハンドルを取得
+''※myXhwndChildAfter : 検索を開始する子Windowのハンドルが「0」の場合最初の子Windowから検索
+'    apiPfnclonFindWindowExHandle = Empty
+'    If myXlonhWndPrnt = 0 Then GoTo ExitPath
+'    myXlonhWnd = FindWindowEx(myXlonhWndPrnt, myXlonhWndChildAfter, _
+'                                coXstrClsName, coXstrWndwName)
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'    apiPfnclonFindWindowExHandle = myXlonhWnd
+'    Exit Function
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウハンドルの取得に失敗"     'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]あるウィンドウを基準に、他の任意のウィンドウハンドルを取得する
+'Private Function apiPfnclonGetWindowHandle(myXlonRefhWnd As Long, _
+'                Optional coXvarwCmd As Variant = 0) As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_あるウィンドウを基準に、他の任意のウィンドウハンドルを取得する
+''  Private Declare Function GetWindow Lib "user32" ( _
+''        ByVal hwnd As Long, ByVal wCmd As Long) As Long
+''←EndDeclaration
+''XRet = GetWindow(基準となるウィンドウのハンドル, 検索コマンド):正常終了は0以外
+''coXvarwCmd     : どのような検索コマンドを実行するかを指定。定数を使用。
+''  Const GW_HWNDFIRST = 0  ': 基準となるWindowと同じ種類のうち最前面のWindow
+''  Const GW_HWNDLAST = 1   ': 基準となるWindowと同じ種類のうち最背面のWindow
+''  Const GW_HWNDNEXT = 2   ': 基準となるWindowの次のWindow
+''  Const GW_HWNDPREV = 3   ': 基準となるWindowの前のWindow
+''  Const GW_OWNER = 4      ': 基準となるWindowのオーナーWindow
+''  Const GW_CHILDＦ = 5      ': 基準となるWindowの子WindowのうちトップレベルのWindow
+'    apiPfnclonGetWindowHandle = Empty
+'    If myXlonRefhWnd = 0 Then GoTo ExitPath
+'    myXlonhWnd = GetWindow(myXlonRefhWnd, coXvarwCmd)
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+'    apiPfnclonGetWindowHandle = myXlonhWnd
+'    Exit Function
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウインドウハンドルの取得に失敗"     'Debug.Print
+'End Function
+'
+' '定型Ｆ_[API]指定ウインドウが属するクラスの名前を取得する
+'Private Function apiPfncstrGetClassName(myXlonhWnd As Long, _
+'                Optional coXlonBuf As Long = 255) As String
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_指定されたウインドウが属するクラスの名前を取得する
+''  Private Declare Function GetClassName Lib "user32.dll" Alias "GetClassNameA" ( _
+''        ByVal hWnd As Long, ByVal lpClassName As String, ByVal nMaxCount As Long) As Long
+''←EndDeclaration
+''myXlonRet = GetClassName(ウインドウのハンドル,
+''            'バッファへのポインタ(アドレス),バッファのサイズ):正常終了0以外
+'    apiPfncstrGetClassName = Empty
+'    If myXlonhWnd = 0 Then GoTo ExitPath
+''//クラス名の文字列を取得
+'  Dim myXstrClsName As String, myXlonLength As Long
+'    myXstrClsName = String(coXlonBuf, vbNullChar)   'バッファを確保
+'    myXlonLength = Len(myXstrClsName)
+'  Dim myXlonRet As Long
+'    myXlonRet = GetClassName(myXlonhWnd, myXstrClsName, myXlonLength)
+'    If myXlonRet = 0 Then GoTo ExitPath
+''//取得した文字列からバッファのNullを除去
+'    If Right(myXstrClsName, 1) <> vbNullChar Then GoTo ExitPath
+'  Dim i As Long, n As Long
+'    For i = Len(myXstrClsName) To 1 Step -1
+'        If Mid(myXstrClsName, i, 1) <> vbNullChar Then
+'            n = i: Exit For
+'        End If
+'    Next i
+'    apiPfncstrGetClassName = Left(myXstrClsName, n)
+'    Exit Function
+'ExitPath:
+'    myXbisExitFlag = True
+''    MsgBox "ウィンドウのクラス名取得に失敗"     'Debug.Print
+'End Function
+'
+' '定型Ｐ_[API]画面上の全てのトップレベルウインドウを列挙する
+'Private Sub apiPfixEnumWindows()
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_画面上の全てのトップレベルウインドウを列挙する
+''  Private Declare Function EnumWindows Lib "user32.dll" ( _
+''        ByVal lpEnumFunc As Long, lParam As Long) As Long
+''  Private myXlonhWndCnt As Long, myZlonhWnd() As Long
+''←EndDeclaration
+''myXlonRet = EnumWindows(コールバック関数へのポインタ(アドレス),
+''                           コールバック関数に渡す値):正常終了は0以外
+''//EnumWindows関数
+'' - トップレベルウインドウのハンドルを列挙して、順にコールバック関数を呼び出してハンドルを渡す
+'' - コールバック関数の呼び出しには、AddressOf演算子を使用してコールバック関数のアドレスをEnumWindows関数に渡す
+'    myXlonhWndCnt = Empty: Erase myZlonhWnd
+'  Dim myXlonRet As Long
+'    On Error Resume Next
+'    myXlonRet = EnumWindows(AddressOf PfnclonEnumWindows, 0)
+'    On Error GoTo 0
+'End Sub
+'Private Function PfnclonEnumWindows(ByVal myXlonhWnd As Long) As Long
+''//EnumWindows関数のコールバック関数
+'' - コールバック関数は必ず標準モジュールに記述
+'' - EnumWindows関数から受け渡されたトップレベルウインドウのハンドルを元に処理を実行
+'' - 最後にコールバック関数に1を渡す事で次のトップレベルウインドウのハンドルが取得される
+'    PfnclonEnumWindows = 1
+'    myXlonhWndCnt = myXlonhWndCnt + 1: ReDim Preserve myZlonhWnd(myXlonhWndCnt) As Long
+'    myZlonhWnd(myXlonhWndCnt) = myXlonhWnd
+'End Function
+'
+' '定型Ｐ_[API]指定親ウインドウに属する子ウインドウを列挙する
+'Private Sub apiPfixEnumChildWindows(myXlonPrnthWnd As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_指定された親ウインドウに属する子ウインドウを列挙する
+''  Private Declare Function EnumChildWindows Lib "user32.dll" ( _
+''        ByVal hwndParent As Long, ByVal lpEnumFunc As Long, ByVal lParam As Long) As Long
+''  Private myXlonhWndCnt As Long, myZlonhWnd() As Long
+''←EndDeclaration
+''myXlonRet = EnumChildWindows(親ウインドウのハンドル,コールバック関数へのポインタ(アドレス),
+''            コールバック関数に渡す値):正常終了は0以外
+''//EnumChildWindows関数の機能
+'' - 指定された親ウインドウに属する子ウインドウのハンドルを列挙して、順にコールバック関数を呼び出してハンドルを渡す
+'' - コールバック関数の呼び出しには、AddressOf演算子を使用してコールバック関数のアドレスをEnumWindows関数に渡す
+'    myXlonhWndCnt = Empty: Erase myZlonhWnd
+'  Dim myXlonRet As Long
+'    On Error Resume Next
+'    myXlonRet = EnumChildWindows(myXlonPrnthWnd, AddressOf PfnclonEnumChildWindows, 0)
+'    On Error GoTo 0
+'End Sub
+'Private Function PfnclonEnumChildWindows(ByVal myXlonhWnd As Long) As Long
+''//EnumChildWindows関数のコールバック関数
+'' - コールバック関数は必ず標準モジュールに記述
+'' - EnumChildWindows関数から受け渡された子ウインドウのハンドルを元に処理を実行
+'' - 最後にコールバック関数に1を渡す事で次の子ウインドウのハンドルが取得される
+'    PfnclonEnumChildWindows = 1
+'    myXlonhWndCnt = myXlonhWndCnt + 1: ReDim Preserve myZlonhWnd(myXlonhWndCnt) As Long
+'    myZlonhWnd(myXlonhWndCnt) = myXlonhWnd
+'End Function
+'
+' '定型Ｆ_[API]ウィンドウへ操作メッセージを送信して文字数を受取る
+'Private Function apiPfnclonSendMessage(myXlonhWnd As Long, myXlonMSG As Long, _
+'                Optional coXlonWPARAM As Long = 0, _
+'                Optional coXlonLPARAM As Long = 0) As Long
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウィンドウへ操作メッセージを送信する
+''  Private Declare PtrSafe Function SendMessage Lib "user32.dll" Alias "SendMessageA" ( _
+''        ByVal HWND As Long, ByVal MSG As Long, _
+''        ByVal wParam As Long, ByVal lParam As Long) As Long
+''←EndDeclaration
+''myXlonRet = SendMessage(送信先ウィンドウのハンドル, 操作の種類,
+''                操作の最初のパラメータ,  操作の2番目のパラメータ):戻り値は処理の結果
+'  Const WM_GETTEXTLENGTH = &HE
+'    apiPfnclonSendMessage = Empty
+'    If myXlonhWnd = 0 Then Exit Function
+'    If myXlonMSG = 0 Then myXlonMSG = WM_GETTEXTLENGTH
+'  Dim myXlonRet As Long
+'    myXlonRet = SendMessage(myXlonhWnd, myXlonMSG, coXlonWPARAM, coXlonLPARAM)
+'    apiPfnclonSendMessage = myXlonRet
+'End Function
+'
+' '定型Ｆ_[API]ウィンドウへ操作メッセージを送信して文字列を受取る
+'Private Function apiPfncstrSendMessageStr(myXlonhWnd As Long, myXlonMSG As Long, _
+'                Optional coXlonBuf As Long = 255) As String
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_ウィンドウへ操作メッセージを送信して文字列を受取る
+''  Private Declare PtrSafe Function SendMessageStr Lib "user32.dll" Alias "SendMessageA" ( _
+''        ByVal HWND As Long, ByVal MSG As Long, _
+''        ByVal wParam As Long, ByVal lParam As String) As Long
+''←EndDeclaration
+''myXlonRet = SendMessageStr(送信先ウィンドウのハンドル, 操作の種類,
+''                操作のパラメータ,  文字列):戻り値は処理の結果
+'  Const WM_GETTEXT = &HD
+'    apiPfncstrSendMessageStr = Empty
+'    If myXlonhWnd = 0 Then Exit Function
+'    If myXlonMSG = 0 Then myXlonMSG = WM_GETTEXT
+''//ウィンドウ操作して文字列を取得
+'  Dim myXstrLPARAM As String, myXlonWPARAM As Long
+'    myXstrLPARAM = String(coXlonBuf, vbNullChar)    'バッファを確保
+'    myXlonWPARAM = Len(myXstrLPARAM)
+'  Dim myXlonRet As Long
+'    myXlonRet = SendMessageStr(myXlonhWnd, myXlonMSG, myXlonWPARAM, myXstrLPARAM)
+''//取得した文字列からバッファのNullを除去
+'    If Right(myXstrLPARAM, 1) <> vbNullChar Then GoTo JumpPath
+'  Dim i As Long, n As Long
+'    For i = Len(myXstrLPARAM) To 1 Step -1
+'        If Mid(myXstrLPARAM, i, 1) <> vbNullChar Then
+'            n = i: Exit For
+'        End If
+'    Next i
+'    myXstrLPARAM = Left(myXstrLPARAM, n)
+'JumpPath:
+'    apiPfncstrSendMessageStr = myXstrLPARAM
+'End Function
+'
+' '定型Ｐ_画面上の全ウインドウのハンドルとタイトルを取得する
+'Private Sub PincGetWindowHandleTitle()
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_画面上の全てのトップレベルウインドウを列挙する
+''  Private Declare PtrSafe Function EnumWindows Lib "user32.dll" ( _
+''        ByVal lpEnumFunc As LongPtr, lParam As Long) As LongPtr
+''  Private myXlonhWndCnt As Long, myZlonhWnd() As Long, myZstrWndwTtl() As String
+''←EndDeclaration
+''Includes apiPfnclonSendMessage
+''Includes apiPfncstrSendMessageStr
+'    myXlonhWndCnt = Empty: Erase myZlonhWnd: Erase myZstrWndwTtl
+'  Dim myXlonRet As LongPtr
+'    On Error Resume Next
+'    myXlonRet = EnumWindows(AddressOf PfnclonGetWindowHandleTitle, 0)
+'    On Error GoTo 0
+''    If myXlonhWndCnt = 0 Then Exit Sub                          'Debug.Print
+''  Dim i As Long                                                 'Debug.Print
+''    For i = LBound(myZlonhWnd) To UBound(myZlonhWnd)            'Debug.Print
+''        Debug.Print i & ". " & myZstrWndwTtl(i) & ": " & myZlonhWnd(i)
+''    Next i                                                      'Debug.Print
+'End Sub
+'Private Function PfnclonGetWindowHandleTitle(ByVal myXlonhWnd As Long) As LongPtr
+'    PfnclonGetWindowHandleTitle = 1
+'    myXlonhWndCnt = myXlonhWndCnt + 1
+''//ウィンドウのハンドル値を変数に格納
+'    ReDim Preserve myZlonhWnd(myXlonhWndCnt) As Long
+'    myZlonhWnd(myXlonhWndCnt) = myXlonhWnd
+''//ウィンドウのタイトルを変数に格納
+'  Dim myXlonLenTtl As Long, myXstrTtl As String
+'    myXlonLenTtl = apiPfnclonSendMessage(myXlonhWnd, 0, 0, 0)
+'    myXstrTtl = apiPfncstrSendMessageStr(myXlonhWnd, 0, myXlonLenTtl + 1)
+'    ReDim Preserve myZstrWndwTtl(myXlonhWndCnt) As String
+'    myZstrWndwTtl(myXlonhWndCnt) = myXstrTtl
+'End Function
+'
+' '定型Ｐ_指定親ウインドウに属する子ウインドウのハンドルとタイトルを取得する
+'Private Sub PincGetChildWindowHandleTitle(myXlonPrnthWnd As Long)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_指定された親ウインドウに属する子ウインドウを列挙する
+''  Private Declare PtrSafe Function EnumChildWindows Lib "user32.dll" ( _
+''        ByVal hwndParent As Long, ByVal lpEnumFunc As LongPtr, ByVal lParam As Long) As LongPtr
+''  Private myXlonhWndCnt As Long, myZlonhWnd() As Long, myZstrWndwTtl() As String
+''←EndDeclaration
+''Includes apiPfnclonSendMessage
+''Includes apiPfncstrSendMessageStr
+'    myXlonhWndCnt = Empty: Erase myZlonhWnd: Erase myZstrWndwTtl
+'  Dim myXlonRet As LongPtr
+'    On Error Resume Next
+'    myXlonRet = EnumChildWindows(myXlonPrnthWnd, AddressOf PfnclonGetChildWindowHandleTitle, 0)
+'    On Error GoTo 0
+''    If myXlonhWndCnt = 0 Then Exit Sub                          'Debug.Print
+''  Dim i As Long                                                 'Debug.Print
+''    For i = LBound(myZlonhWnd) To UBound(myZlonhWnd)            'Debug.Print
+''        Debug.Print i & ". " & myZstrWndwTtl(i) & ": " & myZlonhWnd(i)
+''    Next i                                                      'Debug.Print
+'End Sub
+'Private Function PfnclonGetChildWindowHandleTitle(ByVal myXlonhWnd As Long) As LongPtr
+'    PfnclonGetChildWindowHandleTitle = 1
+'    myXlonhWndCnt = myXlonhWndCnt + 1
+''//ウィンドウのハンドル値を変数に格納
+'    ReDim Preserve myZlonhWnd(myXlonhWndCnt) As Long
+'    myZlonhWnd(myXlonhWndCnt) = myXlonhWnd
+''//ウィンドウのタイトルを変数に格納
+'  Dim myXlonLenTtl As Long, myXstrTtl As String
+'    myXlonLenTtl = apiPfnclonSendMessage(myXlonhWnd, 0, 0, 0)
+'    myXstrTtl = apiPfncstrSendMessageStr(myXlonhWnd, 0, myXlonLenTtl + 1)
+'    ReDim Preserve myZstrWndwTtl(myXlonhWndCnt) As String
+'    myZstrWndwTtl(myXlonhWndCnt) = myXstrTtl
+'End Function
+'
+' '定型Ｆ_指定文字列のタイトルのウィンドウハンドルを取得する
+'Private Function PinclonGetTargetWindowHandle( _
+'            myXlonPrnthWnd As Long, myXstrTrgtWndwTtl As String, _
+'            Optional coXbisInStrOptn As Boolean = False) As Long
+'Includes PincGetWindowHandleTitle
+'Includes PincGetChildWindowHandleTitle
+'    PinclonGetTargetWindowHandle = Empty
+'    If myXstrTrgtWndwTtl = "" Then Exit Function
+'    Select Case myXlonPrnthWnd
+'        Case 0: Call PincGetWindowHandleTitle
+'        Case Else: Call PincGetChildWindowHandleTitle(myXlonPrnthWnd)
+'    End Select
+'    If myXlonhWndCnt <= 0 Then Exit Function
+'  Dim myZlonTmphWndAry() As Long, myZstrTmpTtlAry() As String, n As Long: n = 0
+'  Dim i As Long, myXstrTmp As String
+'    For i = LBound(myZlonhWnd) To UBound(myZlonhWnd)
+'        myXstrTmp = myZstrWndwTtl(i)
+'        Select Case coXbisInStrOptn
+'            Case True: If InStr(myXstrTmp, myXstrTrgtWndwTtl) = 0 Then GoTo NextPath
+'            Case Else: If myXstrTmp <> myXstrTrgtWndwTtl Then GoTo NextPath
+'        End Select
+'        n = n + 1
+'        ReDim myZlonTmphWndAry(n) As Long: myZlonTmphWndAry(n) = myZlonhWnd(i)
+'        ReDim myZstrTmpTtlAry(n) As String: myZstrTmpTtlAry(n) = myZstrWndwTtl(i)
+'NextPath:
+'    Next i
+'    If n <> 1 Then Exit Function
+'    PinclonGetTargetWindowHandle = myZlonTmphWndAry(1)
+'    Erase myZlonTmphWndAry: Erase myZstrTmpTtlAry
+'End Function
+'
+' '定型Ｐ_指定文字列のタイトルのウィンドウを取得するまで待機する
+'Private Sub PincWaitUntilGetTargetWindowTitle(myXlonTrgthWnd As Long, _
+'            myXstrTrgtWndwTtl As String, _
+'            Optional coXbisInStrOptn As Boolean = False, _
+'            Optional coXdouPauseTime As Double = 0.01, _
+'            Optional coXdouExitTime As Double = 0)
+'Includes PinclonGetTargetWindowHandle
+'    myXlonTrgthWnd = Empty
+'    If myXstrTrgtWndwTtl = "" Then Exit Sub
+'  Dim myXdatBgn As Date: myXdatBgn = Timer
+'  Dim myXbisExitLpFlag As Boolean: myXbisExitLpFlag = False
+'    Do While myXbisExitLpFlag = False
+'        myXlonTrgthWnd = PinclonGetTargetWindowHandle( _
+'                            0, myXstrTrgtWndwTtl, coXbisInStrOptn)
+'        If myXlonTrgthWnd > 0 Then: myXbisExitLpFlag = True
+'      Dim myXdatStart As Date: myXdatStart = Timer
+'        Do While Timer < myXdatStart + coXdouPauseTime
+'            DoEvents
+'        Loop
+'        If coXdouExitTime > 0 Then _
+'            If Timer > myXdatBgn + coXdouExitTime Then Exit Sub
+'    Loop
+'End Sub
+'
+' '定型Ｐ_[API][PrintScreen]のキーストロークをアクティブなウィンドウに送信する
+'Private Sub PfixSendKeysPrintScreen(myXbisExitFlag As Boolean)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_既存のファイルをコピーする
+''Private Declare Sub keybd_event Lib "user32" ( _
+''        ByVal bVk As Byte, ByVal bScan As Byte, _
+''        ByVal dwFlags As Long, ByVal dwExtraInfo As Long)
+''Private Const KEYEVENTF_EXTENDEDKEY As Long = &H1
+''Private Const KEYEVENTF_KEYUP As Long = &H2
+''Private Const fKEYDOWN = KEYEVENTF_EXTENDEDKEY
+''Private Const fKEYUP = KEYEVENTF_EXTENDEDKEY Or KEYEVENTF_KEYUP
+''←EndDeclaration
+'    myXbisExitFlag = False
+'    On Error GoTo ExitPath
+'    keybd_event vbKeySnapshot, 0&, fKEYDOWN, 0&
+'    keybd_event vbKeySnapshot, 0&, fKEYUP, 0&
+'    On Error GoTo 0
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+'End Sub
+'
+'Sub Test_20191201101934()
+'
+'  Dim myXbisExitFlag As Boolean
+'    Call PfixSendKeysAltPrintScreen(myXbisExitFlag)
+'    If myXbisExitFlag = True Then Exit Sub
+'End Sub
+'
+' '定型Ｐ_[API][Alt]+[PrintScreen]の同時押しキーストロークをアクティブなウィンドウに送信する
+'Private Sub PfixSendKeysAltPrintScreen(myXbisExitFlag As Boolean)
+''→Declaration0:モジュールの宣言部分に記述
+'''API宣言_既存のファイルをコピーする
+''Private Declare Sub keybd_event Lib "user32" ( _
+''        ByVal bVk As Byte, ByVal bScan As Byte, _
+''        ByVal dwFlags As Long, ByVal dwExtraInfo As Long)
+''Private Const KEYEVENTF_EXTENDEDKEY As Long = &H1
+''Private Const KEYEVENTF_KEYUP As Long = &H2
+''Private Const fKEYDOWN = KEYEVENTF_EXTENDEDKEY
+''Private Const fKEYUP = KEYEVENTF_EXTENDEDKEY Or KEYEVENTF_KEYUP
+''Private Const VK_LMENU As Long = &HA4
+''←EndDeclaration
+'    myXbisExitFlag = False
+'    On Error GoTo ExitPath
+'    keybd_event VK_LMENU, 0&, fKEYDOWN, 0&
+'    keybd_event vbKeySnapshot, 0&, fKEYDOWN, 0&
+'    keybd_event vbKeySnapshot, 0&, fKEYUP, 0&
+'    keybd_event VK_LMENU, 0&, fKEYUP, 0&
+'    On Error GoTo 0
+'    Exit Sub
+'ExitPath:
+'    myXbisExitFlag = True
+'End Sub
 
+      <br></pre>
+    </body>
+  </html>
