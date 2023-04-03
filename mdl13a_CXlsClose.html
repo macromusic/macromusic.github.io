@@ -1,1 +1,369 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfixGetFileNameInformationByFSO
+'Includes PfncbisCheckExcelBookReadOnly
+'Includes PfixGetFileBaseNameExtension
+'Includes PfixSaveAsExcelBook
+'Includes PfixCloseExcelBook
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_エクセルブックを閉じる
+'Rev.003
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CXlsClose"
+  
+'//モジュール内定数
+  Private Const coXstrXL As String = "xl"
+  
+'//PropertyGet_出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  Private myXbisBkOpnd As Boolean, myXbisBkRdOnly As Boolean
+  
+'//PropertySetLet_入力制御信号
+  Private myXbisSaveON As Boolean
+  
+'//PropertySetLet_入力データ
+  Private myXstrCloseFullName As String, myXstrSaveBkName As String
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  Private myXlonBkOpndType As Long
+  
+'//モジュール内変数_データ
+  Private myXstrCloseBkName As String
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonBkOpndType = Empty
+    
+    myXstrCloseBkName = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getCmpltFlag() As Boolean
+    getCmpltFlag = myXbisCmpltFlag
+End Property
+
+Public Property Get getBkOpnd() As Boolean
+    getBkOpnd = myXbisBkOpnd
+'myXbisBkOpnd = True  : 指定エクセルブックが開いている
+'myXbisBkOpnd = False : 指定エクセルブックが開いていない
+End Property
+
+Public Property Get getBkRdOnly() As Boolean
+    getBkRdOnly = myXbisBkRdOnly
+'myXbisBkRdOnly = True  : 指定エクセルブックが読み取り専用で開いている
+'myXbisBkRdOnly = False : 指定エクセルブックが読み取り専用では開いていない
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+    myXbisBkOpnd = False: myXbisBkRdOnly = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letSaveON(ByVal RHS As Boolean)
+    myXbisSaveON = RHS
+'myXbisSaveON = False : 閉じる前に保存しない
+'myXbisSaveON = True  : 閉じる前に保存する
+End Property
+
+Public Property Let letCloseFullName(ByVal RHS As String)
+    myXstrCloseFullName = RHS
+End Property
+
+Public Property Let letSaveBkName(ByVal RHS As String)
+    myXstrSaveBkName = RHS
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+'//指定エクセルブックが既に開いているか確認
+    myXlonBkOpndType = PfnclonCheckExcelBookOpening(myXstrCloseFullName)
+    If myXlonBkOpndType < 1 Then
+        GoTo ExitPath
+        
+    ElseIf myXlonBkOpndType = 1 Then
+    '//指定エクセルブックが開いていない場合の処理
+        GoTo ExitPath
+        
+    ElseIf myXlonBkOpndType = 2 Then
+    '//指定エクセルブックと同一名の別ブックが開いている場合の処理
+        GoTo ExitPath
+        
+    ElseIf myXlonBkOpndType = 3 Then
+    '//指定エクセルブックが開いている場合の処理
+        myXbisBkOpnd = True
+        
+    ElseIf myXlonBkOpndType > 3 Then
+        GoTo ExitPath
+        
+    End If
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    Call ctrProc
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+
+'//指定ファイルのファイル名情報を取得
+  Dim myXstrPrntPath As String, myXstrBaseName As String, myXstrExtsn As String
+    Call PfixGetFileNameInformationByFSO( _
+            myXstrPrntPath, myXstrCloseBkName, myXstrBaseName, myXstrExtsn, _
+            myXstrCloseFullName)
+  Dim myXstrTmp As String
+    myXstrTmp = Left(myXstrExtsn, Len(coXstrXL))
+    If LCase(myXstrTmp) <> LCase(coXstrXL) Then GoTo JumpPath
+    
+'//閉じる前に保存する場合の処理
+    If myXbisSaveON = False Then GoTo JumpPath
+
+'//指定エクセルブックが読み取り専用か確認
+    myXbisBkRdOnly = PfncbisCheckExcelBookReadOnly(myXstrCloseBkName)
+    If myXbisBkRdOnly = True Then GoTo JumpPath
+    
+'//保存用のブック名の設定
+    If myXstrSaveBkName = "" Then
+        myXstrSaveBkName = myXstrCloseBkName: GoTo SavePath
+    End If
+
+'//保存用のブック名からベース名と拡張子を取得する
+  Dim myXstrSvBaseName As String, myXstrSvExtsn As String
+    Call PfixGetFileBaseNameExtension( _
+            myXstrSvBaseName, myXstrSvExtsn, _
+            myXstrSaveBkName)
+    
+'//保存名の拡張子を設定
+    If myXstrSvExtsn = "" Then
+        myXstrSaveBkName = myXstrSvBaseName & "." & myXstrExtsn
+    ElseIf Len(myXstrSvExtsn) >= Len(coXstrXL) Then
+        myXstrTmp = Left(myXstrSvExtsn, Len(coXstrXL))
+        If LCase(myXstrTmp) = LCase(coXstrXL) Then GoTo SavePath
+        myXstrSaveBkName = myXstrSaveBkName & "." & myXstrExtsn
+    Else
+        myXstrSaveBkName = myXstrSaveBkName & "." & myXstrExtsn
+    End If
+
+SavePath:
+'//読み取り専用ではない場合エクセルブックを保存
+    Call PfixSaveAsExcelBook(myXbisExitFlag, myXstrCloseBkName, myXstrSaveBkName)
+    If myXbisExitFlag = True Then GoTo ExitPath
+    myXstrCloseBkName = myXstrSaveBkName
+    
+JumpPath:
+'//エクセルブックを閉じる
+    Call PfixCloseExcelBook(myXbisExitFlag, myXstrCloseBkName)
+    If myXbisExitFlag = True Then GoTo ExitPath
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
+
+ '定型Ｆ_指定エクセルブックが既に開いているか確認する
+Private Function PfnclonCheckExcelBookOpening( _
+            ByVal myXstrFullName As String) As Long
+'PfnclonCheckExcelBookOpening = 0 : 指定ブックが存在しない
+'PfnclonCheckExcelBookOpening = 1 : 開いていない
+'PfnclonCheckExcelBookOpening = 2 : 指定ブックと同一名の別ブックが開いている
+'PfnclonCheckExcelBookOpening = 3 : 指定ブックが開いている
+    PfnclonCheckExcelBookOpening = Empty
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    If myXobjFSO.FileExists(myXstrFullName) = False Then Exit Function
+  Dim myXstrBookName As String
+    myXstrBookName = myXobjFSO.GetFileName(myXstrFullName)
+    On Error GoTo ExitPath
+  Dim myXstrTmp As String: myXstrTmp = Workbooks(myXstrBookName).FullName
+    On Error GoTo 0
+    If myXstrTmp = myXstrFullName Then
+        PfnclonCheckExcelBookOpening = 3
+    Else
+        PfnclonCheckExcelBookOpening = 2
+    End If
+    Set myXobjFSO = Nothing
+    Exit Function
+ExitPath:
+    PfnclonCheckExcelBookOpening = 1
+    Set myXobjFSO = Nothing
+End Function
+
+ '定型Ｐ_指定ファイルのファイル名情報を取得する(FileSystemObject使用)
+Private Sub PfixGetFileNameInformationByFSO( _
+            myXstrPrntPath As String, myXstrFileName As String, _
+            myXstrBaseName As String, myXstrExtsn As String, _
+            ByVal myXstrFilePath As String)
+    myXstrPrntPath = Empty: myXstrFileName = Empty
+    myXstrBaseName = Empty: myXstrExtsn = Empty
+    If myXstrFilePath = "" Then Exit Sub
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    With myXobjFSO
+        myXstrPrntPath = .GetParentFolderName(myXstrFilePath)   '親フォルダパス
+        myXstrFileName = .GetFileName(myXstrFilePath)           'ファイル名
+        myXstrBaseName = .GetBaseName(myXstrFilePath)           'ファイルベース名
+        myXstrExtsn = .GetExtensionName(myXstrFilePath)         'ファイル拡張子
+    End With
+    Set myXobjFSO = Nothing
+End Sub
+
+ '定型Ｐ_指定ファイル名からベース名と拡張子を取得する
+Private Sub PfixGetFileBaseNameExtension( _
+            myXstrBaseName As String, myXstrExtsn As String, _
+            ByVal myXstrFileName As String)
+    myXstrBaseName = Empty: myXstrExtsn = Empty
+    If myXstrFileName = "" Then Exit Sub
+    If InStr(myXstrFileName, "\") > 0 Then Exit Sub
+  Dim i As Long, myXlonInStrRev As Long: myXlonInStrRev = 0
+    For i = Len(myXstrFileName) To 1 Step -1
+        If Mid(myXstrFileName, i, 1) = "." Then
+            myXlonInStrRev = i: Exit For
+        End If
+    Next i
+    If myXlonInStrRev = 0 Then
+        myXstrBaseName = myXstrFileName
+    ElseIf myXlonInStrRev = 1 Then
+        myXstrExtsn = Mid(myXstrFileName, myXlonInStrRev + 1)
+    ElseIf myXlonInStrRev = Len(myXstrFileName) Then
+        myXstrBaseName = Left(myXstrFileName, myXlonInStrRev - 1)
+    Else
+        myXstrBaseName = Left(myXstrFileName, myXlonInStrRev - 1)
+        myXstrExtsn = Mid(myXstrFileName, myXlonInStrRev + 1)
+    End If
+End Sub
+
+ '定型Ｆ_開いたエクセルブックが読み取り専用か確認する
+Private Function PfncbisCheckExcelBookReadOnly( _
+            ByVal myXstrBookName As String) As Boolean
+'PfncbisCheckExcelBookReadOnly = True  : 読み取り専用
+'PfncbisCheckExcelBookReadOnly = False : 読み取り専用ではない
+    PfncbisCheckExcelBookReadOnly = False
+    On Error GoTo ExitPath
+  Dim myXobjBook  As Object: Set myXobjBook = Workbooks(myXstrBookName)
+    On Error GoTo 0
+    PfncbisCheckExcelBookReadOnly = myXobjBook.ReadOnly
+    Set myXobjBook = Nothing
+    Exit Function
+ExitPath:
+End Function
+
+ '定型Ｐ_エクセルブックを名前を付けて保存する
+Private Sub PfixSaveAsExcelBook(myXbisExitFlag As Boolean, _
+            ByVal myXstrOrgBkName As String, ByVal myXstrSaveBkName As String)
+  Const coXstrXL As String = ".xl"
+    If Application.DisplayAlerts = True Then Application.DisplayAlerts = False
+    myXbisExitFlag = False
+    If myXstrSaveBkName = "" Then GoTo ErrPath
+  Dim myXstrTmp1 As String, myXstrTmp2 As String
+    myXstrTmp1 = Right(myXstrSaveBkName, Len(coXstrXL) + 1)
+    myXstrTmp1 = Left(myXstrTmp1, Len(coXstrXL))
+    myXstrTmp2 = Right(myXstrSaveBkName, Len(coXstrXL) + 2)
+    myXstrTmp2 = Left(myXstrTmp2, Len(coXstrXL))
+    If LCase(myXstrTmp1) <> LCase(coXstrXL) _
+        And LCase(myXstrTmp2) <> LCase(coXstrXL) Then GoTo ErrPath
+    On Error GoTo ErrPath
+    If myXstrSaveBkName = myXstrOrgBkName Then
+        Workbooks(myXstrOrgBkName).Save
+    Else
+      Dim myXstrOrgDirPath As String, myXstrSaveFullName As String
+        myXstrOrgDirPath = Workbooks(myXstrOrgBkName).Path
+        myXstrSaveFullName = myXstrOrgDirPath & "\" & myXstrSaveBkName
+        Workbooks(myXstrOrgBkName).SaveAs Filename:=myXstrSaveFullName
+    End If
+    On Error GoTo 0
+    GoTo ExitPath
+ErrPath:
+    myXbisExitFlag = True
+ExitPath:
+    If Application.DisplayAlerts = False Then Application.DisplayAlerts = True
+End Sub
+
+ '定型Ｐ_エクセルブックを閉じる
+Private Sub PfixCloseExcelBook(myXbisExitFlag As Boolean, _
+            ByVal myXstrBookName As String)
+    If Application.DisplayAlerts = True Then Application.DisplayAlerts = False
+    myXbisExitFlag = False
+    On Error GoTo ErrPath
+    Workbooks(myXstrBookName).Close SaveChanges:=False
+    On Error GoTo 0
+    GoTo ExitPath
+ErrPath:
+    myXbisExitFlag = True
+ExitPath:
+    If Application.DisplayAlerts = False Then Application.DisplayAlerts = True
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_エクセルブックを閉じる
+'Private Sub instCXlsClose()
+'  Dim myXbisCmpltFlag As Boolean
+'  Dim myXbisBkOpnd As Boolean
+'    'myXbisBkOpnd = True  : 指定エクセルブックが開いている
+'    'myXbisBkOpnd = False : 指定エクセルブックが開いていない
+'  Dim myXbisBkRdOnly As Boolean
+'    'myXbisBkRdOnly = True  : 指定エクセルブックが読み取り専用で開いている
+'    'myXbisBkRdOnly = False : 指定エクセルブックが読み取り専用では開いていない
+''//クラス内変数への入力
+'  Dim myXbisSaveON As Boolean: myXbisSaveON = False
+'    'myXbisSaveON = False : 閉じる前に保存しない
+'    'myXbisSaveON = True  : 閉じる前に保存する
+'  Dim myXstrCloseFullName As String
+'    myXstrCloseFullName = ""
+'  Dim myXstrSaveBkName As String
+'    myXstrSaveBkName = ""
+''//CXlsCloseクラスモジュールのインスタンス生成
+'  Dim myXinsXlsClose As CXlsClose: Set myXinsXlsClose = New CXlsClose
+'    With myXinsXlsClose
+'    '//クラス内変数への入力
+'        .letCloseFullName = myXstrCloseFullName
+''        .letSaveON = True
+'        .letSaveBkName = myXstrSaveBkName
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        .exeProc
+'        myXbisCmpltFlag = .getCmpltFlag
+'        myXbisBkOpnd = .getBkOpnd
+'        myXbisBkRdOnly = .getBkRdOnly
+'    End With
+'    Set myXinsXlsClose = Nothing
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
