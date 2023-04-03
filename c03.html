@@ -1,1 +1,1660 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
 
+
+ '定型Ｆ_指定ワークシートの存在を確認する
+Private Function PfncbisCheckWorkSheetExist( _
+            ByVal myXstrBkName As String, ByVal myXstrShtName As String) As Boolean
+    PfncbisCheckWorkSheetExist = False
+  Dim myXstrTmp As String, myXobjSheet As Object
+    On Error GoTo ExitPath
+    myXstrTmp = Workbooks(myXstrBkName).Name
+    On Error GoTo 0
+    For Each myXobjSheet In Workbooks(myXstrBkName).Worksheets
+        If myXobjSheet.Name = myXstrShtName Then
+            PfncbisCheckWorkSheetExist = True: Exit For
+        End If
+    Next
+    Set myXobjSheet = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_指定シートの存在を確認して無ければアクティブシートに設定する
+Private Function PfncobjCheckSheet(ByVal myXobjSheet As Object) As Object
+    Set PfncobjCheckSheet = Nothing
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+    On Error GoTo ExitPath
+  Dim myXstrShtName As String: myXstrShtName = myXobjSheet.Name
+    On Error GoTo 0
+    Exit Function
+ExitPath:
+    Set PfncobjCheckSheet = ActiveSheet
+End Function
+
+ '定型Ｆ_指定シート名のシート番号を取得する
+Private Function PfnclonGetSheetNo( _
+            ByVal myXobjBook As Object, ByVal myXstrShtName As String) As Long
+    PfnclonGetSheetNo = Empty
+    If myXobjBook Is Nothing Then Exit Function
+    If myXstrShtName = "" Then Exit Function
+  Dim myXlonShtNo As Long, myXobjTmp As Object
+    For Each myXobjTmp In myXobjBook.Worksheets
+        If myXobjTmp.Name = myXstrShtName Then
+            myXlonShtNo = myXobjTmp.Index
+            Exit For
+        End If
+    Next myXobjTmp
+    PfnclonGetSheetNo = myXlonShtNo
+End Function
+
+ '定型Ｆ_指定シートのシート番号を取得する
+Private Function PfnclonGetSheetIndex(ByVal myXobjSheet As Object) As Long
+    PfnclonGetSheetIndex = Empty
+    If myXobjSheet Is Nothing Then Exit Function
+  Dim myXlonShtNo As Long
+    On Error GoTo ExitPath
+    myXlonShtNo = myXobjSheet.Index
+    On Error GoTo 0
+    PfnclonGetSheetIndex = myXlonShtNo
+ExitPath:
+End Function
+
+ '定型Ｆ_シートを新規追加する
+Private Function PfncobjAddNewSheet( _
+            ByVal myXobjBook As Object, ByVal myXstrShtName As String) As Object
+    Set PfncobjAddNewSheet = Nothing
+    On Error GoTo ExitPath
+  Dim myXlonShtCnt As Long: myXlonShtCnt = myXobjBook.Worksheets.Count
+    Set PfncobjAddNewSheet = myXobjBook.Worksheets.Add( _
+                                After:=myXobjBook.Worksheets(myXlonShtCnt))
+    myXobjBook.Worksheets(myXlonShtCnt + 1).Name = myXstrShtName
+    On Error GoTo 0
+ExitPath:
+End Function
+
+ '定型Ｐ_シート位置を移動する
+Private Sub PfncobjMoveSheetPosition(myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object, ByVal myXlonShtPstn As Long)
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+  Dim myXlonShtCnt As Long: myXlonShtCnt = myXobjSheet.Parent.Worksheets.Count
+    On Error GoTo 0
+    If myXlonShtPstn <= 0 Then
+        myXobjSheet.Move Before:=Worksheets(1)
+    ElseIf myXlonShtPstn >= myXlonShtCnt + 1 Then
+        myXobjSheet.Move After:=Worksheets(myXlonShtCnt)
+    Else
+        myXobjSheet.Move Before:=Worksheets(myXlonShtPstn)
+    End If
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_ブック内の全シート名を取得する
+Private Sub PfixGetAllSheetNameInBook( _
+            myXlonShtCnt As Long, myZstrShtName() As String, _
+            ByVal myXobjBook As Object)
+    On Error GoTo ExitPath
+    myXlonShtCnt = myXobjBook.Worksheets.Count
+    On Error GoTo 0
+    If myXlonShtCnt <= 0 Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = L - 1
+    i = myXlonShtCnt - (1 - L): ReDim myZstrShtName(i) As String
+    For i = 1 To myXlonShtCnt
+        n = n + 1: myZstrShtName(n) = myXobjBook.Worksheets(i).Name
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_ワークシートの表示と非表示を切り替える
+Public Sub PfixChangeDisplayWorksheet(ByVal myXobjSheet As Object)
+    With myXobjSheet
+        .Visible = Not .Visible
+    End With
+End Sub
+
+ '定型Ｐ_シートの一括再表示
+Public Sub PfixDisplayAllWorksheets(ByVal myXobjBook As Object)
+  Dim myXvarTmp As Variant
+    For Each myXvarTmp In myXobjBook.Worksheets
+        myXvarTmp.Visible = True
+    Next myXvarTmp
+End Sub
+
+ '定型Ｐ_シート全範囲の行高さを設定する
+Private Sub PfixSetSheetRowHeight( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object, ByVal myXdouRowHghtPxl As Double)
+'myXdouRowHght : x [pixel]
+  Dim myXdouPointPerPxl As Double: myXdouPointPerPxl = 0.75
+    myXbisExitFlag = False
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+    If myXdouRowHghtPxl < 0 Then GoTo ExitPath
+  Dim myXdouRowHghtPerPxl As Double, myXdouRowHght As Double
+    On Error GoTo ExitPath
+    myXdouRowHghtPerPxl = myXdouPointPerPxl
+    myXdouRowHght = myXdouRowHghtPxl * myXdouRowHghtPerPxl
+    myXobjSheet.Cells.RowHeight = myXdouRowHght
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_シート全範囲の列幅を設定する
+Private Sub PfixSetSheetColumnWidth( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object, ByVal myXdouColWdthPxl As Double)
+'myXdouColWdth : x [pixel]
+  Dim myXdouPointPerPxl As Double: myXdouPointPerPxl = 0.75
+    myXbisExitFlag = False
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+    If myXdouColWdthPxl < 0 Then GoTo ExitPath
+  Dim myXdouColWdthChrCnt As Double, myXdouColWdthPoint As Double, _
+        myXdouColWdthPerPoint As Double, myXdouColWdthPerPxl As Double, myXdouColWdth As Double
+  Dim myXbisExitLpFlag As Boolean: myXbisExitLpFlag = False
+    On Error GoTo ExitPath
+    Do While myXbisExitLpFlag = False
+        myXdouColWdthChrCnt = myXobjSheet.Cells.ColumnWidth
+        myXdouColWdthPoint = myXobjSheet.Cells(1, 1).Width
+        myXdouColWdthPerPoint = myXdouColWdthChrCnt / myXdouColWdthPoint
+        myXdouColWdthPerPxl = myXdouColWdthPerPoint * myXdouPointPerPxl
+        myXdouColWdth = myXdouColWdthPxl * myXdouColWdthPerPxl
+        myXobjSheet.Cells.ColumnWidth = myXdouColWdth
+        myXdouColWdthPoint = myXobjSheet.Cells(1, 1).Width
+        If myXdouColWdthPoint = myXdouColWdthPxl * myXdouPointPerPxl Then myXbisExitLpFlag = True
+    Loop
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_シート上の指定セル範囲を取得する
+Private Function PfncobjSetRange( _
+            ByVal myXobjSheet As Object, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
+            ByVal myXlonEndRow As Long, ByVal myXlonEndCol As Long) As Object
+    Set PfncobjSetRange = Nothing
+    On Error GoTo ExitPath
+  Dim myXstrTmp As String: myXstrTmp = myXobjSheet.Name
+    On Error GoTo 0
+    If myXlonBgnRow <= 0 Or myXlonBgnCol <= 0 Then Exit Function
+    If myXlonEndRow < myXlonBgnRow Then myXlonEndRow = myXlonBgnRow
+    If myXlonEndCol < myXlonBgnCol Then myXlonEndCol = myXlonBgnCol
+    Set PfncobjSetRange = myXobjSheet.Range( _
+                        myXobjSheet.Cells(myXlonBgnRow, myXlonBgnCol), _
+                        myXobjSheet.Cells(myXlonEndRow, myXlonEndCol))
+ExitPath:
+End Function
+
+ '定型Ｆ_指定シート上の指定列の最終行を取得する
+Private Function PfnclonEndRowOnColumn( _
+            ByVal myXobjSheet As Object, ByVal myXlonCol As Long) As Long
+    PfnclonEndRowOnColumn = Empty
+    If myXobjSheet Is Nothing Then Exit Function
+    If myXlonCol <= 0 Then Exit Function
+  Dim myXlonEndRow As Long
+    With myXobjSheet
+        myXlonEndRow = .Cells(.Rows.Count, myXlonCol).End(xlUp).Row
+    End With
+    PfnclonEndRowOnColumn = myXlonEndRow
+End Function
+
+ '定型Ｆ_指定シート上の指定行の最終列を取得する
+Private Function PfnclonEndColumnOnRow( _
+            ByVal myXobjSheet As Object, ByVal myXlonRow As Long) As Long
+    PfnclonEndColumnOnRow = Empty
+    If myXobjSheet Is Nothing Then Exit Function
+    If myXlonRow <= 0 Then Exit Function
+  Dim myXlonEndCol As Long
+    With myXobjSheet
+        myXlonEndCol = .Cells(myXlonRow, .Columns.Count).End(xlToLeft).Column
+    End With
+    PfnclonEndColumnOnRow = myXlonEndCol
+End Function
+
+ '定型Ｐ_指定セル範囲オブジェクトからブックとシートの情報を取得する
+Private Sub PfixGetRangeBookSheetInformation( _
+            myXobjBook As Object, myXstrShtName As String, myXlonShtNo As Long, _
+            ByVal myXobjOrgRng As Object)
+    Set myXobjBook = Nothing: myXstrShtName = Empty: myXlonShtNo = Empty
+    If myXobjOrgRng Is Nothing Then Exit Sub
+    Set myXobjBook = myXobjOrgRng.Parent.Parent
+    myXstrShtName = myXobjOrgRng.Parent.Name
+  Dim i As Long
+    For i = 1 To myXobjOrgRng.Parent.Parent.Worksheets.Count
+        If myXobjOrgRng.Parent.Parent.Worksheets(i).Name = myXstrShtName Then
+            myXlonShtNo = i: Exit For
+        End If
+    Next i
+End Sub
+
+ '定型Ｐ_指定セル範囲オブジェクトからセル範囲情報を取得する
+Private Sub PfixGetRangeInformation( _
+            myXlonBgnRow As Long, myXlonEndRow As Long, _
+            myXlonBgnCol As Long, myXlonEndCol As Long, _
+            myXlonRowCnt As Long, myXlonColCnt As Long, _
+            ByVal myXobjOrgRng As Object)
+    myXlonBgnRow = Empty: myXlonEndRow = Empty
+    myXlonBgnCol = Empty: myXlonEndCol = Empty
+    myXlonRowCnt = Empty: myXlonColCnt = Empty
+    If myXobjOrgRng Is Nothing Then Exit Sub
+    With myXobjOrgRng
+        myXlonBgnRow = .Row
+        myXlonRowCnt = .Rows.Count
+        myXlonEndRow = .Row + myXlonRowCnt - 1
+        myXlonBgnCol = .Column
+        myXlonColCnt = .Columns.Count
+        myXlonEndCol = .Column + myXlonColCnt - 1
+    End With
+End Sub
+
+ '定型Ｐ_指定シートの指定セル範囲の位置情報とサイズ情報を取得する
+Private Sub PfixGetRangePlaceSize( _
+            myXdouRngTop As Double, myXdouRngLft As Double, _
+            myXdouRngBttm As Double, myXdouRngRght As Double, _
+            myXdouRngHght As Double, myXdouRngWdth As Double, _
+            ByVal myXobjSheet As Object, _
+            ByVal myXlonTopRow As Long, ByVal myXlonLftCol As Long, _
+            ByVal myXlonRowCnt As Long, ByVal myXlonColCnt As Long)
+    myXdouRngTop = Empty: myXdouRngLft = Empty
+    myXdouRngBttm = Empty: myXdouRngRght = Empty
+    myXdouRngHght = Empty: myXdouRngWdth = Empty
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+    If myXlonRowCnt <= 0 Then myXlonRowCnt = 0
+    If myXlonColCnt <= 0 Then myXlonColCnt = 0
+  Dim myXlonBttmRow As Long, myXlonRghtCol As Long
+    myXlonBttmRow = myXlonTopRow + myXlonRowCnt - 1
+    myXlonRghtCol = myXlonLftCol + myXlonColCnt - 1
+  Dim myXobjStrtRng As Object, myXobjLastRng As Object, myXobjRng As Object
+    On Error GoTo ExitPath
+    Set myXobjStrtRng = myXobjSheet.Cells(myXlonTopRow, myXlonLftCol)
+    Set myXobjLastRng = myXobjSheet.Cells(myXlonBttmRow, myXlonRghtCol)
+    On Error GoTo 0
+    Set myXobjRng = myXobjSheet.Range(myXobjStrtRng, myXobjLastRng)
+    myXdouRngTop = myXobjRng.Top
+    myXdouRngLft = myXobjRng.Left
+    myXdouRngHght = myXobjRng.Height
+    myXdouRngWdth = myXobjRng.Width
+    myXdouRngBttm = myXdouRngTop + myXdouRngHght
+    myXdouRngRght = myXdouRngLft + myXdouRngWdth
+    Set myXobjStrtRng = Nothing: Set myXobjLastRng = Nothing: Set myXobjRng = Nothing
+ExitPath:
+End Sub
+
+ '定型Ｆ_指定セル範囲が連続か不連続かを確認する
+Private Function PfncbisCheckSeriesRangeByInputBox( _
+            ByVal myXobjOrgRng As Object) As Boolean
+'PfncbisCheckSeriesRangeByInputBox = False : 不連続範囲
+'PfncbisCheckSeriesRangeByInputBox = True  : 連続範囲
+    PfncbisCheckSeriesRangeByInputBox = False
+    If myXobjOrgRng Is Nothing Then Exit Function
+  Dim myXbisSeries As Boolean: myXbisSeries = False
+    If InStr(myXobjOrgRng.Address, ",") <= 0 Then myXbisSeries = True
+    PfncbisCheckSeriesRangeByInputBox = myXbisSeries
+End Function
+
+ '定型Ｐ_指定セル範囲を分割して各セルの配列を抽出する
+Private Sub PfixSplitRange( _
+            myXlonSpltCnt As Long, myZobjSpltRng() As Object, _
+            ByVal myXobjOrgRng As Object)
+'myZobjSpltRng(i) : 分割したセル配列
+    myXlonSpltCnt = Empty: Erase myZobjSpltRng
+    If myXobjOrgRng Is Nothing Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myXvarTmpCell As Variant, n As Long: n = L - 1
+    On Error Resume Next
+    For Each myXvarTmpCell In myXobjOrgRng
+        n = n + 1: ReDim Preserve myZobjSpltRng(n) As Object
+        Set myZobjSpltRng(n) = myXvarTmpCell
+    Next myXvarTmpCell
+    On Error GoTo 0
+    myXlonSpltCnt = n - L + 1
+    myXvarTmpCell = Empty
+End Sub
+
+ '定型Ｐ_セル配列から各セルのアドレス配列を取得する
+Private Sub PfixGetCellAddressArray( _
+            myXlonAdrsCnt As Long, myZstrCellAdrs() As String, _
+            ByRef myZobjOrgCell() As Object, _
+            Optional ByVal coXbisStylSet As Boolean = False, _
+            Optional ByVal coXlonRefStyl As Long = xlA1, _
+            Optional ByVal coXbisExternal As Boolean = False)
+'coXbisStylSet = True  : 現在のアドレス形式で取得する
+'coXbisStylSet = False : アドレス形式を指定して取得する
+'coXlonRefStyl = xlA1   : A1形式
+'coXlonRefStyl = xlR1C1 : R1C1形式
+'coXbisExternal = True  : 外部参照を返す_[ブック名]シート名!アドレス
+'coXbisExternal = False : ローカル参照を返す
+'myZstrCellAdrs(i) : セルアドレス配列
+'myZobjOrgCell(i) : 分割したセル配列
+  Const coXbisRowAbslt As Boolean = True
+  Const coXbisColAbslt As Boolean = True
+    myXlonAdrsCnt = Empty: Erase myZstrCellAdrs
+  Dim myXobjTmp As Object, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZobjOrgCell): Set myXobjTmp = myZobjOrgCell(Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim myXobjTmpCell As Object, myXstrTmpAdrs As String, i As Long, n As Long: n = Lo - 1
+  Dim myXobjRltvRng As Object: Set myXobjRltvRng = Nothing
+   For i = LBound(myZobjOrgCell) To UBound(myZobjOrgCell)
+        myXstrTmpAdrs = Empty
+        If myZobjOrgCell(i) Is Nothing Then GoTo NextPath
+        Set myXobjTmpCell = myZobjOrgCell(i)
+        myXstrTmpAdrs = PfncstrRangeAddress( _
+                            myXobjTmpCell, myXobjRltvRng, coXbisStylSet, coXlonRefStyl, _
+                            coXbisRowAbslt, coXbisColAbslt, coXbisExternal)
+        n = n + 1: ReDim Preserve myZstrCellAdrs(n) As String
+        myZstrCellAdrs(n) = myXstrTmpAdrs
+NextPath:
+    Next i
+    myXlonAdrsCnt = n - Lo + 1
+    Set myXobjTmpCell = Nothing
+ExitPath:
+End Sub
+
+ '定型Ｐ_セル配列からセル位置と値とコメント内容を取得する
+Private Sub PfixGetCellPositionValueCommentArray( _
+            myXlonDataCnt As Long, myZvarCellData() As Variant, _
+            ByRef myZobjOrgCell() As Object, _
+            Optional ByVal myXbisByVrnt As Boolean = False, _
+            Optional ByVal myXbisGetCmnt As Boolean = False)
+'myZvarCellData(i, 1) : セルの行位置
+'myZvarCellData(i, 2) : セルの列位置
+'myZvarCellData(i, 3) : セルの値
+'myZvarCellData(i, 4) : セルのコメント内容
+'myZobjOrgCell(i) : 分割したセル配列
+    myXlonDataCnt = Empty: Erase myZvarCellData
+  Dim myXobjTmp As Object, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZobjOrgCell): Set myXobjTmp = myZobjOrgCell(Li)
+    On Error GoTo 0
+'//出力配列をセッティング
+    myXlonDataCnt = UBound(myZobjOrgCell) - LBound(myZobjOrgCell) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long: i = myXlonDataCnt + Lo - 1
+    ReDim myZvarCellData(i, Lo + 3) As Variant
+'//出力配列に取得データを格納
+  Dim myXobjTmpCell As Object, myXstrTmpCmnt As String, n As Long: n = 0
+    On Error Resume Next
+    For i = LBound(myZobjOrgCell) To UBound(myZobjOrgCell)
+        Set myXobjTmpCell = Nothing
+        Set myXobjTmpCell = myZobjOrgCell(i)
+        If myXobjTmpCell Is Nothing Then GoTo NextPath
+        n = n + 1
+    '//セルの配置を取得
+        myZvarCellData(i + Lo - Li, Lo + 0) = myXobjTmpCell.Row
+        myZvarCellData(i + Lo - Li, Lo + 1) = myXobjTmpCell.Column
+    '//セルの値を取得
+        If myXbisByVrnt = False Then
+            myZvarCellData(i + Lo - Li, Lo + 2) = CStr(myXobjTmpCell.Value)
+        Else
+            myZvarCellData(i + Lo - Li, Lo + 2) = CVar(myXobjTmpCell.Value)
+        End If
+    '//セルのコメント内容を取得
+        If TypeName(myXobjTmpCell.Comment) = "Comment" Then
+            myXstrTmpCmnt = myXobjTmpCell.Comment.Text
+        Else
+            myXstrTmpCmnt = ""
+        End If
+        myZvarCellData(i + Lo - Li, Lo + 3) = myXstrTmpCmnt
+NextPath:
+    Next i
+    On Error GoTo 0
+    If n <> myXlonDataCnt Then GoTo ExitPath
+    Set myXobjTmpCell = Nothing
+    Exit Sub
+ExitPath:
+    myXlonDataCnt = Empty: Erase myZvarCellData
+End Sub
+
+ '定型Ｐ_セル配列から各セルのコメント内容を取得する
+Private Sub PfixGetCellCommentTextArray( _
+            myXlonDataCnt As Long, myZstrCmntData() As String, _
+            ByRef myZobjOrgCell() As Object)
+'myZstrCmntData(i) : セルのコメント配列
+'myZobjOrgCell(i) : 分割したセル配列
+    myXlonDataCnt = Empty: Erase myZstrCmntData
+  Dim myXobjTmp As Object, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZobjOrgCell): Set myXobjTmp = myZobjOrgCell(Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim myXstrTmpCmnt As String, i As Long, n As Long: n = Lo - 1
+    For i = LBound(myZobjOrgCell) To UBound(myZobjOrgCell)
+        myXstrTmpCmnt = Empty
+        If myZobjOrgCell(i) Is Nothing Then GoTo NextPath
+        If TypeName(myZobjOrgCell(i).Comment) = "Comment" Then
+            myXstrTmpCmnt = myZobjOrgCell(i).Comment.Text
+        Else
+            myXstrTmpCmnt = ""
+        End If
+        n = n + 1: ReDim Preserve myZstrCmntData(n) As String
+        myZstrCmntData(n) = myXstrTmpCmnt
+NextPath:
+    Next i
+    myXlonDataCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｆ_シート上のデータ記載範囲の最後のセルを取得する
+Private Function PfncobjLastCell(ByVal myXobjSheet As Object) As Object
+    Set PfncobjLastCell = Nothing
+    If myXobjSheet Is Nothing Then Exit Function
+    Set PfncobjLastCell = myXobjSheet.Cells.SpecialCells(xlCellTypeLastCell)
+End Function
+
+ '定型Ｆ_シート上のデータ記載範囲を取得する
+Private Function PfncobjFirstCellToLastCell(ByVal myXobjSheet As Object) As Object
+    Set PfncobjFirstCellToLastCell = Nothing
+    If myXobjSheet Is Nothing Then Exit Function
+    With myXobjSheet
+        Set PfncobjFirstCellToLastCell _
+            = .Range(.Cells(1, 1), .Cells.SpecialCells(xlCellTypeLastCell))
+    End With
+End Function
+
+ '定型Ｆ_指定セル範囲からデータ記載範囲の最後のセルまでの範囲を取得する
+Private Function PfncobjRangeToLastCell(ByVal myXobjRng As Object) As Object
+    Set PfncobjRangeToLastCell = Nothing
+    If myXobjRng Is Nothing Then Exit Function
+  Dim myXobjSht As Object: Set myXobjSht = myXobjRng.Worksheet
+  Dim myXlonRow1 As Long, myXlonRow2 As Long, myXlonCol1 As Long, myXlonCol2 As Long
+    With myXobjSht
+        myXlonRow1 = myXobjRng.Row
+        myXlonCol1 = myXobjRng.Column
+        myXlonRow2 = .Cells.SpecialCells(xlCellTypeLastCell).Row
+        myXlonCol2 = .Cells.SpecialCells(xlCellTypeLastCell).Column
+        Set PfncobjRangeToLastCell _
+            = .Range(.Cells(myXlonRow1, myXlonCol1), .Cells(myXlonRow2, myXlonCol2))
+    End With
+    Set myXobjSht = Nothing
+End Function
+
+ '定型Ｆ_指定セル範囲からデータ記載範囲の最後の行までの範囲を取得する
+Private Function PfncobjRangeToLastRow(ByVal myXobjRng As Object) As Object
+    Set PfncobjRangeToLastRow = Nothing
+    If myXobjRng Is Nothing Then Exit Function
+  Dim myXlonRow1 As Long, myXlonCol1 As Long, myXlonCol2 As Long
+    myXlonRow1 = myXobjRng.Row
+    myXlonCol1 = myXobjRng.Column
+    myXlonCol2 = myXobjRng.Column + myXobjRng.Columns.Count - 1
+  Dim myXobjSht As Object: Set myXobjSht = myXobjRng.Worksheet
+  Dim myXlonLastRow As Long
+    With myXobjSht
+        myXlonLastRow = .Cells.SpecialCells(xlCellTypeLastCell).Row
+        Set PfncobjRangeToLastRow _
+            = .Range(.Cells(myXlonRow1, myXlonCol1), .Cells(myXlonLastRow, myXlonCol2))
+    End With
+    Set myXobjSht = Nothing
+End Function
+
+ '定型Ｆ_指定セル範囲からデータ記載範囲の最後の列までの範囲を取得する
+Private Function PfncobjRangeToLastColumn(ByVal myXobjRng As Object, _
+                    Optional ByVal coXbisRowDrctn As Boolean = True) As Object
+    Set PfncobjRangeToLastColumn = Nothing
+    If myXobjRng Is Nothing Then Exit Function
+  Dim myXlonRow1 As Long, myXlonRow2 As Long, myXlonCol1 As Long
+    myXlonRow1 = myXobjRng.Row
+    myXlonRow2 = myXobjRng.Row + myXobjRng.Rows.Count - 1
+    myXlonCol1 = myXobjRng.Column
+  Dim myXobjSht As Object: Set myXobjSht = myXobjRng.Worksheet
+  Dim myXlonLastCol As Long
+    With myXobjSht
+        myXlonLastCol = .Cells.SpecialCells(xlCellTypeLastCell).Column
+        Set PfncobjRangeToLastColumn _
+            = .Range(.Cells(myXlonRow1, myXlonCol1), .Cells(myXlonRow2, myXlonLastCol))
+    End With
+    Set myXobjSht = Nothing
+End Function
+
+ '定型Ｆ_指定セル範囲の最終行を取得する
+Private Function PfnclonEndRow(ByVal myXobjRng As Object) As Long
+    PfnclonEndRow = Empty
+    If myXobjRng Is Nothing Then Exit Function
+    On Error GoTo ExitPath
+  Dim myXobjSheet As Object: Set myXobjSheet = myXobjRng.Worksheet
+    On Error GoTo 0
+  Dim myXlonRow1 As Long, myXlonRow2 As Long, myXlonCol1 As Long, myXlonCol2 As Long
+    myXlonRow1 = myXobjRng.Row
+    myXlonRow2 = myXlonRow1 + myXobjRng.Rows.Count - 1
+    myXlonCol1 = myXobjRng.Column
+    myXlonCol2 = myXlonCol1 + myXobjRng.Columns.Count - 1
+  Dim j As Long, myXlonEndRow As Long, myXlonTmpRow As Long
+    With myXobjSheet
+        For j = myXlonCol1 To myXlonCol2
+            myXlonTmpRow = .Cells(.Rows.Count, j).End(xlUp).Row
+            If myXlonTmpRow < myXlonRow1 Then myXlonTmpRow = myXlonRow2
+            If myXlonEndRow < myXlonTmpRow Then myXlonEndRow = myXlonTmpRow
+        Next j
+    End With
+    PfnclonEndRow = myXlonEndRow
+ExitPath:
+End Function
+
+ '定型Ｆ_指定セル範囲の最終列を取得する
+Private Function PfnclonEndColumn(ByVal myXobjRng As Object) As Long
+    PfnclonEndColumn = Empty
+    If myXobjRng Is Nothing Then Exit Function
+    On Error GoTo ExitPath
+  Dim myXobjSheet As Object: Set myXobjSheet = myXobjRng.Worksheet
+    On Error GoTo 0
+  Dim myXlonRow1 As Long, myXlonRow2 As Long, myXlonCol1 As Long, myXlonCol2 As Long
+    myXlonRow1 = myXobjRng.Row
+    myXlonRow2 = myXlonRow1 + myXobjRng.Rows.Count - 1
+    myXlonCol1 = myXobjRng.Column
+    myXlonCol2 = myXlonCol1 + myXobjRng.Columns.Count - 1
+  Dim i As Long, myXlonEndCol As Long, myXlonTmpCol As Long
+    With myXobjSheet
+        For i = myXlonRow1 To myXlonRow2
+            myXlonTmpCol = .Cells(i, .Columns.Count).End(xlToLeft).Column
+            If myXlonTmpCol < myXlonCol1 Then myXlonTmpCol = myXlonCol2
+            If myXlonEndCol < myXlonTmpCol Then myXlonEndCol = myXlonTmpCol
+        Next i
+    End With
+    PfnclonEndColumn = myXlonEndCol
+ExitPath:
+End Function
+
+ '定型Ｆ_指定セル範囲から最終行までの範囲を取得する
+Private Function PfncobjRangeToEndRow(ByVal myXobjRng As Object) As Object
+    Set PfncobjRangeToEndRow = Nothing
+    If myXobjRng Is Nothing Then Exit Function
+    On Error GoTo ExitPath
+  Dim myXobjSheet As Object: Set myXobjSheet = myXobjRng.Worksheet
+    On Error GoTo 0
+  Dim myXlonRow1 As Long, myXlonRow2 As Long, myXlonCol1 As Long, myXlonCol2 As Long
+    myXlonRow1 = myXobjRng.Row
+    myXlonRow2 = myXlonRow1 + myXobjRng.Rows.Count - 1
+    myXlonCol1 = myXobjRng.Column
+    myXlonCol2 = myXlonCol1 + myXobjRng.Columns.Count - 1
+  Dim j As Long, myXlonEndRow As Long, myXlonTmpRow As Long
+    With myXobjSheet
+        For j = myXlonCol1 To myXlonCol2
+            myXlonTmpRow = .Cells(.Rows.Count, j).End(xlUp).Row
+            If myXlonTmpRow < myXlonRow1 Then myXlonTmpRow = myXlonRow2
+            If myXlonEndRow < myXlonTmpRow Then myXlonEndRow = myXlonTmpRow
+        Next j
+        Set PfncobjRangeToEndRow _
+            = .Range(.Cells(myXlonRow1, myXlonCol1), .Cells(myXlonEndRow, myXlonCol2))
+    End With
+ExitPath:
+End Function
+
+ '定型Ｆ_指定セル範囲から最終列までの範囲を取得する
+Private Function PfncobjRangeToEndColumn(ByVal myXobjRng As Object) As Object
+    Set PfncobjRangeToEndColumn = Nothing
+    If myXobjRng Is Nothing Then Exit Function
+    On Error GoTo ExitPath
+  Dim myXobjSheet As Object: Set myXobjSheet = myXobjRng.Worksheet
+    On Error GoTo 0
+  Dim myXlonRow1 As Long, myXlonRow2 As Long, myXlonCol1 As Long, myXlonCol2 As Long
+    myXlonRow1 = myXobjRng.Row
+    myXlonRow2 = myXlonRow1 + myXobjRng.Rows.Count - 1
+    myXlonCol1 = myXobjRng.Column
+    myXlonCol2 = myXlonCol1 + myXobjRng.Columns.Count - 1
+  Dim i As Long, myXlonEndCol As Long, myXlonTmpCol As Long
+    With myXobjSheet
+        For i = myXlonRow1 To myXlonRow2
+            myXlonTmpCol = .Cells(i, .Columns.Count).End(xlToLeft).Column
+            If myXlonTmpCol < myXlonCol1 Then myXlonTmpCol = myXlonCol2
+            If myXlonEndCol < myXlonTmpCol Then myXlonEndCol = myXlonTmpCol
+        Next i
+        Set PfncobjRangeToEndColumn _
+            = .Range(.Cells(myXlonRow1, myXlonCol1), .Cells(myXlonRow2, myXlonEndCol))
+    End With
+ExitPath:
+End Function
+
+ '定型Ｐ_セル選択範囲を全データ範囲まで拡大する
+Private Sub PfixEnlargeSelection( _
+            myXobjExtndRng As Object, _
+            myXobjFrstCell As Object, myXobjLastCell As Object, _
+            ByVal myXobjSlctRng As Object, _
+            Optional ByVal coXlonRngOptn As Long = 0)
+'coXlonRngOptn = 0  : 選択範囲
+'coXlonRngOptn = 1  : 選択位置から最終行までの範囲
+'coXlonRngOptn = 2  : 選択位置から最終列までの範囲
+'coXlonRngOptn = 3  : 全データ範囲
+    Set myXobjExtndRng = Nothing
+    Set myXobjFrstCell = Nothing: Set myXobjLastCell = Nothing
+    On Error GoTo ExitPath
+    If myXobjSlctRng Is Nothing Then Set myXobjSlctRng = Selection
+    On Error GoTo 0
+  Dim myXlonRow1 As Long, myXlonRow2 As Long, myXlonCol1 As Long, myXlonCol2 As Long
+    myXlonRow1 = myXobjSlctRng.Row
+    myXlonRow2 = myXlonRow1 + myXobjSlctRng.Rows.Count - 1
+    myXlonCol1 = myXobjSlctRng.Column
+    myXlonCol2 = myXlonCol1 + myXobjSlctRng.Columns.Count - 1
+  Dim myXlonEndRow As Long, myXlonEndCol As Long, myXlonTmp As Long
+  Dim i As Long, j As Long
+    With myXobjSlctRng
+        If coXlonRngOptn = 1 Then
+            With .Worksheet
+                For j = myXlonCol1 To myXlonCol2
+                    myXlonTmp = .Cells(.Rows.Count, j).End(xlUp).Row
+                    If myXlonEndRow < myXlonRow1 Then myXlonEndRow = myXlonRow2
+                    If myXlonEndRow < myXlonTmp Then myXlonEndRow = myXlonTmp
+                Next j
+                Set myXobjFrstCell = .Cells(myXlonRow1, myXlonCol1)
+                Set myXobjLastCell = .Cells(myXlonEndRow, myXlonCol2)
+            End With
+       ElseIf coXlonRngOptn = 2 Then
+            With .Worksheet
+                For i = myXlonRow1 To myXlonRow2
+                    myXlonTmp = .Cells(i, .Columns.Count).End(xlToLeft).Column
+                    If myXlonEndCol < myXlonTmp Then myXlonEndCol = myXlonTmp
+                    If myXlonEndCol < myXlonCol1 Then myXlonEndCol = myXlonCol2
+                Next i
+                Set myXobjFrstCell = .Cells(myXlonRow1, myXlonCol1)
+                Set myXobjLastCell = .Cells(myXlonRow2, myXlonEndCol)
+            End With
+        ElseIf coXlonRngOptn = 3 Then
+            Set myXobjFrstCell = .Worksheet.Cells(1, 1)
+            Set myXobjLastCell = .Worksheet.Cells.SpecialCells(xlCellTypeLastCell)
+        Else
+            Set myXobjFrstCell = .Worksheet.Cells(myXlonRow1, myXlonCol1)
+            Set myXobjLastCell = .Worksheet.Cells(myXlonRow2, myXlonCol2)
+        End If
+    Set myXobjExtndRng = .Worksheet.Range(myXobjFrstCell, myXobjLastCell)
+    End With
+ExitPath:
+End Sub
+
+ '定型Ｐ_指定セル範囲に罫線を引く
+Private Sub PfixSetBordersAtDesignateRange( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjBrdrRange As Object, ByVal myXstrBrdrIndex As String, _
+            Optional ByVal coXstrBrdrLinStyl As String = xlContinuous, _
+            Optional ByVal coXstrBrdrWght As String = xlThin, _
+            Optional ByVal coXstrBrdrClrIndex As Long = 1)
+'myXstrBrdrIndex = xlDiagonalDown          ': 左上隅から右下への下向き斜線
+'myXstrBrdrIndex = xlDiagonalUp            ': 左下隅から右上への上向き斜線
+'myXstrBrdrIndex = xlEdgeBottom            ': 下側の罫線
+'myXstrBrdrIndex = xlEdgeLeft              ': 左端の罫線
+'myXstrBrdrIndex = xlEdgeRight             ': 右端の罫線
+'myXstrBrdrIndex = xlEdgeTop               ': 上側の罫線
+'myXstrBrdrIndex = xlInsideHorizontal      ': 範囲内の水平中線
+'myXstrBrdrIndex = xlInsideVertical        ': 範囲内の垂直中線
+'coXstrBrdrLinStyl = xlNone            ': なし
+'coXstrBrdrLinStyl = xlContinuous      ': 実線
+'coXstrBrdrLinStyl = xlDash            ': 破線
+'coXstrBrdrLinStyl = xlDashDot         ': 一点鎖線
+'coXstrBrdrLinStyl = xlDashDotDot      ': ニ点鎖線
+'coXstrBrdrLinStyl = xlDot             ': 点線
+'coXstrBrdrLinStyl = xlDouble          ': 2 本線
+'coXstrBrdrLinStyl = xlLineStyleNone   ': 線なし
+'coXstrBrdrLinStyl = xlSlantDashDot    ': 斜破線
+'coXstrBrdrWght = xlHairline   ': 細線
+'coXstrBrdrWght = xlMedium     ': 普通
+'coXstrBrdrWght = xlThick      ': 太線
+'coXstrBrdrWght = xlThin       ': 極細
+    myXbisExitFlag = False
+    If myXobjBrdrRange Is Nothing Then GoTo ExitPath
+    With myXobjBrdrRange.Borders(myXstrBrdrIndex)
+        .LineStyle = coXstrBrdrLinStyl
+        .Weight = coXstrBrdrWght
+        .ColorIndex = coXstrBrdrClrIndex
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_指定セル範囲の周囲に罫線を引く
+Private Sub PfixSetBordersAtAroundOfDesignateRange( _
+            ByVal myXobjBrdrRange As Object, _
+            Optional ByVal coXstrBrdrLinStyl As String = xlContinuous, _
+            Optional ByVal coXstrBrdrWght As String = xlThin, _
+            Optional ByVal coXstrBrdrClrIndex As Long = 1)
+'coXstrBrdrLinStyl = xlNone            ': なし
+'coXstrBrdrLinStyl = xlContinuous      ': 実線
+'coXstrBrdrLinStyl = xlDash            ': 破線
+'coXstrBrdrLinStyl = xlDashDot         ': 一点鎖線
+'coXstrBrdrLinStyl = xlDashDotDot      ': ニ点鎖線
+'coXstrBrdrLinStyl = xlDot             ': 点線
+'coXstrBrdrLinStyl = xlDouble          ': 2 本線
+'coXstrBrdrLinStyl = xlLineStyleNone   ': 線なし
+'coXstrBrdrLinStyl = xlSlantDashDot    ': 斜破線
+'coXstrBrdrWght = xlHairline   ': 細線
+'coXstrBrdrWght = xlMedium     ': 普通
+'coXstrBrdrWght = xlThick      ': 太線
+'coXstrBrdrWght = xlThin       ': 極細
+    myXbisExitFlag = False
+    If myXobjBrdrRange Is Nothing Then GoTo ExitPath
+    Call myXobjBrdrRange.BorderAround( _
+                            LineStyle:=coXstrBrdrLinStyl, _
+                            ColorIndex:=coXstrBrdrClrIndex, _
+                            Weight:=coXstrBrdrWght)
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_セル範囲のアドレスを取得する
+Private Function PfncstrRangeAddress( _
+            ByVal myXobjOrgRng As Object, ByVal myXobjRltvRng As Object, _
+            Optional ByVal coXbisStylSet As Boolean = False, _
+            Optional ByVal coXlonRefStyl As Long = xlA1, _
+            Optional ByVal coXbisRowAbslt As Boolean = True, _
+            Optional ByVal coXbisColAbslt As Boolean = True, _
+            Optional ByVal coXbisExternal As Boolean = False) As String
+'coXbisStylSet = False : 現在のアドレス形式で取得する
+'coXbisStylSet = True  : アドレス形式を指定して取得する
+'coXlonRefStyl = xlA1   : A1形式
+'coXlonRefStyl = xlR1C1 : R1C1形式
+'coXbisRowAbslt = True  : 行の参照を絶対参照として返す
+'coXbisRowAbslt = False : 行の参照を相対参照として返す
+'coXbisColAbslt = True  : 列の参照を絶対参照として返す
+'coXbisColAbslt = False : 列の参照を相対参照として返す
+'coXbisExternal = True  : 外部参照を返す_[ブック名]シート名!アドレス
+'coXbisExternal = False : ローカル参照を返す
+'myXobjRltvRng          : 相対参照の開始位置
+    PfncstrRangeAddress = Empty
+    If myXobjOrgRng Is Nothing Then Exit Function
+  Dim myXlonRefStyl As Long, myXstrRngAdrs As String
+    Select Case coXbisStylSet
+        Case False: myXlonRefStyl = Application.ReferenceStyle
+        Case True: myXlonRefStyl = coXlonRefStyl
+    End Select
+    On Error GoTo ExitPath
+    If myXlonRefStyl = xlR1C1 And (coXbisRowAbslt = False Or coXbisColAbslt = False) Then
+        If myXobjRltvRng Is Nothing Then GoTo ExitPath
+    '//参照形式がxlR1C1で相対参照する場合
+        myXstrRngAdrs = myXobjOrgRng.Address( _
+                            ReferenceStyle:=myXlonRefStyl, _
+                            RowAbsolute:=coXbisRowAbslt, ColumnAbsolute:=coXbisColAbslt, _
+                            external:=coXbisExternal, RelativeTo:=myXobjRltvRng)
+    Else
+    '//相対参照先が必要ない場合
+        myXstrRngAdrs = myXobjOrgRng.Address( _
+                            ReferenceStyle:=myXlonRefStyl, _
+                            RowAbsolute:=coXbisRowAbslt, ColumnAbsolute:=coXbisColAbslt, _
+                            external:=coXbisExternal)
+    End If
+    On Error GoTo 0
+    PfncstrRangeAddress = myXstrRngAdrs
+ExitPath:
+End Function
+
+ '定型Ｆ_セル範囲のアドレスを変換する
+Private Function PfncstrConvertFormulaRangeAddress( _
+            ByVal myXstrAdrsFrml As String, ByVal myXobjRltvRng As Object, _
+            Optional ByVal coXlonFromReferenceStyle As Long = xlA1, _
+            Optional ByVal coXlonToReferenceStyle As Long = xlR1C1, _
+            Optional ByVal coXlonToAbsolute As Long = xlAbsolute) As String
+'coXlonFromReferenceStyle = xlA1    : A1形式のアドレス
+'coXlonFromReferenceStyle = xlR1C1  : R1C1形式のアドレス
+'coXlonToReferenceStyle = xlA1    : A1形式のアドレス
+'coXlonToReferenceStyle = xlR1C1  : R1C1形式のアドレス
+'coXlonToAbsolute = xlAbsolute : 行と列の参照を絶対参照として返す
+'coXlonToAbsolute = xlRelRowAbsColumn : 行を相対参照/列を絶対参照として返す
+'coXlonToAbsolute = xlAbsRowRelColumn : 行を絶対参照/列を相対参照として返す
+'coXlonToAbsolute = xlRelative : 行と列の参照を相対参照として返す
+'myXobjRltvRng          : 相対参照の開始位置
+    PfncstrConvertFormulaRangeAddress = Empty
+    If myXstrAdrsFrml = "" Then Exit Function
+    If coXlonFromReferenceStyle <> xlA1 And _
+        coXlonFromReferenceStyle <> xlR1C1 Then Exit Function
+    If coXlonToReferenceStyle <> xlA1 And _
+        coXlonToReferenceStyle <> xlR1C1 Then Exit Function
+    If coXlonToAbsolute <> xlAbsolute And _
+        coXlonToAbsolute <> xlRelRowAbsColumn And _
+        coXlonToAbsolute <> xlAbsRowRelColumn And _
+        coXlonToAbsolute <> xlRelative Then Exit Function
+  Dim myXstrRngAdrs As String
+    On Error GoTo ExitPath
+    If coXlonToReferenceStyle = xlR1C1 And coXlonToAbsolute <> xlAbsolute Then
+        If myXobjRltvRng Is Nothing Then GoTo ExitPath
+    '//参照形式がxlR1C1で相対参照する場合
+        myXstrRngAdrs = Application.ConvertFormula( _
+                            Formula:=myXstrAdrsFrml, _
+                            FromReferenceStyle:=coXlonFromReferenceStyle, _
+                            ToReferenceStyle:=coXlonToReferenceStyle, _
+                            ToAbsolute:=coXlonToAbsolute, _
+                            RelativeTo:=myXobjRltvRng)
+    Else
+    '//相対参照先が必要ない場合
+        myXstrRngAdrs = Application.ConvertFormula( _
+                            Formula:=myXstrAdrsFrml, _
+                            FromReferenceStyle:=coXlonFromReferenceStyle, _
+                            ToReferenceStyle:=coXlonToReferenceStyle, _
+                            ToAbsolute:=coXlonToAbsolute)
+    End If
+    On Error GoTo 0
+    PfncstrConvertFormulaRangeAddress = myXstrRngAdrs
+    Exit Function
+ExitPath:
+End Function
+
+ '定型Ｐ_セルの位置と値を取得する
+Private Sub PfixGetCellPositionValue( _
+            myXlonCellRow As Long, myXlonCellCol As Long, myXvarCelVal As Variant, _
+            ByVal myZobjOrgCell As Object)
+'myZvarCellData(1) : セルの行位置
+'myZvarCellData(2) : セルの列位置
+'myZvarCellData(3) : セルの値
+'myZobjOrgCell(i) : 指定セル
+    myXlonDataCnt = Empty: myXlonCellCol = Empty: myXvarCelVal = Empty
+    If myZobjOrgCell Is Nothing Then Exit Sub
+    On Error GoTo ExitPath
+    myXlonCellRow = myXobjTmpCell.Row
+    myXlonCellCol = myXobjTmpCell.Column
+    myXvarCelVal = myXobjTmpCell.Value
+    On Error GoTo 0
+ExitPath:
+End Sub
+
+ '定型Ｐ_セルに指定文字列を記入する
+Private Sub PfixWriteCellValue(myXbisExitFlag As Boolean, _
+            ByVal myXobjRng As Object, ByVal myXvarInput As Variant, _
+            Optional ByVal coXbisAppend As Boolean = False)
+'coXbisAppend = False : セルの値を上書きする
+'coXbisAppend = True  : セルの元値に追加する
+    myXbisExitFlag = False
+    If myXobjRng Is Nothing Then GoTo ExitPath
+  Dim myXvarRngVal As Variant
+    Select Case coXbisAppend
+        Case True: myXvarRngVal = myXobjRng.Value & myXvarInput
+        Case Else: myXvarRngVal = myXvarInput
+    End Select
+    myXobjRng.Value = myXvarRngVal
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_セルのコメント有無を確認する
+Private Function PfncbisCheckCommentText(ByVal myXobjRng As Object) As Boolean
+    PfncbisCheckCommentText = Empty
+    If myXobjRng Is Nothing Then Exit Function
+  Dim myXbisCmntExist As Boolean
+    Select Case TypeName(myXobjRng.Comment)
+        Case "Comment": myXbisCmntExist = True
+        Case "Nothing": myXbisCmntExist = False
+        Case Else: myXbisCmntExist = False
+    End Select
+    PfncbisCheckCommentText = myXbisCmntExist
+End Function
+
+ '定型Ｆ_セルのコメント内容を取得する
+Private Function PfncstrCommentText(ByVal myXobjRng As Object) As String
+    PfncstrCommentText = Empty
+    If myXobjRng Is Nothing Then Exit Function
+'//コメント有無確認
+  Dim myXbisCmntExist As Boolean
+    Select Case TypeName(myXobjRng.Comment)
+        Case "Comment": myXbisCmntExist = True
+        Case "Nothing": myXbisCmntExist = False
+        Case Else: myXbisCmntExist = False
+    End Select
+    If myXbisCmntExist = False Then Exit Function
+'//コメント内容取得
+  Dim myXstrTmpCmnt As String: myXstrTmpCmnt = Empty
+    On Error Resume Next
+    myXstrTmpCmnt = myXobjRng.Comment.Text
+    On Error GoTo 0
+    PfncstrCommentText = myXstrTmpCmnt
+End Function
+
+ '定型Ｐ_コメント内容をセルに転記する
+Private Sub PincCopyCommentTextToCell(myXbisExitFlag As Boolean, _
+            ByVal myXobjRng As Object, _
+            Optional ByVal coXbisOverWrite As Boolean = True)
+'Includes PfncstrCommentText
+'Includes PfixWriteCellValue
+'coXbisOverWrite = True  : セルの値を上書きする
+'coXbisOverWrite = False : セルの値を上書きしない
+    myXbisExitFlag = False
+    If myXobjRng Is Nothing Then GoTo ExitPath
+'//セル値の上書き確認
+    If myXobjRng.Value <> "" Then If coXbisOverWrite = False Then GoTo ExitPath
+'//セルのコメント内容を取得
+  Dim myXvarCmntTxt As Variant: myXvarCmntTxt = PfncstrCommentText(myXobjRng)
+'//セルに指定文字列を記入
+    Call PfixWriteCellValue(myXbisExitFlag, myXobjRng, myXvarCmntTxt, False)
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_シート上の全コメント内容をセルに転記する
+Private Sub PincCopyAllCommentTextToCellOnSheet(myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object)
+'Includes PfncstrCommentText
+'Includes PfixWriteCellValue
+    myXbisExitFlag = False
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+'//シート上のデータ記載全範囲をオブジェクト配列に取込む
+  Dim myXobjDataRng As Object
+    With myXobjSheet
+        Set myXobjDataRng = .Range(.Cells(1, 1), .Cells.SpecialCells(xlCellTypeLastCell))
+    End With
+    If myXobjDataRng Is Nothing Then GoTo ExitPath
+'//セルのコメント内容を取得してセルに指定文字列を記入
+  Dim myXobjTmpRng As Object, myXvarCmntTxt As Variant
+    For Each myXobjTmpRng In myXobjDataRng
+        myXvarCmntTxt = PfncstrCommentText(myXobjTmpRng)
+        If myXvarCmntTxt = "" Then GoTo NextPath
+        Call PfixWriteCellValue(myXbisExitFlag, myXobjTmpRng, myXvarCmntTxt, False)
+NextPath:
+    Next
+    Set myXobjDataRng = Nothing: Set myXobjTmpRng = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_コメントを追加してコメントに指定文字列を記入する
+Private Sub PfixAddCommentAndWriteText(myXbisExitFlag As Boolean, _
+            ByVal myXobjRng As Object, ByVal myXvarInput As Variant, _
+            Optional ByVal coXbisAppend As Boolean = False)
+'coXbisAppend = False : コメントの内容を上書きする
+'coXbisAppend = True  : コメントの元内容に追加する
+    myXbisExitFlag = False
+    If myXobjRng Is Nothing Then GoTo ExitPath
+    If myXvarInput = "" Then GoTo ExitPath
+'//コメント有無確認
+  Dim myXbisCmntExist As Boolean
+    Select Case TypeName(myXobjRng.Comment)
+        Case "Comment": myXbisCmntExist = True
+        Case "Nothing": myXbisCmntExist = False
+        Case Else: myXbisCmntExist = False
+    End Select
+'//コメント入力文字の設定
+  Dim myXstrCmntTxt As String
+    If myXbisCmntExist = True And coXbisAppend = True Then
+        myXstrCmntTxt = CStr(myXobjRng.Comment.Text & myXvarInput)
+    Else
+        myXstrCmntTxt = CStr(myXvarInput)
+    End If
+'//コメント追加と設定
+    If myXbisCmntExist = True Then myXobjRng.ClearComments
+    Call myXobjRng.AddComment.Text(myXstrCmntTxt)
+    With myXobjRng.Comment.Shape.TextFrame
+        .HorizontalAlignment = xlLeft
+        .VerticalAlignment = xlTop
+        .AutoSize = True
+        With .Characters.Font
+            .Name = "ＭＳ Ｐゴシック"
+            .FontStyle = "標準"
+            .Size = 11
+            .ColorIndex = 1
+        End With
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_コメントを追加してセル値をコメントに転記する
+Private Sub PincAddCommentAndCopyCellValueToComment(myXbisExitFlag As Boolean, _
+            ByVal myXobjRng As Object)
+'Includes PfixAddCommentAndWriteText
+    myXbisExitFlag = False
+    If myXobjRng Is Nothing Then GoTo ExitPath
+'//セルの値を取得
+  Dim myXvarRngVal As Variant: myXvarRngVal = myXobjRng.Value
+    If myXvarRngVal = "" Then GoTo ExitPath
+'//コメントを追加してコメントに指定文字列を記入
+    Call PfixAddCommentAndWriteText(myXobjRng, myXvarRngVal, False)
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_シート上の全セル内容をコメントに転記する
+Private Sub PincCopyAllCellValueToCommentOnSheet(myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object)
+'Includes PfixAddCommentAndWriteText
+    myXbisExitFlag = False
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+'//シート上のデータ記載全範囲をオブジェクト配列に取込む
+  Dim myXobjDataRng As Object
+    With myXobjSheet
+        Set myXobjDataRng = .Range(.Cells(1, 1), .Cells.SpecialCells(xlCellTypeLastCell))
+    End With
+    If myXobjDataRng Is Nothing Then GoTo ExitPath
+'//セルのコメント内容を取得してセルに指定文字列を記入
+  Dim myXobjTmpRng As Object
+    For Each myXobjTmpRng In myXobjDataRng
+      Dim myXvarRngVal As Variant: myXvarRngVal = myXobjTmpRng.Value
+        If myXvarRngVal = "" Then GoTo NextPath
+        Call PfixAddCommentAndWriteText(myXbisExitFlag, myXobjTmpRng, myXvarRngVal, False)
+NextPath:
+    Next
+    Set myXobjDataRng = Nothing: Set myXobjTmpRng = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_シート上の全コメントを消去する
+Private Sub PfixClearAllCommentOnSheet(myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object)
+    myXbisExitFlag = False
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+  Dim myXobjDataRng As Object, myXobjTmpRng As Object
+    With myXobjSheet
+        Set myXobjDataRng = .Range(.Cells(1, 1), .Cells.SpecialCells(xlCellTypeLastCell))
+    End With
+    If myXobjDataRng Is Nothing Then GoTo ExitPath
+    On Error Resume Next
+    For Each myXobjTmpRng In myXobjDataRng
+        myXobjTmpRng.ClearComments
+    Next
+    On Error GoTo 0
+    Set myXobjDataRng = Nothing: Set myXobjTmpRng = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_セルのコメントの表示を切り換える
+Private Sub PfixSwitchCommentVisible(myXobjRng As Object)
+    With myXobjRng.Comment
+        .Visible = Not .Visible
+    End With
+End Sub
+
+ '定型Ｐ_セルのコメントにフォーカスする
+Private Sub PfixFocusComment(myXbisExitFlag As Boolean, _
+            ByVal myXobjRng As Object, _
+            Optional ByVal coXbisWait As Boolean = True)
+  Const coXstrSendKey As String = "+{F2}"
+    myXbisExitFlag = False
+    If myXobjRng Is Nothing Then GoTo ExitPath
+    On Error GoTo ExitPath
+    myXobjRng.Worksheet.Activate
+    myXobjRng.Select
+    On Error GoTo 0
+  Dim myXbisCmntExist As Boolean
+    Select Case TypeName(myXobjRng.Comment)
+        Case "Comment": myXbisCmntExist = True
+        Case "Nothing": myXbisCmntExist = False
+        Case Else: myXbisCmntExist = False
+    End Select
+    If myXbisCmntExist = False Then GoTo ExitPath
+    Call SendKeys(coXstrSendKey, coXbisWait)
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_シート上のコメント付きの全セルの配列を取得する
+Private Sub PfixGetCommentCellArray( _
+            myXlonCellCnt As Long, myZobjCmntCell() As Object, _
+            ByVal myXobjSheet As Object)
+    myXlonCellCnt = Empty: Erase myZobjCmntCell
+    If myXobjSheet Is Nothing Then Exit Sub
+  Dim myXobjTmpRng As Object
+    On Error GoTo ExitPath
+    Set myXobjTmpRng = myXobjSheet.Cells.SpecialCells(xlCellTypeComments)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myXvarTmp As Variant, n As Long: n = L - 1
+    For Each myXvarTmp In myXobjTmpRng
+        n = n + 1: ReDim Preserve myZobjCmntCell(n) As Object
+        Set myZobjCmntCell(n) = myXvarTmp
+    Next myXvarTmp
+    Set myXobjTmpRng = Nothing: myXvarTmp = Empty
+ExitPath:
+End Sub
+
+ '定型Ｐ_シート上のコメント付きの全セルのセル位置とコメント内容を取得する
+Private Sub PfixGetCommentCellPositionTextArray( _
+            myXlonDataCnt As Long, myZvarCmntData() As Variant, _
+            ByVal myXobjSheet As Object)
+'myZvarCmntData(i) : セルのコメント配列
+    myXlonDataCnt = Empty: Erase myZvarCmntData
+    If myXobjSheet Is Nothing Then Exit Sub
+  Dim myXobjTmpRng As Object
+    On Error GoTo ExitPath
+    Set myXobjTmpRng = myXobjSheet.Cells.SpecialCells(xlCellTypeComments)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myXvarTmp As Variant, m As Long, n As Long: m = L - 1: n = L - 1
+    For Each myXvarTmp In myXobjTmpRng
+        m = m + 1
+    Next myXvarTmp
+    myXlonDataCnt = m - L + 1
+    ReDim myZvarCmntData(m, L + 2) As Variant
+    For Each myXvarTmp In myXobjTmpRng
+        n = n + 1
+        myZvarCmntData(n, L + 0) = myXvarTmp.Row
+        myZvarCmntData(n, L + 1) = myXvarTmp.Column
+        myZvarCmntData(n, L + 2) = myXvarTmp.Comment.Text
+    Next myXvarTmp
+    Set myXobjTmpRng = Nothing: myXvarTmp = Empty
+ExitPath:
+End Sub
+
+ '定型Ｆ_シート上のコメント内容を検索してセルを取得する
+Private Function PfncobjSearchCommentCell( _
+            ByVal myXstrSrchVal As Variant, ByVal myXobjSrchSheet As Object, _
+            Optional ByVal coXbisInStrOptn As Boolean = False) As Object
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    Set PfncobjSearchCommentCell = Nothing
+    If myXstrSrchVal = "" Then Exit Function
+    If myXobjSrchSheet Is Nothing Then Exit Function
+  Dim myXobjCmntCells As Object
+    On Error GoTo ExitPath
+    Set myXobjCmntCells = myXobjSrchSheet.Cells.SpecialCells(xlCellTypeComments)
+    On Error GoTo 0
+  Dim myXobjCmntRng As Object, myXstrTmp As String
+    If coXbisInStrOptn = True Then
+        For Each myXobjCmntRng In myXobjCmntCells
+            myXstrTmp = myXobjCmntRng.Comment.Text
+            If InStr(myXstrTmp, myXstrSrchVal) > 0 Then Exit For
+        Next myXobjCmntRng
+    Else
+        For Each myXobjCmntRng In myXobjCmntCells
+            myXstrTmp = myXobjCmntRng.Comment.Text
+            If myXstrTmp = myXstrSrchVal Then Exit For
+        Next myXobjCmntRng
+    End If
+    Set PfncobjSearchCommentCell = myXobjCmntRng
+    Set myXobjCmntCells = Nothing: Set myXobjCmntRng = Nothing
+ExitPath:
+End Function
+
+ '定型Ｐ_シート上のコメントで複数の文字列を検索してそれぞれの最初のコメントと位置の一覧を取得する
+Private Sub PincSearchCommentCellMulti( _
+            myXlonCmntCnt As Long, myZvarCmntPstn() As Variant, _
+            ByRef myZvarSrchCndtn() As Variant, ByVal myXobjSrchSheet As Object, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfncobjSearchCommentCell
+'myZvarCmntPstn(i, 1) : 取得データ
+'myZvarCmntPstn(i, 2) : 行位置
+'myZvarCmntPstn(i, 3) : 列位置
+'myZvarSrchCndtn(i, 1) : 検索文字列
+'myZvarSrchCndtn(i, 2) : オフセット行数
+'myZvarSrchCndtn(i, 3) : オフセット列数
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonCmntCnt = Empty: Erase myZvarCmntPstn
+  Dim myXstrTmp As String, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarSrchCndtn, 1): myXstrTmp = myZvarSrchCndtn(Li, Li)
+    Ui = UBound(myZvarSrchCndtn, 1)
+    On Error GoTo 0
+    myXlonCmntCnt = Ui - Li + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long: i = myXlonCmntCnt + Lo - 1: ReDim myZvarCmntPstn(i, Lo + 2) As Variant
+  Dim myXstrIfCndtn As String, myXlonROfst As Long, myXlonCOfst As Long
+  Dim myXobjTmpRng As Object
+    For i = Li To Ui
+   '//検索条件を設定
+        myXstrIfCndtn = CStr(myZvarSrchCndtn(i, Li + 0))
+        myXlonROfst = CLng(myZvarSrchCndtn(i, Li + 1))
+        myXlonCOfst = CLng(myZvarSrchCndtn(i, Li + 2))
+        If myXstrIfCndtn = "" Then GoTo ExitPath
+   '//シート上のコメント内容を検索してセルを取得
+        Set myXobjTmpRng = PfncobjSearchCommentCell( _
+                            myXstrIfCndtn, myXobjSrchSheet, coXbisInStrOptn)
+   '//検索結果を出力変数に格納
+        If Not myXobjTmpRng Is Nothing Then
+            Set myXobjTmpRng = myXobjTmpRng.Offset(myXlonROfst, myXlonCOfst)
+            myZvarCmntPstn(i, Lo + 0) = myXobjTmpRng.Comment.Text
+            myZvarCmntPstn(i, Lo + 1) = myXobjTmpRng.Row
+            myZvarCmntPstn(i, Lo + 2) = myXobjTmpRng.Column
+        Else
+            myZvarCmntPstn(i, Lo + 0) = ""
+            myZvarCmntPstn(i, Lo + 1) = 0
+            myZvarCmntPstn(i, Lo + 2) = 0
+        End If
+    Next i
+    Set myXobjTmpRng = Nothing
+ExitPath:
+End Sub
+
+ '定型Ｆ_シート上の文字列を検索してセルを取得する
+Private Function PfncobjSearchValueCell( _
+            ByVal myXstrSrchVal As String, ByVal myXobjSheet As Object, _
+            Optional ByVal coXbisInStrOptn As Boolean = False) As Object
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    Set PfncobjSearchValueCell = Nothing
+    If myXstrSrchVal = "" Then Exit Function
+    If myXobjSheet Is Nothing Then Exit Function
+  Dim myXobjDataRng As Object
+    Set myXobjDataRng = myXobjSheet.Range( _
+            myXobjSheet.Cells(1, 1), _
+            myXobjSheet.Cells.SpecialCells(xlCellTypeLastCell))
+  Dim i As Long, j As Long
+    i = myXobjDataRng.Rows.Count: j = myXobjDataRng.Columns.Count
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZvarRngData As Variant
+    If i * j = 1 Then
+        ReDim myZvarRngData(L, L) As Variant
+        myZvarRngData(L, L) = myXobjDataRng.Value
+    Else
+        myZvarRngData = myXobjDataRng.Value
+    End If
+  Dim myXobjTrgtRng As Object, myXstrTmp As String
+    On Error Resume Next
+    If coXbisInStrOptn = True Then
+        For j = LBound(myZvarRngData, 2) To UBound(myZvarRngData, 2)
+            For i = LBound(myZvarRngData, 1) To UBound(myZvarRngData, 1)
+                myXstrTmp = myZvarRngData(i, j)
+                If InStr(myXstrTmp, myXstrSrchVal) > 0 Then
+                    Set myXobjTrgtRng = myXobjSheet.Cells(i, j)
+                    GoTo JumpPath
+                End If
+            Next i
+        Next j
+    Else
+        For j = LBound(myZvarRngData, 2) To UBound(myZvarRngData, 2)
+            For i = LBound(myZvarRngData, 1) To UBound(myZvarRngData, 1)
+                myXstrTmp = myZvarRngData(i, j)
+                If myXstrTmp = myXstrSrchVal Then
+                    Set myXobjTrgtRng = myXobjSheet.Cells(i, j)
+                    GoTo JumpPath
+                End If
+            Next i
+        Next j
+    End If
+    On Error GoTo 0
+JumpPath:
+    Set PfncobjSearchValueCell = myXobjTrgtRng
+    Set myXobjDataRng = Nothing: Set myXobjTrgtRng = Nothing
+    myZvarRngData = Empty
+End Function
+
+ '定型Ｐ_シート上の文字列で複数の文字列を検索してそれぞれの最初の文字列と位置の一覧を取得する
+Private Sub PincSearchValueCellMulti( _
+            myXlonValCnt As Long, myZvarValPstn() As Variant, _
+            ByRef myZvarSrchCndtn() As Variant, ByVal myXobjSrchSheet As Object, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfncobjSearchValueCell
+'myZvarValPstn(i, 1) : 取得データ
+'myZvarValPstn(i, 2) : 行位置
+'myZvarValPstn(i, 3) : 列位置
+'myZvarSrchCndtn(i, 1) : 検索文字列
+'myZvarSrchCndtn(i, 2) : オフセット行数
+'myZvarSrchCndtn(i, 3) : オフセット列数
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValCnt = Empty: Erase myZvarValPstn
+  Dim myXstrTmp As String, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarSrchCndtn, 1): myXstrTmp = myZvarSrchCndtn(Li, Li)
+    Ui = UBound(myZvarSrchCndtn, 1)
+    On Error GoTo 0
+    myXlonValCnt = Ui - Li + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long: i = myXlonValCnt + Lo - 1: ReDim myZvarValPstn(i, Lo + 2) As Variant
+  Dim myXstrIfCndtn As String, myXlonROfst As Long, myXlonCOfst As Long
+  Dim myXobjTmpRng As Object
+    For i = Li To Ui
+   '//検索条件を設定
+        myXstrIfCndtn = myZvarSrchCndtn(i, Li + 0)
+        myXlonROfst = myZvarSrchCndtn(i, Li + 1)
+        myXlonCOfst = myZvarSrchCndtn(i, Li + 2)
+        If myXstrIfCndtn = "" Then GoTo ExitPath
+   '//シート上の文字列を検索してセルを取得
+        Set myXobjTmpRng = PfncobjSearchValueCell( _
+                            myXstrIfCndtn, myXobjSrchSheet, coXbisInStrOptn)
+   '//検索結果を出力変数に格納
+        If Not myXobjTmpRng Is Nothing Then
+            Set myXobjTmpRng = myXobjTmpRng.Offset(myXlonROfst, myXlonCOfst)
+            myZvarValPstn(i, Lo + 0) = myXobjTmpRng.Value
+            myZvarValPstn(i, Lo + 1) = myXobjTmpRng.Row
+            myZvarValPstn(i, Lo + 2) = myXobjTmpRng.Column
+        Else
+            myZvarValPstn(i, Lo + 0) = ""
+            myZvarValPstn(i, Lo + 1) = 0
+            myZvarValPstn(i, Lo + 2) = 0
+        End If
+    Next i
+    Set myXobjTmpRng = Nothing
+ExitPath:
+End Sub
+
+ '定型Ｐ_改行を含む文字列を行ごとに分離して取得する
+Private Sub PfixSplitValueWithLineFeed( _
+            myXlonValCnt As String, myZstrVal() As String, _
+            ByVal myXstrOrgData As String)
+'myZstrVal(i) : 取得データ配列
+'vbLf : Chr(10) : 行送り(ラインフィード) : セル内のAlt+Enterキー操作
+    myXlonValCnt = Empty: Erase myZstrVal
+    If myXstrOrgData = "" Then Exit Sub
+  Dim myZvarSpltVal As Variant
+    myZvarSpltVal = Split(myXstrOrgData, vbLf)  '文字列を改行文字で分割
+    myXlonValCnt = UBound(myZvarSpltVal) - LBound(myZvarSpltVal) + 1
+    If myXlonValCnt <= 0 Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = L - 1
+    i = myXlonValCnt - (1 - L): ReDim myZstrVal(i) As String
+    For i = LBound(myZvarSpltVal) To UBound(myZvarSpltVal)
+        n = n + 1: myZstrVal(n) = CStr(myZvarSpltVal(i))
+    Next i
+    myZvarSpltVal = Empty
+End Sub
+
+ '定型Ｐ_指定セルの改行を含む値を行ごとに分離して取得する
+Private Sub PfixSplitCellValueWithLineFeed( _
+            myXlonValCnt As String, myZstrVal() As String, _
+            ByVal myXobjCell As Object)
+'myZstrVal(i) : 取得データ配列
+'vbLf : Chr(10) : 行送り(ラインフィード) : セル内のAlt+Enterキー操作
+    myXlonValCnt = Empty: Erase myZstrVal
+  Dim myXstrTmp As String
+    On Error GoTo ExitPath
+    myXstrTmp = myXobjCell.Value
+    On Error GoTo 0
+  Dim myZvarSpltVal As Variant
+    myZvarSpltVal = Split(myXstrTmp, vbLf)  '文字列を改行文字で分割
+    myXlonValCnt = UBound(myZvarSpltVal) - LBound(myZvarSpltVal) + 1
+    If myXlonValCnt <= 0 Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = L - 1
+    i = myXlonValCnt - (1 - L): ReDim myZstrVal(i) As String
+    For i = LBound(myZvarSpltVal) To UBound(myZvarSpltVal)
+        n = n + 1: myZstrVal(n) = CStr(myZvarSpltVal(i))
+    Next i
+    myZvarSpltVal = Empty
+ExitPath:
+End Sub
+
+ '定型Ｐ_文字列リストを改行を含む文字列に入れ替えてセルに入力する
+Private Sub PfixSetValueWithLineFeed( _
+            myXbisExitFlag As Boolean, _
+            ByRef myZstrOrgData() As String, ByVal myXobjCell As Object)
+'myZstrOrgData(i) : 元データ配列
+'Chr(34) : ダブルクォーテーション(")
+'vbLf : Chr(10) : 行送り(ラインフィード) : セル内のAlt+Enterキー操作
+    myXbisExitFlag = False
+  Dim myXstrTmp As String, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZstrOrgData): myXstrTmp = myZstrOrgData(L)
+    myXstrTmp = myXobjCell.Value
+    On Error GoTo 0
+    myXstrTmp = Empty
+  Dim i As Long
+    For i = LBound(myZstrOrgData) To UBound(myZstrOrgData)
+        If i = L Then
+            myXstrTmp = myZstrOrgData(i)
+        Else
+            myXstrTmp = myXstrTmp & vbLf & myZstrOrgData(i)
+        End If
+    Next i
+    myXobjCell.Value = myXstrTmp
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_文字列リストを改行を含む計算式の書式でセルに入力する
+Private Sub PfixSetFormulaWithLineFeed( _
+            myXbisExitFlag As Boolean, _
+            ByRef myZstrOrgData() As String, ByVal myXobjCell As Object)
+'myZstrOrgData(i) : 元データ配列
+'Chr(34) : ダブルクォーテーション(")
+'vbLf : Chr(10) : 行送り(ラインフィード) : セル内のAlt+Enterキー操作
+    myXbisExitFlag = False
+  Dim myXstrTmp As String, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZstrOrgData): myXstrTmp = myZstrOrgData(L)
+    myXstrTmp = myXobjCell.Value
+    On Error GoTo 0
+    myXstrTmp = Empty
+  Dim i As Long
+    For i = LBound(myZstrOrgData) To UBound(myZstrOrgData)
+        If i = L Then
+            myXstrTmp = "="
+            myXstrTmp = myXstrTmp & Chr(34) & myZstrOrgData(i) & Chr(34)
+        Else
+            myXstrTmp = myXstrTmp & "&CHAR(10)&" & Chr(34) & myZstrOrgData(i) & Chr(34)
+        End If
+    Next i
+    myXobjCell.Value = myXstrTmp
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_文字列リストを指定文字を挟んで結合した文字列を取得する
+Private Function PfixCombineStrings( _
+            ByRef myZstrOrgData() As String, _
+            Optional ByVal myXstrCmbnChr As String = "") As String
+'myZstrOrgData(i) : 元データ配列
+    PfixCombineStrings = Empty
+  Dim myXstrTmp As String, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZstrOrgData): myXstrTmp = myZstrOrgData(L)
+    On Error GoTo 0
+    myXstrTmp = Empty
+  Dim i As Long
+    For i = LBound(myZstrOrgData) To UBound(myZstrOrgData)
+        If i = L Then
+            myXstrTmp = myZstrOrgData(i)
+        Else
+            myXstrTmp = myXstrTmp & myXstrCmbnChr & myZstrOrgData(i)
+        End If
+    Next i
+    PfixCombineStrings = myXstrTmp
+    Exit Function
+ExitPath:
+End Function
+
+ '定型Ｆ_行列位置を指定してシート上のセル範囲を設定する
+Private Function PfncobjSetRangeByRowColumn( _
+            ByVal myXobjSheet As Object, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
+            ByVal myXlonEndRow As Long, ByVal myXlonEndCol As Long) As Object
+    Set PfncobjSetRangeByRowColumn = Nothing
+    If myXobjSheet Is Nothing Then Exit Function
+    If myXlonBgnRow <= 0 Then Exit Function
+    If myXlonEndRow < myXlonBgnRow Then Exit Function
+    If myXlonBgnCol <= 0 Then Exit Function
+    If myXlonEndCol < myXlonBgnCol Then Exit Function
+    With myXobjSheet
+        Set PfncobjSetRangeByRowColumn _
+            = .Range(.Cells(myXlonBgnRow, myXlonBgnCol), .Cells(myXlonEndRow, myXlonEndCol))
+    End With
+End Function
+
+ '定型Ｐ_ワークシート上のデータをコピペする
+Private Sub PfixSheetDataCopyPaste( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjCpyRng As Object, ByVal myXobjPstRng As Object, _
+            Optional ByVal coXlonPaste As Long = xlPasteAll, _
+            Optional ByVal coXlonOperation As Long = xlPasteSpecialOperationNone, _
+            Optional ByVal coXbisSkipBlanks As Boolean = False, _
+            Optional ByVal coXbisTranspose As Boolean = False)
+'Paste:=xlPasteAll                          = -4104 : 貼り付け : すべて
+'Paste:=xlPasteFormulas                     = -4123 : 貼り付け : 数式
+'Paste:=xlPasteValues                       = -4163 : 貼り付け : 値
+'Paste:=xlPasteFormats                      = -4122 : 貼り付け : 書式
+'Paste:=xlPasteComments                     = -4144 : 貼り付け : コメント
+'Paste:=xlPasteValidation                   = 6 : 貼り付け : 入力規則
+'Paste:=xlPasteAllExceptBorders             = 7 : 貼り付け : 罫線を除く全て
+'Paste:=xlPasteColumnWidths                 = 8 : 貼り付け : 列幅
+'Paste:=xlPasteFormulasAndNumberFormats     = 11 : 貼り付け : 数式と数値の書式
+'Paste:=xlPasteValuesAndNumberFormats       = 12 : 貼り付け : 値と数値の書式
+'Paste:=xlPasteAllUsingSourceTheme          = 13 : 貼り付け : コピー元のテーマを使用してすべて貼り付け_2007以降
+'Paste:=xlPasteAllMergingConditionalFormats = 14 : 貼り付け : すべての結合されている条件付き書式_2010以降
+'Operation:=xlPasteSpecialOperationNone     = -4142 : 演算 : しない
+'Operation:=xlPasteSpecialOperationAdd      = 2     : 演算 : 加算
+'Operation:=xlPasteSpecialOperationSubtract = 3     : 演算 : 減算
+'Operation:=xlPasteSpecialOperationMultiply = 4     : 演算 : 乗算
+'Operation:=xlPasteSpecialOperationDivide   = 5     : 演算 : 除算
+'SkipBlanks:=True  : 空白セルを無視する
+'SkipBlanks:=False : 空白セルを無視しない
+'Transpose:=True  : 行列を入れ替える
+'Transpose:=False : 行列を入れ替えない
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    myXobjCpyRng.Copy
+    myXobjPstRng.PasteSpecial _
+                    Paste:=coXlonPaste, _
+                    Operation:=coXlonOperation, _
+                    SkipBlanks:=coXbisSkipBlanks, _
+                    Transpose:=coXbisTranspose
+    Application.CutCopyMode = False
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_シート内の空白セルを指定文字列で置換する
+Private Sub PfixReplaceBlankToString( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object, ByVal myXstrRplc As String)
+    myXbisExitFlag = False
+    If myXobjSheet Is Nothing Then Exit Sub
+    If myXstrRplc = "" Then Exit Sub
+  Dim myXobjFullRng As Object
+    On Error GoTo ExitPath
+    With myXobjSheet
+        Set myXobjFullRng = .Range(.Cells(1, 1), .Cells.SpecialCells(xlCellTypeLastCell))
+    End With
+    On Error GoTo 0
+    myXobjFullRng.SpecialCells(xlCellTypeBlanks).Value = myXstrRplc
+    Set myXobjFullRng = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_シート内の指定文字列を置換する
+Private Sub PfixReplaceString( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object, _
+            ByVal myXstrRplcd As String, ByVal myXstrRplc As String, _
+            Optional ByVal coXbisMatchCase As Boolean = False)
+'myXstrRplcd : 置換される文字列
+'myXstrRplc  : 置換後の文字列
+    myXbisExitFlag = False
+    If myXobjSheet Is Nothing Then Exit Sub
+    If myXstrRplcd = "" Then Exit Sub
+  Dim myXobjFullRng As Object
+    On Error GoTo ExitPath
+    With myXobjSheet
+        Set myXobjFullRng = .Range(.Cells(1, 1), .Cells.SpecialCells(xlCellTypeLastCell))
+    End With
+    On Error GoTo 0
+    Call myXobjFullRng.Replace(What:=myXstrRplcd, Replacement:=myXstrRplc, _
+                        LookAt:=xlPart, SearchOrder:=xlByColumns, MatchCase:=coXbisMatchCase)
+    Set myXobjFullRng = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_エクセルシートのウィンドウをスクロールする
+Private Sub absPfixScroll()
+  Dim myXobjWndw As Object
+    Set myXobjWndw = ActiveWindow
+  Dim myXobjSheet As Object
+    Set myXobjSheet = ActiveSheet
+'指定行番号が上端になるようにウィンドウをスクロールする
+  Dim myXlonToRow As Long
+    myXlonToRow = 10
+    myXobjWndw.ScrollRow = myXlonToRow
+''指定列番号が左端になるようにウィンドウをスクロールする
+'  Dim myXlonToCol As Long
+'    myXlonToCol = 8
+'    myXobjWndw.ScrollColumn = myXlonToCol
+''セルを選択してウィンドウをスクロールする
+'  Dim myXlonRefRow As Long, myXlonRefCol As Long
+'    myXlonRefRow = 10
+'    myXlonRefCol = 8
+'    Application.Goto Reference:=myXobjSheet.Cells(myXlonRefRow, myXlonRefCol), scroll:=True
+''指定ページ数分スクロールする
+'  Dim myXlonScrlDwn As Long, myXlonScrlUp As Long, _
+'        myXlonScrlRght As Long, myXlonScrlLft As Long
+'    myXlonScrlDwn = 1
+'    myXlonScrlUp = 0
+'    myXlonScrlRght = 1
+'    myXlonScrlLft = 0
+'    myXobjWndw.LargeScroll Down:=myXlonScrlDwn, Up:=myXlonScrlUp, _
+'                            ToRight:=myXlonScrlRght, ToLeft:=myXlonScrlLft
+''指定行数分もしく指定は列数分スクロールする
+'  Dim myXlonScrlDwn As Long, myXlonScrlUp As Long, _
+'        myXlonScrlRght As Long, myXlonScrlLft As Long
+'    myXlonScrlDwn = 1
+'    myXlonScrlUp = 1
+'    myXlonScrlRght = 1
+'    myXlonScrlLft = 1
+'    myXobjWndw.SmallScroll Down:=XNum1, Up:=XNum2, ToRight:=XNum3, ToLeft:=XNum4
+''指定行数分スクロールする
+'  Const coXlonScrlRow As Long = 10
+'    ActiveWindow.ScrollRow = coXlonScrlRow
+''指定列数分スクロールする
+'  Const coXlonScrlCol As Long = 8
+'    myXobjWndw.ScrollColumn = coXlonScrlCol
+End Sub
+
+ '定型Ｐ_セルを結合する
+Private Sub PfixCellsMerage(ByVal myXobjRng As Object)
+'    myXobjRng.Merge
+    myXobjRng.MergeCells = True
+End Sub
+
+ '定型Ｐ_セルの結合を解除する
+Private Sub PfixCellsMerageFalse(ByVal myXobjRng As Object)
+    myXobjRng.MergeCells = False
+End Sub
+
+ '定型Ｆ_セルが結合されているか判定する
+Private Function PfixCheckCellsMerage(ByVal myXobjRng As Object) As Boolean
+    PfixCheckCellsMerage = False
+  Dim myXvarTmp As Variant
+    For Each myXvarTmp In myXobjRng
+        PfixCheckCellsMerage = myXvarTmp.MergeCells
+        If PfixCheckCellsMerage = True Then Exit For
+    Next myXvarTmp
+End Function
+
+ '定型Ｐ_結合セルに含まれるセル範囲を取得する
+Private Sub PfixCellsMerageB( _
+            myXlonMrgAreaRows As Long, myXlonMrgAreaCols As Long, _
+            myXlonMrgAreaCells As Long, _
+            myXstrMrgAreaTopLftAdrs As String, myXstrMrgAreaBttmRghtAdrs As String, _
+            myXlonMrgAreaTopRow As Long, myXlonMrgAreaLftCol As Long, _
+            myXlonMrgAreaBttmRow As Long, myXlonMrgAreaRghtCol As Long, _
+            ByVal myXobjRng As Object)
+    With myXobjRng
+        myXlonMrgAreaRows = .Rows.Count
+        myXlonMrgAreaCols = .Columns.Count
+        myXlonMrgAreaCells = .Count
+        myXstrMrgAreaTopLftAdrs = .Item(1).Address
+        myXstrMrgAreaBttmRghtAdrs = .Item(.Count).Address
+    End With
+    With myXobjRng.Worksheet
+        myXlonMrgAreaTopRow = .Range(myXstrMrgAreaTopLftAdrs).Row
+        myXlonMrgAreaLftCol = .Range(myXstrMrgAreaTopLftAdrs).Column
+        myXlonMrgAreaBttmRow = .Range(myXstrMrgAreaBttmRghtAdrs).Row
+        myXlonMrgAreaRghtCol = .Range(myXstrMrgAreaBttmRghtAdrs).Column
+    End With
+'    Debug.Print "行数: " & myXlonMrgAreaRows
+'    Debug.Print "列数: " & myXlonMrgAreaCols
+'    Debug.Print "セル数: " & myXlonMrgAreaCells
+'    Debug.Print "左上位置: " & myXstrMrgAreaTopLftAdrs
+'    Debug.Print "右下位置: " & myXstrMrgAreaBttmRghtAdrs
+'    Debug.Print "左上行: " & myXlonMrgAreaTopRow
+'    Debug.Print "左上列: " & myXlonMrgAreaLftCol
+'    Debug.Print "右下行: " & myXlonMrgAreaBttmRow
+'    Debug.Print "右下列: " & myXlonMrgAreaRghtCol
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
