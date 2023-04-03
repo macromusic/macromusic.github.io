@@ -1,1 +1,4126 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
 
+
+ '定型Ｆ_指定変数がVariant変数かどうかチェックする
+Private Function PfncbisIsVariant(ByRef myXvarOrg As Variant) As Boolean
+    PfncbisIsVariant = False
+  Dim myXvarTmp As Variant: myXvarTmp = myXvarOrg
+    On Error GoTo ExitPath
+    myXvarOrg = Empty
+    On Error GoTo 0
+    PfncbisIsVariant = IsEmpty(myXvarOrg)
+    myXvarOrg = myXvarTmp
+ExitPath:
+End Function
+
+ '定型Ｆ_指定変数が配列かどうかチェックする
+Private Function PfncbisIsArray(ByRef myXvarOrg As Variant) As Boolean
+    PfncbisIsArray = False
+    PfncbisIsArray = IsArray(myXvarOrg)
+End Function
+
+ '定型Ｆ_指定変数の内容を消去する
+Private Function PfncbisEraseEmptyVariable(ByRef myXvarOrg As Variant) As Boolean
+    PfncbisEraseEmptyVariable = False
+    On Error Resume Next
+    Erase myXvarOrg: If Err.Number = 13 Then myXvarOrg = Empty
+    On Error GoTo 0
+    PfncbisEraseEmptyVariable = True
+End Function
+
+ '定型Ｆ_指定変数が配列で空かどうかチェックする
+Private Function PfnclonIsArrayExtd(ByRef myZvarOrgData As Variant) As Long
+'PfnclonIsArrayExtd = 1  : 空ではない配列変数
+'PfnclonIsArrayExtd = 0  : 空の配列変数
+'PfnclonIsArrayExtd = -1 : 配列ではない変数
+    PfnclonIsArrayExtd = Empty
+  Dim myXlonChckFlag As Long, myXlonTmp As Long
+'//配列であることを確認
+    If IsArray(myZvarOrgData) = False Then
+        myXlonChckFlag = -1: GoTo JumpPath
+    End If
+'//配列が空でないことを確認
+    myXlonChckFlag = 0
+    On Error GoTo JumpPath
+    myXlonTmp = UBound(myZvarOrgData) - LBound(myZvarOrgData) + 1
+    On Error GoTo 0
+    If myXlonTmp <= 0 Then GoTo JumpPath
+    myXlonChckFlag = 1
+JumpPath:
+    PfnclonIsArrayExtd = myXlonChckFlag
+End Function
+
+ '定型Ｐ_指定変数の型を取得する
+Private Sub PfixGetVariableTypeName( _
+            myXbisExitFlag As Boolean, myXstrTypeName As String, _
+            myXbisObjFlag As Boolean, myXbisAryFlag As Boolean, _
+            ByRef myXvarVrbl As Variant)
+    myXbisExitFlag = False: myXstrTypeName = Empty
+    myXbisObjFlag = False: myXbisAryFlag = False
+'//配列かどうかを確認
+    myXbisAryFlag = IsArray(myXvarVrbl)
+'//変数の型を取得
+  Dim myXstrPrnths As String: myXstrPrnths = Chr(40) & Chr(41)
+  Dim myXstrTmpName As String
+    myXstrTmpName = TypeName(myXvarVrbl)
+    Select Case myXstrTmpName
+        Case "Nothing": myXstrTmpName = "Object"
+        Case "Empty": myXstrTmpName = "Variant"
+        Case "Error": GoTo ErrPath
+        Case "Null": GoTo ErrPath
+        Case "Unknown": GoTo ErrPath
+    End Select
+    If Right(myXstrTmpName, Len(myXstrPrnths)) = myXstrPrnths Then
+        If myXbisAryFlag = False Then GoTo ErrPath
+        myXstrTypeName = Left(myXstrTmpName, Len(myXstrTmpName) - Len(myXstrPrnths))
+    Else
+        myXstrTypeName = myXstrTmpName
+    End If
+'//オブジェクトかどうかを確認
+    If myXstrTypeName = "Object" Then myXbisObjFlag = True
+    On Error Resume Next
+  Dim myXvarTmp As Variant: myXvarTmp = myXvarVrbl
+    If Err.Number = 438 Then myXbisObjFlag = True
+    On Error GoTo 0
+    Exit Sub
+ErrPath:
+    myXstrTypeName = ""
+End Sub
+
+ '定型Ｆ_配列変数の次元数を取得する
+Private Function PfnclonArrayDimension(ByRef myZvarOrgData As Variant) As Long
+    PfnclonArrayDimension = Empty
+    If IsArray(myZvarOrgData) = False Then Exit Function
+  Dim myXvarTmp As Variant, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXvarTmp = UBound(myZvarOrgData, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    PfnclonArrayDimension = k - 1
+End Function
+
+ '定型Ｆ_配列変数の次元数が指定次元と一致するかをチェックする
+Private Function PfncbisCheckArrayDimension( _
+            ByRef myZvarOrgData As Variant, ByVal myXlonDmnsn As Long) As Boolean
+    PfncbisCheckArrayDimension = False
+    If IsArray(myZvarOrgData) = False Then Exit Function
+    If myXlonDmnsn <= 0 Then Exit Function
+  Dim myXlonTmp As Long, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXlonTmp = UBound(myZvarOrgData, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    If k - 1 <> myXlonDmnsn Then Exit Function
+    PfncbisCheckArrayDimension = True
+End Function
+
+ '定型Ｐ_配列変数の次元数と配列長を取得する
+Private Sub PfixGetArrayDimensionLength( _
+            myXbisExitFlag As Boolean, myXlonAryDmnsn As Long, _
+            myZlonAryLBnd() As Long, myZlonAryUBnd() As Long, _
+            myZlonAryLen() As Long, _
+            ByRef myZvarOrgData As Variant)
+'myZlonAryLBnd(i) : 配列の最小添字
+'myZlonAryUBnd(i) : 配列の最大添字
+'myZlonAryLen(i)  : 配列長
+    myXbisExitFlag = False: myXlonAryDmnsn = Empty
+    Erase myZlonAryLBnd: Erase myZlonAryUBnd: Erase myZlonAryLen
+'//配列であることを確認
+    If IsArray(myZvarOrgData) = False Then GoTo ExitPath
+'//配列が空でないことを確認
+  Dim myXlonTmp As Long
+    On Error GoTo ExitPath
+    myXlonTmp = UBound(myZvarOrgData) - LBound(myZvarOrgData) + 1
+    On Error GoTo 0
+    If myXlonTmp <= 0 Then GoTo ExitPath
+'//配列の次元数を取得
+  Dim myXvarTmp As Variant, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXvarTmp = UBound(myZvarOrgData, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    myXlonAryDmnsn = k - 1: k = 0
+    If myXlonAryDmnsn <= 0 Then GoTo ExitPath
+'//配列の最小添字と最大添字を取得
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long: i = myXlonAryDmnsn + Lo - 1
+    ReDim myZlonAryLBnd(i) As Long: ReDim myZlonAryUBnd(i) As Long
+    k = 0
+    For i = LBound(myZlonAryLBnd) To UBound(myZlonAryLBnd)
+        k = k + 1
+        myZlonAryLBnd(i) = LBound(myZvarOrgData, k)
+        myZlonAryUBnd(i) = UBound(myZvarOrgData, k)
+    Next i
+'//配列長を取得
+    i = myXlonAryDmnsn + Lo - 1
+    ReDim myZlonAryLen(i) As Long
+    For i = LBound(myZlonAryLen) To UBound(myZlonAryLen)
+        myZlonAryLen(i) = myZlonAryUBnd(i) - myZlonAryLBnd(i) + 1
+    Next i
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_配列変数の次元数と配列長が指定値を満足するかをチェックする
+Private Function PfncbisCheckArrayDimensionLength( _
+            ByRef myZvarOrgData As Variant, ByVal myXlonChckAryDmnsn As Long, _
+            ByRef myXlonChckAryLen() As Long) As Boolean
+'myXlonChckAryDmnsn  : 配列の次元数の指定値
+'myXlonChckAryLen(i) : i次元目の配列長の指定値
+'myXlonChckAryLen(i) = 0 : 配列長のチェックを実施しない
+    PfncbisCheckArrayDimensionLength = False
+    If myXlonChckAryDmnsn <= 0 Then Exit Function
+  Dim Li As Long, Ui As Long, myXlonChckAryLenCnt As Long
+    On Error Resume Next
+    Li = LBound(myXlonChckAryLen): Ui = UBound(myXlonChckAryLen)
+    If Err.Number = 9 Then Exit Function
+    On Error GoTo 0
+    myXlonChckAryLenCnt = Ui - Li + 1
+    If myXlonChckAryLenCnt <= 0 Then Exit Function
+  Dim i As Long
+    For i = LBound(myXlonChckAryLen) To UBound(myXlonChckAryLen)
+        If myXlonChckAryLen(i) < 0 Then Exit Function
+    Next i
+'//配列であることを確認
+    If IsArray(myZvarOrgData) = False Then Exit Function
+'//配列が空でないことを確認
+  Dim myXlonTmp As Long
+    On Error Resume Next
+    myXlonTmp = UBound(myZvarOrgData) - LBound(myZvarOrgData) + 1
+    If Err.Number = 9 Then Exit Function
+    On Error GoTo 0
+    If myXlonTmp <= 0 Then Exit Function
+'//配列の次元数を取得
+  Dim myXlonAryDmnsn As Long, myXvarTmp As Variant, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXvarTmp = UBound(myZvarOrgData, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    myXlonAryDmnsn = k - 1
+    If myXlonAryDmnsn <> myXlonChckAryDmnsn Then Exit Function
+    If myXlonAryDmnsn <> myXlonChckAryLenCnt Then Exit Function
+'//配列の最小添字と最大添字を取得
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+    i = myXlonAryDmnsn + Lo - 1
+  Dim myZlonAryLBnd() As Long: ReDim myZlonAryLBnd(i) As Long
+  Dim myZlonAryUBnd() As Long: ReDim myZlonAryUBnd(i) As Long
+    k = 0
+    For i = LBound(myZlonAryLBnd) To UBound(myZlonAryLBnd)
+        k = k + 1
+        myZlonAryLBnd(i) = LBound(myZvarOrgData, k)
+        myZlonAryUBnd(i) = UBound(myZvarOrgData, k)
+    Next i
+'//配列長を取得
+    i = myXlonAryDmnsn + Lo - 1
+  Dim myZlonAryLen() As Long: ReDim myZlonAryLen(i) As Long
+    For i = LBound(myZlonAryLen) To UBound(myZlonAryLen)
+        myZlonAryLen(i) = myZlonAryUBnd(i) - myZlonAryLBnd(i) + 1
+    Next i
+'//次元数と配列長をチェック
+    For i = LBound(myZlonAryLen) To UBound(myZlonAryLen)
+        If myXlonChckAryLen(i + Li - Lo) <> 0 Then _
+            If myZlonAryLen(i) <> myXlonChckAryLen(i + Li - Lo) Then Exit Function
+    Next i
+    PfncbisCheckArrayDimensionLength = True
+    Erase myZlonAryLBnd: Erase myZlonAryUBnd: Erase myZlonAryLen
+End Function
+
+ '定型Ｆ_指定変数が1次元の数値配列かどうかをチェックする
+Private Function PfncbisIsNumeric1DArray(ByRef myZvarAry As Variant) As Boolean
+    PfncbisIsNumeric1DArray = False
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarAry): myXdouTmp = myZvarAry(Li)
+    On Error GoTo 0
+    PfncbisIsNumeric1DArray = True
+ExitPath:
+End Function
+
+ '定型Ｆ_指定変数が2次元の数値配列かどうかをチェックする
+Private Function PfncbisIsNumeric2DArray(ByRef myZvarAry As Variant) As Boolean
+    PfncbisIsNumeric2DArray = False
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarAry, 1): myXdouTmp = myZvarAry(Li, Li)
+    On Error GoTo 0
+    PfncbisIsNumeric2DArray = True
+ExitPath:
+End Function
+
+ '定型Ｐ_配列変数の次元数を確認して2次元配列に調整する
+Private Sub PfixRedim2DArray( _
+            myXlonRowCnt As Long, myXlonColCnt As Long, myZvarNewAry() As Variant, _
+            ByRef myZvarOrgAry As Variant)
+    myXlonRowCnt = Empty: myXlonColCnt = Empty: Erase myZvarNewAry
+'//配列変数の次元数を取得
+  Dim myXlonTmp As Long, m As Long: m = 0
+    On Error Resume Next
+    Do
+        m = m + 1: myXlonTmp = UBound(myZvarOrgAry, m)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+  Dim myXlonAryDmnsn As Long: myXlonAryDmnsn = m - 1
+'//配列変数の次元数に応じて処理を実施
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim Li As Long, Ui1 As Long, Ui2 As Long, i As Long, j As Long
+    If myXlonAryDmnsn = 0 Then
+        ReDim myZvarNewAry(Lo, Lo) As Variant
+        myZvarNewAry(Lo, Lo) = myZvarOrgAry
+    ElseIf myXlonAryDmnsn = 1 Then
+        Li = LBound(myZvarOrgAry): Ui1 = UBound(myZvarOrgAry)
+        myXlonRowCnt = Ui1 - Li + 1: myXlonColCnt = 1
+        If myXlonRowCnt <= 0 Then Exit Sub
+        i = myXlonRowCnt + Lo - 1: j = myXlonColCnt + Lo - 1
+        ReDim myZvarNewAry(i, j) As Variant
+        For i = LBound(myZvarOrgAry) To UBound(myZvarOrgAry)
+            myZvarNewAry(i + Lo - Li, Lo) = myZvarOrgAry(i)
+        Next i
+    ElseIf myXlonAryDmnsn = 2 Then
+        Li = LBound(myZvarOrgAry, 1): Ui1 = UBound(myZvarOrgAry, 1)
+        Ui2 = UBound(myZvarOrgAry, 2)
+        myXlonRowCnt = Ui1 - Li + 1: myXlonColCnt = Ui2 - Li + 1
+        If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then Exit Sub
+        i = myXlonRowCnt + Lo - 1: j = myXlonColCnt + Lo - 1
+        ReDim myZvarNewAry(i, j) As Variant
+        For i = Li To Ui1
+            For j = Li To Ui2
+                myZvarNewAry(i + Lo - Li, j + Lo - Li) = myZvarOrgAry(i, j)
+            Next j
+        Next i
+    Else
+        Exit Sub
+    End If
+End Sub
+
+ '定型Ｆ_配列の検索文字列を含むデータ数を取得する
+Private Function PfnclonCountIfString( _
+            ByRef myZstrOrgData() As String, ByVal myXstrIfCndtn As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False) As Long
+'myZstrOrgData() : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    PfnclonCountIfString = Empty
+    If myXstrIfCndtn = "" Then Exit Function
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+  Dim myXvarTmp As Variant, n As Long: n = 0
+    If coXbisInStrOptn = True Then
+        For Each myXvarTmp In myZstrOrgData
+            If InStr(myXvarTmp, myXstrIfCndtn) > 0 Then n = n + 1
+        Next myXvarTmp
+    Else
+        For Each myXvarTmp In myZstrOrgData
+            If myXvarTmp = myXstrIfCndtn Then n = n + 1
+        Next myXvarTmp
+    End If
+    PfnclonCountIfString = n
+ExitPath:
+End Function
+
+ '定型Ｆ_2次元配列の指定列で文字列を検索してデータ数を取得する
+Private Function PfnclonVCountIfString( _
+            ByRef myZstrOrgData() As String, ByVal myXstrIfCndtn As String, _
+            Optional ByVal coXlonSrchCol As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False) As Long
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    PfnclonVCountIfString = Empty
+    If myXstrIfCndtn = "" Then Exit Function
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If coXlonSrchCol < LBound(myZstrOrgData, 2) _
+        Or coXlonSrchCol > UBound(myZstrOrgData, 2) Then Exit Function
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, coXlonSrchCol)
+    On Error GoTo 0
+  Dim i As Long, n As Long: n = 0
+    If coXbisInStrOptn = True Then
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myXstrTmp = myZstrOrgData(i, coXlonSrchCol)
+            If InStr(myXstrTmp, myXstrIfCndtn) > 0 Then n = n + 1
+        Next i
+    Else
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myXstrTmp = myZstrOrgData(i, coXlonSrchCol)
+            If myXstrTmp = myXstrIfCndtn Then n = n + 1
+        Next i
+    End If
+    PfnclonVCountIfString = n
+ExitPath:
+End Function
+
+ '定型Ｆ_2次元配列の指定行で文字列を検索してデータ数を取得する
+Private Function PfnclonHCountIfString( _
+            ByRef myZstrOrgData() As String, ByVal myXstrIfCndtn As String, _
+            Optional ByVal coXlonSrchRow As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False) As Long
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    PfnclonHCountIfString = Empty
+    If myXstrIfCndtn = "" Then Exit Function
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If coXlonSrchRow < LBound(myZstrOrgData, 1) _
+        Or coXlonSrchRow > UBound(myZstrOrgData, 1) Then Exit Function
+    Li = LBound(myZstrOrgData, 2): myXstrTmp = myZstrOrgData(coXlonSrchRow, Li)
+    On Error GoTo 0
+   Dim j As Long, n As Long: n = 0
+   If coXbisInStrOptn = True Then
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            myXstrTmp = myZstrOrgData(coXlonSrchRow, j)
+            If InStr(myXstrTmp, myXstrIfCndtn) > 0 Then n = n + 1
+        Next j
+    Else
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            myXstrTmp = myZstrOrgData(coXlonSrchRow, j)
+            If myXstrTmp = myXstrIfCndtn Then n = n + 1
+        Next j
+    End If
+    PfnclonHCountIfString = n
+ExitPath:
+End Function
+
+ '定型Ｆ_1次元配列で文字列を検索して最初のデータ位置を取得する
+Private Function PfnclonMatchString( _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False) As Long
+'myZstrOrgData (i): 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    PfnclonMatchString = Empty
+    If myXstrIfCndtn = "" Then Exit Function
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData): myXstrTmp = myZstrOrgData(Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    If coXbisInStrOptn = True Then
+        For i = LBound(myZstrOrgData) To UBound(myZstrOrgData)
+            myXstrTmp = myZstrOrgData(i)
+            If InStr(myXstrTmp, myXstrIfCndtn) > 0 Then
+                n = i: Exit For
+            End If
+        Next i
+    Else
+        For i = LBound(myZstrOrgData) To UBound(myZstrOrgData)
+            myXstrTmp = myZstrOrgData(i)
+            If myXstrTmp = myXstrIfCndtn Then
+                n = i: Exit For
+            End If
+        Next i
+    End If
+    PfnclonMatchString = n
+    Exit Function
+ExitPath:
+    PfnclonMatchString = Lo - 1
+End Function
+
+ '定型Ｆ_2次元配列の指定列で文字列を検索して最初のデータ位置を取得する
+Private Function PfnclonVMatchString( _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchCol As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False) As Long
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    PfnclonVMatchString = Empty
+    If myXstrIfCndtn = "" Then Exit Function
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If coXlonSrchCol < LBound(myZstrOrgData, 2) _
+        Or coXlonSrchCol > UBound(myZstrOrgData, 2) Then Exit Function
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, coXlonSrchCol)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    If coXbisInStrOptn = True Then
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myXstrTmp = myZstrOrgData(i, coXlonSrchCol)
+            If InStr(myXstrTmp, myXstrIfCndtn) > 0 Then
+                n = i: Exit For
+            End If
+        Next i
+    Else
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myXstrTmp = myZstrOrgData(i, coXlonSrchCol)
+            If myXstrTmp = myXstrIfCndtn Then
+                n = i: Exit For
+            End If
+        Next i
+    End If
+    PfnclonVMatchString = n
+    Exit Function
+ExitPath:
+    PfnclonVMatchString = Lo - 1
+End Function
+
+ '定型Ｆ_2次元配列の指定行で文字列を検索して最初のデータ位置を取得する
+Private Function PfnclonHMatchString( _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchRow As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False) As Long
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    PfnclonHMatchString = Empty
+    If myXstrIfCndtn = "" Then Exit Function
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If coXlonSrchRow < LBound(myZstrOrgData, 1) _
+        Or coXlonSrchRow > UBound(myZstrOrgData, 1) Then Exit Function
+    Li = LBound(myZstrOrgData, 2): myXstrTmp = myZstrOrgData(coXlonSrchRow, Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim j As Long, n As Long: n = Lo - 1
+    If coXbisInStrOptn = True Then
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            myXstrTmp = myZstrOrgData(coXlonSrchRow, j)
+            If InStr(myXstrTmp, myXstrIfCndtn) > 0 Then
+                n = j: Exit For
+            End If
+        Next j
+    Else
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            myXstrTmp = myZstrOrgData(coXlonSrchRow, j)
+            If myXstrTmp = myXstrIfCndtn Then
+                n = j: Exit For
+            End If
+        Next j
+    End If
+    PfnclonHMatchString = n
+    Exit Function
+ExitPath:
+    PfnclonHMatchString = Lo - 1
+End Function
+
+ '定型Ｐ_1次元配列で文字列を検索してデータ位置の一覧を取得する
+Private Sub PfixMatchExtendedString( _
+            myXlonPstnCnt As Long, myZlonPstn() As Long, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'myZlonPstn(i) : データ位置配列
+'myZstrOrgData(i) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonPstnCnt = Empty: Erase myZlonPstn
+    If myXstrIfCndtn = "" Then Exit Sub
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData): myXstrTmp = myZstrOrgData(Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    If coXbisInStrOptn = True Then
+        For i = LBound(myZstrOrgData) To UBound(myZstrOrgData)
+            myXstrTmp = myZstrOrgData(i)
+            If InStr(myXstrTmp, myXstrIfCndtn) > 0 Then
+                n = n + 1: ReDim Preserve myZlonPstn(n) As Long
+                myZlonPstn(n) = i
+            End If
+        Next i
+    Else
+        For i = LBound(myZstrOrgData) To UBound(myZstrOrgData)
+            myXstrTmp = myZstrOrgData(i)
+            If myXstrTmp = myXstrIfCndtn Then
+                n = n + 1: ReDim Preserve myZlonPstn(n) As Long
+                myZlonPstn(n) = i
+            End If
+        Next i
+    End If
+    myXlonPstnCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の指定列で文字列を検索してデータ位置の一覧を取得する
+Private Sub PfixVMatchExtendedString( _
+            myXlonPstnCnt As Long, myZlonPstn() As Long, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchCol As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'myZlonPstn(i) : データ行位置
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonPstnCnt = Empty: Erase myZlonPstn
+    If myXstrIfCndtn = "" Then Exit Sub
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If coXlonSrchCol < LBound(myZstrOrgData, 2) _
+        Or coXlonSrchCol > UBound(myZstrOrgData, 2) Then Exit Sub
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, coXlonSrchCol)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    If coXbisInStrOptn = True Then
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myXstrTmp = myZstrOrgData(i, coXlonSrchCol)
+            If InStr(myXstrTmp, myXstrIfCndtn) > 0 Then
+                n = n + 1: ReDim Preserve myZlonPstn(n) As Long
+                myZlonPstn(n) = i
+            End If
+        Next i
+    Else
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myXstrTmp = myZstrOrgData(i, coXlonSrchCol)
+            If myXstrTmp = myXstrIfCndtn Then
+                n = n + 1: ReDim Preserve myZlonPstn(n) As Long
+                myZlonPstn(n) = i
+            End If
+        Next i
+    End If
+    myXlonPstnCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の指定行で文字列を検索してデータ位置の一覧を取得する
+Private Sub PfixHMatchExtendedString( _
+            myXlonPstnCnt As Long, myZlonPstn() As Long, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchRow As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'myZlonPstn(i) : データ列位置
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonPstnCnt = Empty: Erase myZlonPstn
+    If myXstrIfCndtn = "" Then Exit Sub
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If coXlonSrchRow < LBound(myZstrOrgData, 1) _
+        Or coXlonSrchRow > UBound(myZstrOrgData, 1) Then Exit Sub
+    Li = LBound(myZstrOrgData, 2): myXstrTmp = myZstrOrgData(coXlonSrchRow, Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim j As Long, n As Long: n = Lo - 1
+    If coXbisInStrOptn = True Then
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            myXstrTmp = myZstrOrgData(coXlonSrchRow, j)
+            If InStr(myXstrTmp, myXstrIfCndtn) > 0 Then
+                n = n + 1: ReDim Preserve myZlonPstn(n) As Long
+                myZlonPstn(n) = j
+            End If
+        Next j
+    Else
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            myXstrTmp = myZstrOrgData(coXlonSrchRow, j)
+            If myXstrTmp = myXstrIfCndtn Then
+                n = n + 1: ReDim Preserve myZlonPstn(n) As Long
+                myZlonPstn(n) = j
+            End If
+        Next j
+    End If
+    myXlonPstnCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｆ_2次元配列の指定列で文字列を検索して指定列の同じ行にある最初の値を取得する
+Private Function PincstrVLookupString( _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchCol As Long = 1, _
+            Optional ByVal coXlonGetCol As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False) As String
+'Includes PfnclonVMatchString
+'myZstrOrgData(i, j) : 元データ配列
+'coXlonGetCol  : 値を取得する列番号を指定
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    PincstrVLookupString = Empty
+    On Error GoTo ExitPath
+    If coXlonGetCol < LBound(myZstrOrgData, 2) _
+        Or coXlonGetCol > UBound(myZstrOrgData, 2) Then Exit Function
+    On Error GoTo 0
+  Dim myXlonPstn As Long
+    myXlonPstn = PfnclonVMatchString( _
+                    myXstrIfCndtn, myZstrOrgData, coXlonSrchCol, coXbisInStrOptn)
+    If myXlonPstn < LBound(myZstrOrgData, 1) Then Exit Function
+    PincstrVLookupString = myZstrOrgData(myXlonPstn, coXlonGetCol)
+ExitPath:
+End Function
+
+ '定型Ｆ_2次元配列の指定行で文字列を検索して指定行の同じ列にある最初の値を取得する
+Private Function PincstrHLookupString( _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchRow As Long = 1, _
+            Optional ByVal coXlonGetRow As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False) As String
+'Includes PfnclonHMatchString
+'myZstrOrgData(i, j) : 元データ配列
+'coXlonGetRow  : 値を取得する行番号を指定
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    PincstrHLookupString = Empty
+    On Error GoTo ExitPath
+    If coXlonGetRow < LBound(myZstrOrgData, 1) _
+        Or coXlonGetRow > UBound(myZstrOrgData, 1) Then Exit Function
+    On Error GoTo 0
+  Dim myXlonPstn As Long
+    myXlonPstn = PfnclonHMatchString( _
+                    myXstrIfCndtn, myZstrOrgData, coXlonSrchRow, coXbisInStrOptn)
+    If myXlonPstn < LBound(myZstrOrgData, 2) Then Exit Function
+    PincstrHLookupString = myZstrOrgData(coXlonGetRow, myXlonPstn)
+ExitPath:
+End Function
+
+ '定型Ｐ_2次元配列の指定列で文字列を検索して指定列の同じ行にある値の一覧を取得する
+Private Sub PincVLookupExtendedString( _
+            myXlonValCnt As Long, myZstrVal() As String, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchCol As Long = 1, _
+            Optional ByVal coXlonGetCol As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfixVMatchExtendedString
+'myZstrVal(i) : 取得値
+'myZstrOrgData(i, j) : 元データ配列
+'coXlonGetCol : 値を取得する列番号を指定
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValCnt = Empty: Erase myZstrVal
+    On Error GoTo ExitPath
+    If coXlonGetCol < LBound(myZstrOrgData, 2) _
+        Or coXlonGetCol > UBound(myZstrOrgData, 2) Then Exit Sub
+    On Error GoTo 0
+  Dim myXlonValCnt As Long, myZlonPstn() As Long
+    Call PfixVMatchExtendedString(myXlonValCnt, myZlonPstn, _
+            myXstrIfCndtn, myZstrOrgData, coXlonSrchCol, coXbisInStrOptn)
+    If myXlonValCnt <= 0 Then Exit Sub
+  Dim i As Long
+    i = UBound(myZlonPstn): ReDim myZstrVal(i) As String
+    For i = LBound(myZlonPstn) To UBound(myZlonPstn)
+        myZstrVal(i) = myZstrOrgData(i, coXlonGetCol)
+    Next i
+    Erase myZlonPstn
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の指定行で文字列を検索して指定行の同じ列にある値の一覧を取得する
+Private Sub PincHLookupExtendedString( _
+            myXlonValCnt As Long, myZstrVal() As String, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchRow As Long = 1, _
+            Optional ByVal coXlonGetRow As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfixHMatchExtendedString
+'myZstrVal(i) : 取得値
+'myZstrOrgData(i, j) : 元データ配列
+'coXlonGetCol : 値を取得する列番号を指定
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValCnt = Empty: Erase myZstrVal
+    On Error GoTo ExitPath
+    If coXlonGetRow < LBound(myZstrOrgData, 1) _
+        Or coXlonGetRow > UBound(myZstrOrgData, 1) Then Exit Sub
+    On Error GoTo 0
+  Dim myXlonValCnt As Long, myZlonPstn() As Long
+    Call PfixHMatchExtendedString(myXlonValCnt, myZlonPstn, _
+            myXstrIfCndtn, myZstrOrgData, coXlonSrchRow, coXbisInStrOptn)
+    If myXlonValCnt <= 0 Then Exit Sub
+  Dim i As Long
+    i = UBound(myZlonPstn): ReDim myZstrVal(i) As String
+    For i = LBound(myZlonPstn) To UBound(myZlonPstn)
+        myZstrVal(i) = myZstrOrgData(coXlonGetRow, i)
+    Next i
+    Erase myZlonPstn
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の指定列で文字列を検索して最初の行全体を取得する
+Private Sub PincVFilterString( _
+            myXlonValCnt As Long, myXlonColCnt As Long, myZstrVal() As String, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchCol As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfnclonVMatchString
+'myZstrVal(1, i) : 取得値
+'myZstrOrgData(i, j) : 元データ配列
+'coXlonSrchCol : 検索する列番号を指定
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValCnt = Empty: myXlonColCnt = Empty: Erase myZstrVal
+    On Error GoTo ExitPath
+  Dim Li As Long: Li = LBound(myZstrOrgData, 1)
+    On Error GoTo 0
+  Dim myXlonFltrRow As Long
+    myXlonFltrRow = PfnclonVMatchString( _
+                        myXstrIfCndtn, myZstrOrgData, coXlonSrchCol, coXbisInStrOptn)
+    If myXlonFltrRow < Li Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    j = UBound(myZstrOrgData, 2)
+    ReDim myZstrVal(Lo, j) As String
+    myXlonValCnt = UBound(myZstrVal, 1) - LBound(myZstrVal, 1) + 1
+    myXlonColCnt = UBound(myZstrVal, 2) - LBound(myZstrVal, 2) + 1
+    For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+        myZstrVal(Lo, j) = myZstrOrgData(myXlonFltrRow, j)
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の指定行で文字列を検索して最初の列全体を取得する
+Private Sub PincHFilterString( _
+            myXlonRowCnt As Long, myXlonValCnt As Long, myZstrVal() As String, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchRow As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfnclonHMatchString
+'myZstrVal(i, 1) : 取得値
+'myZstrOrgData(i) : 元データ
+'coXlonSrchRow : 検索する行番号を指定
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonRowCnt = Empty: myXlonValCnt = Empty: Erase myZstrVal
+    On Error GoTo ExitPath
+  Dim Li As Long: Li = LBound(myZstrOrgData, 2)
+    On Error GoTo 0
+  Dim myXlonFltrCol As Long
+    myXlonFltrCol = PfnclonHMatchString( _
+                        myXstrIfCndtn, myZstrOrgData, coXlonSrchRow, coXbisInStrOptn)
+    If myXlonFltrCol < Li Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    i = UBound(myZstrOrgData, 1)
+    ReDim myZstrVal(i, Lo) As String
+    myXlonRowCnt = UBound(myZstrOrgData, 1) - LBound(myZstrOrgData, 1) + 1
+    myXlonValCnt = UBound(myZstrOrgData, 2) - LBound(myZstrOrgData, 2) + 1
+    For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+        myZstrVal(i, Lo) = myZstrOrgData(i, myXlonFltrCol)
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の指定列で文字列を検索してデータ位置と行全体の一覧を取得する
+Private Sub PincVMatchFilterExtendedString( _
+            myXlonValRowCnt As Long, myXlonValColCnt As Long, _
+            myZlonPstn() As Long, myZstrVal() As String, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchCol As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfixVMatchExtendedString
+'myZlonPstn(i) : データ行位置
+'myZstrVal(i, j) : 取得値
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValRowCnt = Empty: myXlonValColCnt = Empty
+    Erase myZlonPstn: Erase myZstrVal
+  Dim myXlonPstnCnt As Long
+    Call PfixVMatchExtendedString(myXlonPstnCnt, myZlonPstn, _
+            myXstrIfCndtn, myZstrOrgData, coXlonSrchCol, coXbisInStrOptn)
+    If myXlonPstnCnt <= 0 Then Exit Sub
+  Dim i As Long, j As Long
+    i = UBound(myZlonPstn): j = UBound(myZstrOrgData, 2)
+    ReDim myZstrVal(i, j) As String
+    myXlonValRowCnt = myXlonPstnCnt
+    myXlonValColCnt = UBound(myZstrOrgData, 2) - LBound(myZstrOrgData, 2) + 1
+    For i = LBound(myZlonPstn) To UBound(myZlonPstn)
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            myZstrVal(i, j) = myZstrOrgData(myZlonPstn(i), j)
+        Next j
+    Next i
+End Sub
+
+ '定型Ｐ_2次元配列の指定行で文字列を検索してデータ位置と列全体の一覧を取得する
+Private Sub PincHMatchFilterExtendedString( _
+            myXlonValRowCnt As Long, myXlonValColCnt As Long, _
+            myZlonPstn() As Long, myZstrVal() As String, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchRow As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfixHMatchExtendedString
+'myZlonPstn(j) : データ列位置
+'myZstrVal(i, j) : 取得値
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValRowCnt = Empty: myXlonValColCnt = Empty
+    Erase myZlonPstn: Erase myZstrVal
+  Dim myXlonPstnCnt As Long
+    Call PfixHMatchExtendedString(myXlonPstnCnt, myZlonPstn, _
+            myXstrIfCndtn, myZstrOrgData, coXlonSrchRow, coXbisInStrOptn)
+    If myXlonPstnCnt <= 0 Then Exit Sub
+  Dim i As Long, j As Long
+    i = UBound(myZstrOrgData, 1): j = UBound(myZlonPstn)
+    ReDim myZstrVal(i, j) As String
+    myXlonValRowCnt = UBound(myZstrOrgData, 1) - LBound(myZstrOrgData, 1) + 1
+    myXlonValColCnt = myXlonPstnCnt
+    For j = LBound(myZlonPstn) To UBound(myZlonPstn)
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myZstrVal(i, j) = myZstrOrgData(i, myZlonPstn(j))
+        Next i
+    Next j
+End Sub
+
+ '定型Ｐ_2次元配列の複数の指定列で異なる文字列を検索してデータ位置と行全体の一覧を取得する
+Private Sub PincVMatchFilterExtendedSeveralString( _
+            myXlonValRowCnt As Long, myXlonValColCnt As Long, _
+            myZlonPstn() As Long, myZstrVal() As String, _
+            ByRef myZstrIfCndtn() As String, ByRef myZstrOrgData() As String, _
+            ByRef myZlonSrchCol() As Long, ByRef myZbisInStrOptn() As Boolean)
+'Includes PfixVMatchExtendedString
+'myZlonPstn(i)   : データ行位置
+'myZstrVal(i, j) : 取得値
+'myZstrIfCndtn(i)    : 検索する文字列条件
+'myZstrOrgData(i, j) : 元データ配列
+'myZlonSrchCol(i)    : 検索する列
+'myZbisInStrOptn(i) = False : 指定文字列と一致する条件
+'myZbisInStrOptn(i) = True  : 指定文字列を含む条件
+    myXlonValRowCnt = Empty: myXlonValColCnt = Empty
+    Erase myZlonPstn: Erase myZstrVal
+  Dim myXstrTmp1 As String, myXstrTmp2 As String, _
+        myXlonTmp3 As Long, myXbisTmp4 As Boolean, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1)
+    myXstrTmp1 = myZstrIfCndtn(Li)
+    myXstrTmp2 = myZstrOrgData(Li, Li)
+    myXlonTmp3 = myZlonSrchCol(Li)
+    myXbisTmp4 = myZbisInStrOptn(Li)
+    On Error GoTo 0
+'//元データ配列を別の配列変数に格納
+  Dim i As Long, j As Long
+    i = UBound(myZstrOrgData, 1): j = UBound(myZstrOrgData, 2)
+    ReDim myZstrVal(i, j) As String: ReDim myZlonPstn(i) As Long
+    For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myZstrVal(i, j) = myZstrOrgData(i, j)
+            myZlonPstn(i) = i
+        Next i
+    Next j
+'//検索列数分の繰り返し処理
+  Dim myZstrInptVal() As String, myZlonInptPstn() As Long
+  Dim myXlonPstnCnt As Long, myZlonPstnTmp() As Long, myXlonTmpPstn As Long, k As Long
+    For k = LBound(myZstrIfCndtn) To UBound(myZstrIfCndtn)
+    '//検索用のデータ配列をセット
+        Erase myZstrInptVal: Erase myZlonInptPstn
+        i = UBound(myZstrVal, 1): j = UBound(myZstrVal, 2)
+        ReDim myZstrInptVal(i, j) As String: ReDim myZlonInptPstn(i) As Long
+        For j = LBound(myZstrVal, 2) To UBound(myZstrVal, 2)
+            For i = LBound(myZstrVal, 1) To UBound(myZstrVal, 1)
+                myZstrInptVal(i, j) = myZstrVal(i, j)
+                myZlonInptPstn(i) = myZlonPstn(i)
+            Next i
+        Next j
+        myXlonValRowCnt = Empty: myXlonValColCnt = Empty
+        Erase myZlonPstn: Erase myZstrVal
+    '//2次元配列の指定列で文字列を検索してデータ位置の一覧を取得
+        Call PfixVMatchExtendedString(myXlonPstnCnt, myZlonPstnTmp, _
+                myZstrIfCndtn(k), myZstrInptVal, myZlonSrchCol(k), myZbisInStrOptn(k))
+        If myXlonPstnCnt <= 0 Then GoTo ExitPath
+    '//取得したデータ位置の行全体の一覧を取得
+        i = UBound(myZlonPstnTmp): j = UBound(myZstrInptVal, 2)
+        ReDim myZstrVal(i, j) As String: ReDim myZlonPstn(i) As Long
+        myXlonValRowCnt = myXlonPstnCnt
+        myXlonValColCnt = UBound(myZstrInptVal, 2) - LBound(myZstrInptVal, 2) + 1
+        For i = LBound(myZlonPstnTmp) To UBound(myZlonPstnTmp)
+            For j = LBound(myZstrInptVal, 2) To UBound(myZstrInptVal, 2)
+                myXlonTmpPstn = myZlonPstnTmp(i)
+                myZstrVal(i, j) = myZstrInptVal(myXlonTmpPstn, j)
+                myZlonPstn(i) = myZlonInptPstn(myXlonTmpPstn)
+            Next j
+        Next i
+    Next k
+    Erase myZstrInptVal: Erase myZlonInptPstn: Erase myZlonPstnTmp
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の複数の指定行で異なる文字列を検索してデータ位置と列行全体の一覧を取得する
+Private Sub PincHMatchFilterExtendedSeveralString( _
+            myXlonValRowCnt As Long, myXlonValColCnt As Long, _
+            myZlonPstn() As Long, myZstrVal() As String, _
+            ByRef myZstrIfCndtn() As String, ByRef myZstrOrgData() As String, _
+            ByRef myZlonSrchRow() As Long, ByRef myZbisInStrOptn() As Boolean)
+'Includes PfixHMatchExtendedString
+'myZlonPstn(i)   : データ列位置
+'myZstrVal(i, j) : 取得値
+'myZstrIfCndtn(i)    : 検索する文字列条件
+'myZstrOrgData(i, j) : 元データ配列
+'myZlonSrchRow(i)    : 検索する行
+'myZbisInStrOptn(i) = False : 指定文字列と一致する条件
+'myZbisInStrOptn(i) = True  : 指定文字列を含む条件
+    myXlonValRowCnt = Empty: myXlonValColCnt = Empty
+    Erase myZlonPstn: Erase myZstrVal
+  Dim myXstrTmp1 As String, myXstrTmp2 As String, _
+        myXlonTmp3 As Long, myXbisTmp4 As Boolean, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1)
+    myXstrTmp1 = myZstrIfCndtn(Li)
+    myXstrTmp2 = myZstrOrgData(Li, Li)
+    myXlonTmp3 = myZlonSrchRow(Li)
+    myXbisTmp4 = myZbisInStrOptn(Li)
+    On Error GoTo 0
+'//元データ配列を別の配列変数に格納
+  Dim i As Long, j As Long
+    i = UBound(myZstrOrgData, 1): j = UBound(myZstrOrgData, 2)
+    ReDim myZstrVal(i, j) As String: ReDim myZlonPstn(j) As Long
+    For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myZstrVal(i, j) = myZstrOrgData(i, j)
+            myZlonPstn(j) = j
+        Next i
+    Next j
+'//検索列数分の繰り返し処理
+  Dim myZstrInptVal() As String, myZlonInptPstn() As Long
+  Dim myXlonPstnCnt As Long, myZlonPstnTmp() As Long, myXlonTmpPstn As Long, k As Long
+    For k = LBound(myZstrIfCndtn) To UBound(myZstrIfCndtn)
+    '//検索用のデータ配列をセット
+        Erase myZstrInptVal: Erase myZlonInptPstn
+        i = UBound(myZstrVal, 1): j = UBound(myZstrVal, 2)
+        ReDim myZstrInptVal(i, j) As String: ReDim myZlonInptPstn(j) As Long
+        For j = LBound(myZstrVal, 2) To UBound(myZstrVal, 2)
+            For i = LBound(myZstrVal, 1) To UBound(myZstrVal, 1)
+                myZstrInptVal(i, j) = myZstrVal(i, j)
+                myZlonInptPstn(j) = myZlonPstn(j)
+            Next i
+        Next j
+        myXlonValRowCnt = Empty: myXlonValColCnt = Empty
+        Erase myZlonPstn: Erase myZstrVal
+    '//2次元配列の指定列で文字列を検索してデータ位置の一覧を取得
+        Call PfixHMatchExtendedString(myXlonPstnCnt, myZlonPstnTmp, _
+                myZstrIfCndtn(k), myZstrInptVal, myZlonSrchRow(k), myZbisInStrOptn(k))
+        If myXlonPstnCnt <= 0 Then GoTo ExitPath
+    '//取得したデータ位置の行全体の一覧を取得
+        i = UBound(myZstrInptVal, 1): j = UBound(myZlonPstnTmp)
+        ReDim myZstrVal(i, j) As String: ReDim myZlonPstn(j) As Long
+        myXlonValRowCnt = UBound(myZstrInptVal, 1) - LBound(myZstrInptVal, 1) + 1
+        myXlonValColCnt = myXlonPstnCnt
+        For j = LBound(myZlonPstnTmp) To UBound(myZlonPstnTmp)
+            For i = LBound(myZstrInptVal, 1) To UBound(myZstrInptVal, 1)
+                myXlonTmpPstn = myZlonPstnTmp(i)
+                myZstrVal(i, j) = myZstrInptVal(i, myXlonTmpPstn)
+                myZlonPstn(j) = myZlonInptPstn(myXlonTmpPstn)
+            Next i
+        Next j
+    Next k
+    Erase myZstrInptVal: Erase myZlonInptPstn: Erase myZlonPstnTmp
+ExitPath:
+End Sub
+
+ '定型Ｆ_2次元配列の複数の指定列で異なる文字列を検索して一致するデータ数を取得する
+Private Function PinclonVCountIfMultiSeveralString( _
+            ByRef myZstrOrgData() As String, ByRef myZstrIfCndtn() As String, _
+            ByRef myZlonSrchCol() As Long, ByRef myZbisInStrOptn() As Boolean) As Long
+'Includes PincVMatchFilterExtendedSeveralString
+'myZstrOrgData(i, j) : 元データ配列
+'myZstrIfCndtn(i)    : 検索する文字列条件
+'myZlonSrchCol(i)    : 検索する列
+'myZbisInStrOptn(i) = False : 指定文字列と一致する条件
+'myZbisInStrOptn(i) = True  : 指定文字列を含む条件
+    PinclonVCountIfMultiSeveralString = Empty
+'//2次元配列の複数の指定列で異なる文字列を検索してデータ位置と行全体の一覧を取得
+  Dim myXlonValRowCnt As Long, myXlonValColCnt As Long, _
+        myZlonPstn() As Long, myZstrVal() As String
+    Call PincVMatchFilterExtendedSeveralString( _
+            myXlonValRowCnt, myXlonValColCnt, myZlonPstn, myZstrVal, _
+            myZstrIfCndtn, myZstrOrgData, myZlonSrchCol, myZbisInStrOptn)
+    PinclonVCountIfMultiSeveralString = myXlonValRowCnt
+    Erase myZlonPstn: Erase myZstrVal
+End Function
+
+ '定型ＷＳＦ_指定セル範囲内の複数の指定列で異なる文字列を検索して一致するデータ数を取得する
+Private Function PinclonVCountIfMultiSeveralRange( _
+            ByVal myXobjDataRng As Object, _
+            ParamArray myZvarCndtnRng() As Variant) As Long
+'Includes PincVMatchFilterExtendedSeveralString
+'myXobjDataRng : 文字列を検索するセル範囲
+'myZvarCndtnRng : 検索する文字列
+    PinclonVCountIfMultiSeveralRange = Empty
+  Dim myXvarTmp As Variant, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarCndtnRng): Set myXvarTmp = myZvarCndtnRng(Li)
+    Ui = UBound(myZvarCndtnRng)
+    On Error GoTo 0
+'//検索元データと検索条件の設定
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim k As Long: k = Ui + Lo - Li
+  Dim myZstrIfCndtn() As String: ReDim myZstrIfCndtn(k) As String
+  Dim myZlonSrchCol() As Long: ReDim myZlonSrchCol(k) As Long
+  Dim myZbisInStrOptn() As Boolean: ReDim myZbisInStrOptn(k) As Boolean
+    For k = Li To Ui
+        myZstrIfCndtn(k + Lo - Li) = myZvarCndtnRng(k).Value
+        myZlonSrchCol(k + Lo - Li) = myZvarCndtnRng(k).Column - myXobjDataRng.Column + 1
+        myZbisInStrOptn(k + Lo - Li) = False
+    Next k
+  Dim myZstrOrgData() As String, myZvarRngData As Variant
+    myZvarRngData = myXobjDataRng.Value
+  Dim i As Long, j As Long, m As Long, n As Long
+    i = UBound(myZvarRngData, 1): j = UBound(myZvarRngData, 2)
+    m = UBound(myZvarRngData, 1) - LBound(myZvarRngData, 1) + 1
+    n = UBound(myZvarRngData, 2) - LBound(myZvarRngData, 2) + 1
+    ReDim myZstrOrgData(i, j) As String
+    On Error Resume Next
+    If m * n = 1 Then
+        myZstrOrgData(i, j) = myZvarRngData
+    Else
+        For j = LBound(myZvarRngData, 2) To UBound(myZvarRngData, 2)
+            For i = LBound(myZvarRngData, 1) To UBound(myZvarRngData, 1)
+                myZstrOrgData(i, j) = myZvarRngData(i, j)
+            Next i
+        Next j
+    End If
+    On Error GoTo 0
+'//2次元配列の複数の指定列で異なる文字列を検索して一致するデータ数を取得
+  Dim myXlonVCntIf As Long
+    myXlonVCntIf = PinclonVCountIfMultiSeveralString( _
+                    myZstrOrgData, myZstrIfCndtn, myZlonSrchCol, myZbisInStrOptn)
+    PinclonVCountIfMultiSeveralRange = myXlonVCntIf
+    Erase myZstrIfCndtn: Erase myZlonSrchCol: Erase myZbisInStrOptn
+    Erase myZstrOrgData: myZvarRngData = Empty
+ExitPath:
+End Function
+
+ '定型ＷＳＦ_指定セル範囲内の複数の指定列で異なる文字列を検索して一致データの行位置を取得する
+Private Function PinclonVMatchSeveralRange( _
+            ByVal myXobjDataRng As Object, _
+            ParamArray myZvarCndtnRng() As Variant) As Long
+'Includes PincVMatchFilterExtendedSeveralString
+'myXobjDataRng : 文字列を検索するセル範囲
+'myZvarCndtnRng : 検索する文字列
+    PinclonVMatchSeveralRange = Empty
+  Dim myXvarTmp As Variant, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarCndtnRng): Set myXvarTmp = myZvarCndtnRng(Li)
+    Ui = UBound(myZvarCndtnRng)
+    On Error GoTo 0
+'//検索元データと検索条件の設定
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim k As Long: k = Ui + Lo - Li
+  Dim myZstrIfCndtn() As String: ReDim myZstrIfCndtn(k) As String
+  Dim myZlonSrchCol() As Long: ReDim myZlonSrchCol(k) As Long
+  Dim myZbisInStrOptn() As Boolean: ReDim myZbisInStrOptn(k) As Boolean
+    For k = Li To Ui
+        myZstrIfCndtn(k + Lo - Li) = myZvarCndtnRng(k).Value
+        myZlonSrchCol(k + Lo - Li) = myZvarCndtnRng(k).Column - myXobjDataRng.Column + 1
+        myZbisInStrOptn(k + Lo - Li) = False
+    Next k
+  Dim myZstrOrgData() As String, myZvarRngData As Variant
+    myZvarRngData = myXobjDataRng.Value
+  Dim i As Long, j As Long, m As Long, n As Long
+    i = UBound(myZvarRngData, 1): j = UBound(myZvarRngData, 2)
+    m = UBound(myZvarRngData, 1) - LBound(myZvarRngData, 1) + 1
+    n = UBound(myZvarRngData, 2) - LBound(myZvarRngData, 2) + 1
+    ReDim myZstrOrgData(i, j) As String
+    On Error Resume Next
+    If m * n = 1 Then
+        myZstrOrgData(i, j) = myZvarRngData
+    Else
+        For j = LBound(myZvarRngData, 2) To UBound(myZvarRngData, 2)
+            For i = LBound(myZvarRngData, 1) To UBound(myZvarRngData, 1)
+                myZstrOrgData(i, j) = myZvarRngData(i, j)
+            Next i
+        Next j
+    End If
+    On Error GoTo 0
+'//2次元配列の複数の指定列で異なる文字列を検索してデータ位置と行全体の一覧を取得
+  Dim myXlonValRowCnt As Long, myXlonValColCnt As Long, _
+        myZlonPstn() As Long, myZstrVal() As String
+    Call PincVMatchFilterExtendedSeveralString( _
+            myXlonValRowCnt, myXlonValColCnt, myZlonPstn, myZstrVal, _
+            myZstrIfCndtn, myZstrOrgData, myZlonSrchCol, myZbisInStrOptn)
+    If myXlonValRowCnt <= 0 And myXlonValColCnt <= 0 Then Exit Function
+    If myXlonValRowCnt > 1 Then Exit Function
+  Dim Lc As Long: Lc = LBound(myZlonPstn)
+    PinclonVMatchSeveralRange = myZlonPstn(Lc) + myXobjDataRng.Row - 1
+    Erase myZstrIfCndtn: Erase myZlonSrchCol: Erase myZbisInStrOptn
+    Erase myZstrOrgData: myZvarRngData = Empty
+ExitPath:
+End Function
+
+ '定型Ｐ_2次元配列の指定列で文字列を検索して行全体の一覧を取得する
+Private Sub PincVFilterExtendedString( _
+            myXlonValRowCnt As Long, myXlonValColCnt As Long, myZstrVal() As String, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchCol As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfixVMatchExtendedString
+'myZstrVal(i, j) : 取得値
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValRowCnt = Empty: myXlonValColCnt = Empty: Erase myZstrVal
+  Dim myXlonPstnCnt As Long, myZlonPstn() As Long
+    Call PfixVMatchExtendedString(myXlonPstnCnt, myZlonPstn, _
+            myXstrIfCndtn, myZstrOrgData, coXlonSrchCol, coXbisInStrOptn)
+    If myXlonPstnCnt <= 0 Then Exit Sub
+  Dim Li As Long, myXlonTmp As Long
+    Li = LBound(myZlonPstn): myXlonTmp = myZlonPstn(Li)
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    i = UBound(myZstrOrgData, 1) + Lo - Li: j = UBound(myZlonPstn) + Lo - Li
+    ReDim myZstrVal(i, j) As String
+    myXlonValRowCnt = myXlonPstnCnt
+    myXlonValColCnt = UBound(myZstrOrgData, 2) - LBound(myZstrOrgData, 2) + 1
+    For i = LBound(myZlonPstn) To UBound(myZlonPstn)
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            myZstrVal(i, j) = myZstrOrgData(myZlonPstn(i), j)
+        Next j
+    Next i
+    Erase myZlonPstn
+End Sub
+
+ '定型Ｐ_2次元配列の指定行で文字列を検索して列全体の一覧を取得する
+Private Sub PincHFilterExtendedString( _
+            myXlonValRowCnt As Long, myXlonValColCnt As Long, myZstrVal() As String, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXlonSrchRow As Long = 1, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfixHMatchExtendedString
+'myZstrVal(i, j) : 取得値
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValRowCnt = Empty: myXlonValColCnt = Empty: Erase myZstrVal
+  Dim myXlonPstnCnt As Long, myZlonPstn() As Long
+    Call PfixHMatchExtendedString(myXlonPstnCnt, myZlonPstn, _
+            myXstrIfCndtn, myZstrOrgData, coXlonSrchRow, coXbisInStrOptn)
+    If myXlonPstnCnt <= 0 Then Exit Sub
+  Dim i As Long, j As Long
+    i = UBound(myZstrOrgData, 1): j = UBound(myZlonPstn)
+    ReDim myZstrVal(i, j) As String
+    myXlonValRowCnt = UBound(myZstrOrgData, 1) - LBound(myZstrOrgData, 1) + 1
+    myXlonValColCnt = myXlonPstnCnt
+    For j = LBound(myZlonPstn) To UBound(myZlonPstn)
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myZstrVal(i, j) = myZstrOrgData(i, myZlonPstn(j))
+        Next i
+    Next j
+    Erase myZlonPstn
+End Sub
+
+ '定型Ｐ_2次元配列で文字列を検索して最初のデータ位置を取得する
+Private Sub PfixHVMatchString(myXlonRow As Long, myXlonCol As Long, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列とを含む条件
+    myXlonRow = Empty: myXlonCol = Empty
+    If myXstrIfCndtn = "" Then Exit Sub
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+  Dim i As Long, j As Long, r As Long, c As Long: r = Li - 1: c = Li - 1
+    If coXbisInStrOptn = True Then
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+                myXstrTmp = myZstrOrgData(i, j)
+                If InStr(myXstrTmp, myXstrIfCndtn) > 0 Then
+                    r = i: c = j: GoTo JumpPath
+                End If
+            Next i
+        Next j
+    Else
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+                myXstrTmp = myZstrOrgData(i, j)
+                If myXstrTmp = myXstrIfCndtn Then
+                    r = i: c = j: GoTo JumpPath
+                End If
+            Next i
+        Next j
+    End If
+JumpPath:
+    myXlonRow = r: myXlonCol = c
+ExitPath:
+End Sub
+
+ '定型Ｆ_2次元配列で文字列を検索して最初のデータを取得する
+Private Function PincstrHVLookupString( _
+            ByRef myZvarSrchCndtn() As Variant, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False) As String
+'Includes PfixHVMatchString
+'myZvarSrchCndtn(1) : 検索文字列
+'myZvarSrchCndtn(2) : オフセット行数
+'myZvarSrchCndtn(3) : オフセット列数
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False  : 指定文字列と一致する条件
+'coXbisInStrOptn = True   : 指定文字列とを含む条件
+    PincstrHVLookupString = Empty
+  Dim myXstrIfCndtn As String, myXlonROfst As Long, myXlonCOfst As Long, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarSrchCndtn)
+    myXstrIfCndtn = CStr(myZvarSrchCndtn(Li + 0))
+    myXlonROfst = CLng(myZvarSrchCndtn(Li + 1))
+    myXlonCOfst = CLng(myZvarSrchCndtn(Li + 2))
+    Li = LBound(myZstrOrgData, 1)
+    On Error GoTo 0
+  Dim r As Long, c As Long
+    Call PfixHVMatchString(r, c, myXstrIfCndtn, myZstrOrgData, coXbisInStrOptn)
+    If r < Li Or c < Li Then Exit Function
+    If r + myXlonROfst > UBound(myZstrOrgData, 1) _
+        Or c + myXlonCOfst > UBound(myZstrOrgData, 2) Then
+        PincstrHVLookupString = ""
+    Else
+        PincstrHVLookupString = myZstrOrgData(r + myXlonROfst, c + myXlonCOfst)
+    End If
+ExitPath:
+End Function
+
+ '定型Ｐ_2次元配列で文字列を検索して最初のデータと位置を取得する
+Private Sub PincHVLookupMatchString( _
+            myXlonValCnt As Long, myZvarValPstn() As Variant, _
+            ByRef myZvarSrchCndtn() As Variant, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfixHVMatchString
+'myZvarValPstn(1) : 取得データ
+'myZvarValPstn(2) : 行位置
+'myZvarValPstn(3) : 列位置
+'myZvarSrchCndtn(1) : 検索文字列
+'myZvarSrchCndtn(2) : オフセット行数
+'myZvarSrchCndtn(3) : オフセット列数
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValCnt = Empty: Erase myZvarValPstn
+  Dim myXstrIfCndtn As String, myXlonROfst As Long, myXlonCOfst As Long
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarSrchCndtn)
+    myXstrIfCndtn = CStr(myZvarSrchCndtn(Li + 0))
+    myXlonROfst = CLng(myZvarSrchCndtn(Li + 1))
+    myXlonCOfst = CLng(myZvarSrchCndtn(Li + 2))
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+  Dim r As Long, c As Long
+    Call PfixHVMatchString(r, c, myXstrIfCndtn, myZstrOrgData, coXbisInStrOptn)
+    If r < Li Or c < Li Then Exit Sub
+  Dim myXstrValue As String
+    If r + myXlonROfst > UBound(myZstrOrgData, 1) _
+        Or c + myXlonCOfst > UBound(myZstrOrgData, 2) Then
+        myXstrValue = ""
+    Else
+        myXstrValue = myZstrOrgData(r + myXlonROfst, c + myXlonCOfst)
+    End If
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+    ReDim myZvarValPstn(Lo + 2) As Variant
+    myXlonValCnt = 1
+    myZvarValPstn(Lo + 0) = myXstrValue
+    myZvarValPstn(Lo + 1) = r + myXlonROfst
+    myZvarValPstn(Lo + 2) = c + myXlonCOfst
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列で文字列を検索してデータ位置一覧を取得する
+Private Sub PfixHVMatchExtendedString( _
+            myXlonPstnCnt As Long, myZlonPstn() As Long, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'myZlonPstn(1, i) : データ行位置配列
+'myZlonPstn(2, i) : データ列位置配列
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False  : 指定文字列と一致する条件
+'coXbisInStrOptn = True   : 指定文字列とを含む条件
+    myXlonPstnCnt = Empty: Erase myZlonPstn
+    If myXstrIfCndtn = "" Then Exit Sub
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    If coXbisInStrOptn = True Then
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+                myXstrTmp = myZstrOrgData(i, j)
+                If InStr(myXstrTmp, myXstrIfCndtn) > 0 Then
+                    n = n + 1: ReDim Preserve myZlonPstn(Lo + 1, n) As Long
+                    myZlonPstn(Lo + 0, n) = i
+                    myZlonPstn(Lo + 1, n) = j
+                End If
+            Next i
+        Next j
+    Else
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+                myXstrTmp = myZstrOrgData(i, j)
+                If myXstrTmp = myXstrIfCndtn Then
+                    n = n + 1: ReDim Preserve myZlonPstn(Lo + 1, n) As Long
+                    myZlonPstn(Lo + 0, n) = i
+                    myZlonPstn(Lo + 1, n) = j
+                End If
+            Next i
+        Next j
+    End If
+    myXlonPstnCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列で文字列を検索してデータ一覧を取得する
+Private Sub PincHVLookupExtendedString( _
+            myXlonValCnt As Long, myZstrVal() As String, _
+            ByRef myZvarSrchCndtn() As Variant, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfixHVMatchExtendedString
+'myZstrVal(i) : 取得データ
+'myZvarSrchCndtn(1) : 検索文字列
+'myZvarSrchCndtn(2) : オフセット行数
+'myZvarSrchCndtn(3) : オフセット列数
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False  : 指定文字列と一致する条件
+'coXbisInStrOptn = True   : 指定文字列とを含む条件
+    myXlonValCnt = Empty: Erase myZstrVal
+  Dim Li As Long, myXstrTmp As String
+  Dim myXstrIfCndtn As String, myXlonROfst As Long, myXlonCOfst As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarSrchCndtn)
+    myXstrIfCndtn = CStr(myZvarSrchCndtn(Li + 0))
+    myXlonROfst = CLng(myZvarSrchCndtn(Li + 1))
+    myXlonCOfst = CLng(myZvarSrchCndtn(Li + 2))
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+  Dim myXlonPstnCnt As Long, myZlonPstn() As Long
+    Call PfixHVMatchExtendedString(myXlonPstnCnt, myZlonPstn, _
+            myXstrIfCndtn, myZstrOrgData, coXbisInStrOptn)
+    If myXlonPstnCnt <= 0 Then Exit Sub
+    myXlonValCnt = myXlonPstnCnt
+  Dim Lc As Long: Lc = LBound(myZlonPstn, 1)
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim k As Long, r As Long, c As Long
+    k = myXlonValCnt + Lo - 1: ReDim myZstrVal(k) As String
+    For k = LBound(myZlonPstn, 2) To UBound(myZlonPstn, 2)
+        r = myZlonPstn(Lc + 0, k): c = myZlonPstn(Lc + 1, k)
+        If r < Li Or c < Li Then GoTo NextPath
+        If r + myXlonROfst > UBound(myZstrOrgData, 1) _
+            Or c + myXlonCOfst > UBound(myZstrOrgData, 2) Then
+            myZstrVal(k) = ""
+        Else
+            myZstrVal(k) = myZstrOrgData(r + myXlonROfst, c + myXlonCOfst)
+        End If
+NextPath:
+    Next k
+    Erase myZlonPstn
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列で文字列を検索してデータと位置の一覧を取得する
+Private Sub PincHVLookupMatchExtendedString( _
+            myXlonValCnt As Long, myZvarValPstn() As Variant, _
+            ByRef myZvarSrchCndtn() As Variant, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfixHVMatchExtendedString
+'myZvarValPstn(i, 1) : 取得データ
+'myZvarValPstn(i, 2) : 行位置
+'myZvarValPstn(i, 3) : 列位置
+'myZvarSrchCndtn(1) : 検索文字列
+'myZvarSrchCndtn(2) : オフセット行数
+'myZvarSrchCndtn(3) : オフセット列数
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValCnt = Empty: Erase myZvarValPstn
+  Dim Li As Long, myXstrTmp As String
+  Dim myXstrIfCndtn As String, myXlonROfst As Long, myXlonCOfst As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarSrchCndtn)
+    myXstrIfCndtn = CStr(myZvarSrchCndtn(Li + 0))
+    myXlonROfst = CLng(myZvarSrchCndtn(Li + 1))
+    myXlonCOfst = CLng(myZvarSrchCndtn(Li + 2))
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+  Dim myXlonPstnCnt As Long, myZlonPstn() As Long
+    Call PfixHVMatchExtendedString(myXlonPstnCnt, myZlonPstn, _
+            myXstrIfCndtn, myZstrOrgData, coXbisInStrOptn)
+    If myXlonPstnCnt <= 0 Then Exit Sub
+    myXlonValCnt = myXlonPstnCnt
+  Dim Lc As Long: Lc = LBound(myZlonPstn, 1)
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim k As Long, r As Long, c As Long
+  Dim myXstrVal As String, myZvarTmp() As Variant
+    k = myXlonValCnt + Lo - 1: ReDim myZvarValPstn(k, Lo + 2) As Variant
+    For k = LBound(myZlonPstn, 2) To UBound(myZlonPstn, 2)
+        r = myZlonPstn(Lc + 0, k): c = myZlonPstn(Lc + 1, k)
+        If r < Li Or c < Li Then GoTo NextPath
+        If r + myXlonROfst > UBound(myZstrOrgData, 1) _
+            Or c + myXlonCOfst > UBound(myZstrOrgData, 2) Then
+            myXstrVal = ""
+        Else
+            myXstrVal = myZstrOrgData(r + myXlonROfst, c + myXlonCOfst)
+        End If
+        myZvarValPstn(k, Lo + 0) = myXstrVal
+        myZvarValPstn(k, Lo + 1) = r + myXlonROfst
+        myZvarValPstn(k, Lo + 2) = c + myXlonCOfst
+NextPath:
+    Next k
+    Erase myZlonPstn
+ExitPath:
+End Sub
+
+ '定型Ｐ_配列で複数の文字列を検索してそれぞれの検索文字列を含むデータ数を取得する
+Private Sub PincCountIfMultiString( _
+            myXlonNCnt As Long, myZlonDataN() As Long, _
+            ByRef myZvarSrchCndtn() As Variant, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PfnclonCountIfString
+'myZlonDataN(i) : 検索文字列を含むデータ数
+'myZvarSrchCndtn(i, 1) : 検索文字列
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonNCnt = Empty: Erase myZlonDataN
+  Dim myXstrTmp As Variant, myXvarTmp As String, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    Li = LBound(myZvarSrchCndtn, 1): myXvarTmp = myZvarSrchCndtn(Li, Li)
+    Ui = UBound(myZvarSrchCndtn, 1)
+    On Error GoTo 0
+    myXlonNCnt = Ui - Li + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long: i = myXlonNCnt + Lo - 1: ReDim myZlonDataN(i) As Long
+  Dim myXstrIfCndtn As String
+    For i = Li To Ui
+        myXstrIfCndtn = CStr(myZvarSrchCndtn(i, Li))
+        myZlonDataN(i + Lo - Li) = PfnclonCountIfString( _
+                                    myZstrOrgData, myXstrIfCndtn, coXbisInStrOptn)
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列で複数の文字列を検索してそれぞれの最初のデータの一覧を取得する
+Private Sub PincHVLookupMultiString( _
+            myXlonValCnt As Long, myZstrVal() As String, _
+            ByRef myZvarSrchCndtn() As Variant, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PincstrHVLookupString
+'myZstrVal(i) : 取得データ
+'myZvarSrchCndtn(i, 1) : 検索文字列
+'myZvarSrchCndtn(i, 2) : オフセット行数
+'myZvarSrchCndtn(i, 3) : オフセット列数
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValCnt = Empty: Erase myZstrVal
+  Dim myXstrTmp As Variant, myXvarTmp As String, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    Li = LBound(myZvarSrchCndtn, 1): myXvarTmp = myZvarSrchCndtn(Li, Li)
+    Ui = UBound(myZvarSrchCndtn, 1)
+    On Error GoTo 0
+    myXlonValCnt = Ui - Li + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long: i = myXlonValCnt + Lo - 1: ReDim myZstrVal(i) As String
+  Dim myZvarTmpCndtn() As Variant: ReDim myZvarTmpCndtn(Lo + 2) As Variant
+    For i = Li To Ui
+        myZvarTmpCndtn(Lo + 0) = myZvarSrchCndtn(i, Li + 0)
+        myZvarTmpCndtn(Lo + 1) = myZvarSrchCndtn(i, Li + 1)
+        myZvarTmpCndtn(Lo + 2) = myZvarSrchCndtn(i, Li + 2)
+        myZstrVal(i + Lo - Li) = PincstrHVLookupString( _
+                                    myZvarTmpCndtn, myZstrOrgData, coXbisInStrOptn)
+    Next i
+    Erase myZvarTmpCndtn
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列で複数の文字列を検索してそれぞれの最初のデータと位置の一覧を取得する
+Private Sub PincHVLookupMatchMultiString( _
+            myXlonValCnt As Long, myZvarValPstn() As Variant, _
+            ByRef myZvarSrchCndtn() As Variant, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'Includes PincHVLookupMatchString
+'myZvarValPstn(i, 1) : 取得データ
+'myZvarValPstn(i, 2) : 行位置
+'myZvarValPstn(i, 3) : 列位置
+'myZvarSrchCndtn(i, 1) : 検索文字列
+'myZvarSrchCndtn(i, 2) : オフセット行数
+'myZvarSrchCndtn(i, 3) : オフセット列数
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列を含む条件
+    myXlonValCnt = Empty: Erase myZvarValPstn
+  Dim myXstrTmp As Variant, myXvarTmp As String, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    Li = LBound(myZvarSrchCndtn, 1): myXstrTmp = myZvarSrchCndtn(Li, Li)
+    Ui = UBound(myZvarSrchCndtn, 1)
+    On Error GoTo 0
+    myXlonValCnt = Ui - Li + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long: i = myXlonValCnt + Lo - 1: ReDim myZvarValPstn(i, Lo + 2) As Variant
+  Dim myZvarTmpCndtn() As Variant: ReDim myZvarTmpCndtn(Lo + 2) As Variant
+  Dim myXlonTmpCnt As Long, myZvarTmp() As Variant, Lc As Long
+    For i = Li To Ui
+        myZvarTmpCndtn(Lo + 0) = myZvarSrchCndtn(i, Li + 0)
+        myZvarTmpCndtn(Lo + 1) = myZvarSrchCndtn(i, Li + 1)
+        myZvarTmpCndtn(Lo + 2) = myZvarSrchCndtn(i, Li + 2)
+        Call PincHVLookupMatchString(myXlonTmpCnt, myZvarTmp, _
+                myZvarTmpCndtn, myZstrOrgData, coXbisInStrOptn)
+        If myXlonTmpCnt > 0 Then
+            Lc = LBound(myZvarTmp)
+            myZvarValPstn(i + Lo - Li, Lo + 0) = myZvarTmp(Lc + 0)
+            myZvarValPstn(i + Lo - Li, Lo + 1) = myZvarTmp(Lc + 1)
+            myZvarValPstn(i + Lo - Li, Lo + 2) = myZvarTmp(Lc + 2)
+        Else
+            myZvarValPstn(i + Lo - Li, Lo + 0) = ""
+            myZvarValPstn(i + Lo - Li, Lo + 1) = 0
+            myZvarValPstn(i + Lo - Li, Lo + 2) = 0
+        End If
+    Next i
+    Erase myZvarTmpCndtn: Erase myZvarTmp
+ExitPath:
+End Sub
+
+ '定型Ｆ_1次元配列で数値の符号が反転する最初のデータ位置を取得する
+Private Function PfnclonSignInversion(ByRef myZdouOrgData() As Double) As Long
+'myZdouOrgData(i) : 元データ配列
+    PfnclonSignInversion = Empty
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData): myXdouTmp = myZdouOrgData(Li)
+    Ui = UBound(myZdouOrgData)
+    On Error GoTo 0
+  Dim myXlonSgn As Long, i As Long, n As Long
+    i = Li
+    If myZdouOrgData(i) >= 0 Then
+        myXlonSgn = 1
+        For i = Li + 1 To Ui
+            If myXlonSgn * myZdouOrgData(i) < 0 Then
+                n = i: Exit For
+            End If
+        Next i
+    Else
+        myXlonSgn = -1
+        For i = Li + 1 To Ui
+            If myXlonSgn * myZdouOrgData(i) <= 0 Then
+                n = i: Exit For
+            End If
+        Next i
+    End If
+    PfnclonSignInversion = n
+ExitPath:
+End Function
+
+ '定型Ｆ_1次元配列で数値の傾きが反転する最初のデータ位置を取得する
+Private Function PfnclonSlopeInversion(ByRef myZdouOrgData() As Double) As Long
+'myZdouOrgData(i) : 元データ配列
+    PfnclonSlopeInversion = Empty
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData): myXdouTmp = myZdouOrgData(Li)
+    Ui = UBound(myZdouOrgData)
+    On Error GoTo 0
+  Dim myXlonSlp As Long, i As Long, n As Long
+    i = Li + 1: myXdouTmp = myZdouOrgData(i) - myZdouOrgData(i - 1)
+    If myXdouTmp >= 0 Then
+        myXlonSlp = 1
+    Else
+        myXlonSlp = -1
+    End If
+    For i = Li + 2 To Ui
+        myXdouTmp = myZdouOrgData(i) - myZdouOrgData(i - 1)
+        If myXlonSlp * myXdouTmp <= 0 Then
+            n = i: Exit For
+        End If
+    Next i
+    PfnclonSlopeInversion = n
+ExitPath:
+End Function
+
+ '定型Ｆ_1次元配列で数値が指定しきい値を超える最初のデータ位置を取得する
+Private Function PfnclonOverThreshold( _
+            ByRef myZdouOrgData() As Double, ByVal myXdouThrsh As Double) As Long
+'myZdouOrgData(i) : 元データ配列
+    PfnclonOverThreshold = Empty
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData): myXdouTmp = myZdouOrgData(Li)
+    Ui = UBound(myZdouOrgData)
+    On Error GoTo 0
+  Dim myXlonSgn As Long, i As Long, n As Long
+    myXdouTmp = myZdouOrgData(Li) - myXdouThrsh
+    If myXdouTmp >= 0 Then
+        myXlonSgn = 1
+    Else
+        myXlonSgn = -1
+    End If
+    For i = Li + 1 To Ui
+        myXdouTmp = myZdouOrgData(i) - myXdouThrsh
+        If myXlonSgn * myXdouTmp < 0 Then
+            n = i: Exit For
+        End If
+    Next i
+    PfnclonOverThreshold = n
+ExitPath:
+End Function
+
+ '定型Ｆ_1次元配列で数値を検索して最初のデータ位置を取得する
+Private Function PfnclonMatchNumeric( _
+            ByVal myXdouIfCndtn As Double, ByRef myZdouOrgData() As Double, _
+            Optional ByVal coXbisNearest As Boolean = False) As Long
+'myZdouOrgData(i): 元データ配列
+'coXbisNearest = False : 指定数値と一致する値
+'coXbisNearest = True  : 指定数値に最も近い値
+    PfnclonMatchNumeric = Empty
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData): myXdouTmp = myZdouOrgData(Li)
+    Ui = UBound(myZdouOrgData)
+    On Error GoTo 0
+  Dim i As Long, n As Long
+    If coXbisNearest = True Then
+      Dim myXdouPrvs As Double, myXdouPrsnt As Double, myXlonSgn As Long
+        myXdouTmp = myZdouOrgData(Li) - myXdouIfCndtn
+        If myXdouTmp >= 0 Then
+            myXlonSgn = 1
+        Else
+            myXlonSgn = -1
+        End If
+        For i = Li + 1 To Ui
+            myXdouTmp = myZdouOrgData(i) - myXdouIfCndtn
+            If myXlonSgn * myXdouTmp < 0 Then
+                myXdouPrvs = myZdouOrgData(i - 1) - myXdouIfCndtn
+                myXdouPrsnt = myZdouOrgData(i) - myXdouIfCndtn
+                If Abs(myXdouPrsnt) >= Abs(myXdouPrvs) Then
+                    n = i - 1
+                Else
+                    n = i
+                End If
+                Exit For
+            End If
+        Next i
+    Else
+        For i = Li To Ui
+            If myZdouOrgData(i) = myXdouIfCndtn Then
+                n = i: Exit For
+            End If
+        Next i
+    End If
+    PfnclonMatchNumeric = n
+ExitPath:
+End Function
+
+ '定型Ｆ_2次元配列の指定列で数値を検索して最初のデータ位置を取得する
+Private Function PfnclonVMatchNumeric( _
+            ByVal myXdouIfCndtn As Double, ByRef myZdouOrgData() As Double, _
+            Optional ByVal coXlonSrchCol As Long = 1, _
+            Optional ByVal coXbisNearest As Boolean = False) As Long
+'myZdouOrgData(i, j) : 元データ配列
+'coXbisNearest = False : 指定数値と一致する値
+'coXbisNearest = True  : 指定数値に最も近い値
+    PfnclonVMatchNumeric = Empty
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    If coXlonSrchCol < LBound(myZdouOrgData, 2) _
+        Or coXlonSrchCol > UBound(myZdouOrgData, 2) Then Exit Function
+    Li = LBound(myZdouOrgData, 1): myXdouTmp = myZdouOrgData(Li, coXlonSrchCol)
+    Ui = UBound(myZdouOrgData, 1)
+    On Error GoTo 0
+  Dim i As Long, n As Long
+    If coXbisNearest = True Then
+      Dim myXdouPrvs As Double, myXdouPrsnt As Double, myXlonSgn As Long
+        myXdouTmp = myZdouOrgData(Li, coXlonSrchCol) - myXdouIfCndtn
+        If myXdouTmp >= 0 Then
+            myXlonSgn = 1
+        Else
+            myXlonSgn = -1
+        End If
+        For i = Li + 1 To Ui
+            myXdouTmp = myZdouOrgData(i, coXlonSrchCol) - myXdouIfCndtn
+            If myXlonSgn * myXdouTmp < 0 Then
+                myXdouPrvs = myZdouOrgData(i - 1, coXlonSrchCol) - myXdouIfCndtn
+                myXdouPrsnt = myZdouOrgData(i, coXlonSrchCol) - myXdouIfCndtn
+                If Abs(myXdouPrsnt) >= Abs(myXdouPrvs) Then
+                    n = i - 1
+                Else
+                    n = i
+                End If
+                Exit For
+            End If
+        Next i
+    Else
+        For i = Li To Ui
+            If myZdouOrgData(i, coXlonSrchCol) = myXdouIfCndtn Then
+                n = i: Exit For
+            End If
+        Next i
+    End If
+    PfnclonVMatchNumeric = n
+ExitPath:
+End Function
+
+ '定型Ｆ_2次元配列の指定行で数値を検索して最初のデータ位置を取得する
+Private Function PfnclonHMatchNumeric( _
+            ByVal myXdouIfCndtn As Double, ByRef myZdouOrgData() As Double, _
+            Optional ByVal coXlonSrchRow As Long = 1, _
+            Optional ByVal coXbisNearest As Boolean = False) As Long
+'myZdouOrgData(i, j) : 元データ配列
+'coXbisNearest = False : 指定文字列と一致する条件
+'coXbisNearest = True  : 指定文字列を含む条件
+    PfnclonHMatchNumeric = Empty
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    If coXlonSrchRow < LBound(myZdouOrgData, 1) _
+        Or coXlonSrchRow > UBound(myZdouOrgData, 1) Then Exit Function
+    Li = LBound(myZdouOrgData, 2): myXdouTmp = myZdouOrgData(coXlonSrchRow, Li)
+    Ui = UBound(myZdouOrgData, 2)
+    On Error GoTo 0
+  Dim j As Long, n As Long
+    If coXbisNearest = True Then
+      Dim myXdouPrvs As Double, myXdouPrsnt As Double, myXlonSgn As Long
+        myXdouTmp = myZdouOrgData(coXlonSrchRow, Li) - myXdouIfCndtn
+        If myXdouTmp >= 0 Then
+            myXlonSgn = 1
+        Else
+            myXlonSgn = -1
+        End If
+        For j = Li + 1 To Ui
+            myXdouTmp = myZdouOrgData(coXlonSrchRow, j) - myXdouIfCndtn
+            If myXlonSgn * myXdouTmp < 0 Then
+                myXdouPrvs = myZdouOrgData(coXlonSrchRow, j - 1) - myXdouIfCndtn
+                myXdouPrsnt = myZdouOrgData(coXlonSrchRow, j) - myXdouIfCndtn
+                If Abs(myXdouPrsnt) >= Abs(myXdouPrvs) Then
+                    n = j - 1
+                Else
+                    n = j
+                End If
+                Exit For
+            End If
+        Next j
+    Else
+        For j = Li To Ui
+            If myZdouOrgData(coXlonSrchRow, j) = myXdouIfCndtn Then
+                n = j: Exit For
+            End If
+        Next j
+    End If
+    PfnclonHMatchNumeric = n
+ExitPath:
+End Function
+
+ '定型Ｐ_2次元配列内の任意の始点から行または列方向に連続するデータ範囲の終点を取得する
+Private Sub PfixEndRowColumnSeriesData( _
+            myXlonEndRow As Long, myXlonEndCol As Long, _
+            ByRef myZstrOrgData() As String, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
+            Optional ByVal coXbisRowDrctn As Boolean = True, _
+            Optional ByVal coXbisValDtct As Boolean = True)
+'myZdouOrgData(i, j) : 元データ配列
+'coXbisRowDrctn = True  : 行方向のみを検索
+'coXbisRowDrctn = False : 列方向のみを検索
+'coXbisValDtct = True  : 空白では無いセルを検索
+'coXbisValDtct = False : 空白セルを検索
+    myXlonEndRow = Empty: myXlonEndCol = Empty
+    On Error GoTo ExitPath
+    If myXlonBgnRow < LBound(myZstrOrgData, 1) _
+        Or myXlonBgnRow > UBound(myZstrOrgData, 1) Then Exit Sub
+    If myXlonBgnCol < LBound(myZstrOrgData, 2) _
+        Or myXlonBgnCol > UBound(myZstrOrgData, 2) Then Exit Sub
+  Dim myXstrTmp As String: myXstrTmp = myZstrOrgData(myXlonBgnRow, myXlonBgnCol)
+    On Error GoTo 0
+  Dim i As Long, j As Long
+    If coXbisRowDrctn = True Then
+        If coXbisValDtct = True Then
+        '//行方向&空白以外検索
+            If myXstrTmp = "" Then Exit Sub
+            For i = myXlonBgnRow To UBound(myZstrOrgData, 1)
+                If myZstrOrgData(i, myXlonBgnCol) = "" Then Exit For
+            Next i
+            myXlonEndRow = i - 1: myXlonEndCol = myXlonBgnCol
+        Else
+        '//行方向&空白検索
+            If myXstrTmp <> "" Then Exit Sub
+            For i = myXlonBgnRow To UBound(myZstrOrgData, 1)
+                If myZstrOrgData(i, myXlonBgnCol) <> "" Then Exit For
+            Next i
+            myXlonEndRow = i - 1: myXlonEndCol = myXlonBgnCol
+        End If
+    Else
+        If coXbisValDtct = True Then
+        '//列方向&空白以外検索
+            If myXstrTmp = "" Then Exit Sub
+            For j = myXlonBgnCol To UBound(myZstrOrgData, 2)
+                If myZstrOrgData(myXlonBgnRow, j) = "" Then Exit For
+            Next j
+            myXlonEndRow = myXlonBgnRow: myXlonEndCol = j - 1
+        Else
+        '//列方向&空白検索
+            If myXstrTmp <> "" Then Exit Sub
+            For j = myXlonBgnCol To UBound(myZstrOrgData, 2)
+                If myZstrOrgData(myXlonBgnRow, j) <> "" Then Exit For
+            Next j
+            myXlonEndRow = myXlonBgnRow: myXlonEndCol = j - 1
+        End If
+    End If
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列内の任意の始点から行または列方向に連続する範囲のデータを取得する
+Private Sub PfixSeriesData( _
+            myXlonSrsDataCnt As Long, myZstrSrsData() As String, _
+            ByRef myZstrOrgData() As String, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
+            Optional ByVal coXbisRowDrctn As Boolean = True)
+'myZstrSrsData(i) : 連続範囲の取得データ
+'myZdouOrgData(i, j) : 元データ配列
+'coXbisRowDrctn = True  : 行方向のみを検索
+'coXbisRowDrctn = False : 列方向のみを検索
+    myXlonSrsDataCnt = Empty: Erase myZstrSrsData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If myXlonBgnRow < LBound(myZstrOrgData, 1) _
+        Or myXlonBgnRow > UBound(myZstrOrgData, 1) Then Exit Sub
+    If myXlonBgnCol < LBound(myZstrOrgData, 2) _
+        Or myXlonBgnCol > UBound(myZstrOrgData, 2) Then Exit Sub
+    myXstrTmp = myZstrOrgData(myXlonBgnRow, myXlonBgnCol)
+    Li = LBound(myZstrOrgData, 1)
+    On Error GoTo 0
+  Dim myXlonEndRow As Long, myXlonEndCol As Long, i As Long, j As Long
+  Dim n As Long: n = Li - 1
+    If coXbisRowDrctn = True Then
+    '//行方向
+        If myXstrTmp = "" Then Exit Sub
+        For i = myXlonBgnRow To UBound(myZstrOrgData, 1)
+            If myZstrOrgData(i, myXlonBgnCol) = "" Then Exit For
+            n = n + 1: ReDim Preserve myZstrSrsData(n) As String
+            myZstrSrsData(n) = myZstrOrgData(i, myXlonBgnCol)
+        Next i
+    Else
+    '//列方向
+        If myXstrTmp = "" Then Exit Sub
+        For j = myXlonBgnCol To UBound(myZstrOrgData, 2)
+            If myZstrOrgData(myXlonBgnRow, j) = "" Then Exit For
+            n = n + 1: ReDim Preserve myZstrSrsData(n) As String
+            myZstrSrsData(n) = myZstrOrgData(myXlonBgnRow, j)
+        Next j
+    End If
+    myXlonSrsDataCnt = n - Li + 1
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列内の任意の始点から行と列方向に連続するデータ範囲の終点を取得する
+Private Sub PfixEndRowColumnSeriesDataArray( _
+            myXlonEndRow As Long, myXlonEndCol As Long, _
+            ByRef myZstrOrgData() As String, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
+            Optional ByVal coXbisValDtct As Boolean = True)
+'myZdouOrgData(i, j) : 元データ配列
+'coXbisValDtct = True  : 空白では無いセルを検索
+'coXbisValDtct = False : 空白セルを検索
+    myXlonEndRow = Empty: myXlonEndCol = Empty
+    On Error GoTo ExitPath
+    If myXlonBgnRow < LBound(myZstrOrgData, 1) _
+        Or myXlonBgnRow > UBound(myZstrOrgData, 1) Then Exit Sub
+    If myXlonBgnCol < LBound(myZstrOrgData, 2) _
+        Or myXlonBgnCol > UBound(myZstrOrgData, 2) Then Exit Sub
+  Dim myXstrTmp As String: myXstrTmp = myZstrOrgData(myXlonBgnRow, myXlonBgnCol)
+    On Error GoTo 0
+  Dim i As Long, j As Long
+    If coXbisValDtct = True Then
+    '//空白以外検索
+        If myXstrTmp = "" Then Exit Sub
+    '//行方向
+        For i = myXlonBgnRow To UBound(myZstrOrgData, 1)
+            If myZstrOrgData(i, myXlonBgnCol) = "" Then Exit For
+        Next i
+        myXlonEndRow = i - 1
+    '//列方向
+        For j = myXlonBgnCol To UBound(myZstrOrgData, 2)
+            If myZstrOrgData(myXlonBgnRow, j) = "" Then Exit For
+        Next j
+        myXlonEndCol = j - 1
+    Else
+    '//空白検索
+        If myXstrTmp <> "" Then Exit Sub
+    '//行方向
+        For i = myXlonBgnRow To UBound(myZstrOrgData, 1)
+            If myZstrOrgData(i, myXlonBgnCol) <> "" Then Exit For
+        Next i
+        myXlonEndRow = i - 1
+    '//列方向
+        For j = myXlonBgnCol To UBound(myZstrOrgData, 2)
+            If myZstrOrgData(myXlonBgnRow, j) <> "" Then Exit For
+        Next j
+        myXlonEndCol = j - 1
+    End If
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列内の任意の始点から行と列方向に連続する範囲のデータを取得する
+Private Sub PfixSeriesDataArray( _
+            myXlonSrsRowCnt As Long, myXlonSrsColCnt As Long, myZstrSrsData() As String, _
+            ByRef myZstrOrgData() As String, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long)
+'myZstrSrsData(i, j) : 連続範囲の取得データ
+'myZdouOrgData(i, j) : 元データ配列
+    myXlonSrsRowCnt = Empty: myXlonSrsColCnt = Empty: Erase myZstrSrsData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If myXlonBgnRow < LBound(myZstrOrgData, 1) _
+        Or myXlonBgnRow > UBound(myZstrOrgData, 1) Then Exit Sub
+    If myXlonBgnCol < LBound(myZstrOrgData, 2) _
+        Or myXlonBgnCol > UBound(myZstrOrgData, 2) Then Exit Sub
+    myXstrTmp = myZstrOrgData(myXlonBgnRow, myXlonBgnCol)
+    Li = LBound(myZstrOrgData, 1)
+    On Error GoTo 0
+  Dim myXlonEndRow As Long, myXlonEndCol As Long, i As Long, j As Long
+    If myXstrTmp = "" Then Exit Sub
+'//行方向
+    For i = myXlonBgnRow To UBound(myZstrOrgData, 1)
+        If myZstrOrgData(i, myXlonBgnCol) = "" Then Exit For
+    Next i
+    myXlonEndRow = i - 1
+'//列方向
+    For j = myXlonBgnCol To UBound(myZstrOrgData, 2)
+        If myZstrOrgData(myXlonBgnRow, j) = "" Then Exit For
+    Next j
+    myXlonEndCol = j - 1
+'//連続範囲のデータを配列変数に格納
+    If myXlonEndRow < myXlonBgnRow Or myXlonEndCol < myXlonBgnCol Then Exit Sub
+    myXlonSrsRowCnt = myXlonEndRow - myXlonBgnRow + 1
+    myXlonSrsColCnt = myXlonEndCol - myXlonBgnCol + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+    i = myXlonSrsRowCnt + Lo - 1: j = myXlonSrsColCnt + Lo - 1
+    ReDim myZstrSrsData(i, j) As String
+  Dim m As Long, n As Long: n = Lo - 1
+    For j = myXlonBgnCol To myXlonEndCol
+        n = n + 1
+        m = Lo - 1
+        For i = myXlonBgnRow To myXlonEndRow
+            m = m + 1
+            myZstrSrsData(m, n) = myZstrOrgData(i, j)
+        Next i
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元配列から一部を取得する
+Private Sub Pfix1DArrayExtractString( _
+            myXlonExtrctCnt As Long, myZstrExtrctData() As String, _
+            ByRef myZstrOrgData() As String, _
+            ByVal myXlonBgn As Long, ByVal myXlonEnd As Long, _
+            Optional ByVal coXlonStep As Long = 1)
+'myZstrExtrctData(i) : 取得データ配列
+'myZstrOrgData(i) : 元データ配列
+    myXlonExtrctCnt = Empty: Erase myZstrExtrctData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If myXlonBgn < LBound(myZstrOrgData) Then Exit Sub
+    If myXlonEnd > UBound(myZstrOrgData) Then Exit Sub
+    If myXlonEnd < myXlonBgn Then Exit Sub
+    If coXlonStep <= 0 Or coXlonStep > UBound(myZstrOrgData) Then Exit Sub
+    myXstrTmp = myZstrOrgData(myXlonBgn): Li = LBound(myZstrOrgData)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    For i = myXlonBgn To myXlonEnd Step coXlonStep
+        n = n + 1: ReDim Preserve myZstrExtrctData(n) As String
+        myZstrExtrctData(n) = myZstrOrgData(i)
+    Next i
+    myXlonExtrctCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列から一部を取得する
+Private Sub Pfix2DArrayExtractString( _
+            myXlonExtrctRowCnt As Long, myXlonExtrctColCnt As Long, _
+            myZstrExtrctData() As String, _
+            ByRef myZstrOrgData() As String, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonEndRow As Long, _
+            ByVal myXlonBgnCol As Long, ByVal myXlonEndCol As Long, _
+            Optional ByVal coXlonRowStep As Long = 1, _
+            Optional ByVal coXlonColStep As Long = 1)
+'myZstrExtrctData(i, j) : 取得データ配列
+'myZstrOrgData(i, j) : 元データ配列
+    myXlonExtrctRowCnt = Empty: myXlonExtrctColCnt = Empty: Erase myZstrExtrctData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If myXlonBgnRow < LBound(myZstrOrgData, 1) Then Exit Sub
+    If myXlonBgnCol < LBound(myZstrOrgData, 2) Then Exit Sub
+    If myXlonEndRow > UBound(myZstrOrgData, 1) Then Exit Sub
+    If myXlonEndCol > UBound(myZstrOrgData, 2) Then Exit Sub
+    If myXlonEndRow < myXlonBgnRow Then Exit Sub
+    If myXlonEndCol < myXlonBgnCol Then Exit Sub
+    If coXlonRowStep <= 0 Or coXlonRowStep > UBound(myZstrOrgData, 1) Then Exit Sub
+    If coXlonColStep <= 0 Or coXlonColStep > UBound(myZstrOrgData, 2) Then Exit Sub
+    myXstrTmp = myZstrOrgData(myXlonBgnRow, myXlonBgnCol)
+    Li = LBound(myZstrOrgData, 1)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    myXlonExtrctRowCnt = Int((myXlonEndRow - myXlonBgnRow + 0.9) / coXlonRowStep) + 1
+    myXlonExtrctColCnt = Int((myXlonEndCol - myXlonBgnCol + 0.9) / coXlonColStep) + 1
+    i = myXlonExtrctRowCnt + Lo - 1: j = myXlonExtrctColCnt + Lo - 1
+    ReDim myZstrExtrctData(i, j) As String
+  Dim m As Long, n As Long: m = Lo - 1
+    For i = myXlonBgnRow To myXlonEndRow Step coXlonRowStep
+        m = m + 1: n = Lo - 1
+        For j = myXlonBgnCol To myXlonEndCol Step coXlonColStep
+            n = n + 1: myZstrExtrctData(m, n) = myZstrOrgData(i, j)
+        Next j
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元の数値配列から一部を取得する
+Private Sub Pfix1DArrayExtractNumeric( _
+            myXlonExtrctCnt As Long, myZdouExtrctData() As Double, _
+            ByRef myZdouOrgData() As Double, _
+            ByVal myXlonBgn As Long, ByVal myXlonEnd As Long, _
+            Optional ByVal coXlonStep As Long = 1)
+'myZdouExtrctData(i) : 取得データ配列
+'myZdouOrgData(i) : 元データ配列
+    myXlonExtrctCnt = Empty: Erase myZdouExtrctData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    If myXlonBgn < LBound(myZdouOrgData) Then Exit Sub
+    If myXlonEnd > UBound(myZdouOrgData) Then Exit Sub
+    If myXlonEnd < myXlonBgn Then Exit Sub
+    If coXlonStep <= 0 Or coXlonStep > UBound(myZdouOrgData) Then Exit Sub
+    myXdouTmp = myZdouOrgData(myXlonBgn): Li = LBound(myZdouOrgData)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    For i = myXlonBgn To myXlonEnd Step coXlonStep
+        n = n + 1: ReDim Preserve myZdouExtrctData(n) As Double
+        myZdouExtrctData(n) = myZdouOrgData(i)
+    Next i
+    myXlonExtrctCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元の数値配列から一部を取得する
+Private Sub Pfix2DArrayExtractNumeric( _
+            myXlonExtrctRowCnt As Long, myXlonExtrctColCnt As Long, _
+            myZdouExtrctData() As Double, _
+            ByRef myZdouOrgData() As Double, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
+            ByVal myXlonEndRow As Long, ByVal myXlonEndCol As Long, _
+            Optional ByVal coXlonRowStep As Long = 1, _
+            Optional ByVal coXlonColStep As Long = 1)
+'myZdouExtrctData(i, j) : 取得データ配列
+'myZdouOrgData(i, j) : 元データ配列
+    myXlonExtrctRowCnt = Empty: myXlonExtrctColCnt = Empty: Erase myZdouExtrctData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    If myXlonBgnRow < LBound(myZdouOrgData, 1) Then Exit Sub
+    If myXlonBgnCol < LBound(myZdouOrgData, 2) Then Exit Sub
+    If myXlonEndRow > UBound(myZdouOrgData, 1) Then Exit Sub
+    If myXlonEndCol > UBound(myZdouOrgData, 2) Then Exit Sub
+    If myXlonEndRow < myXlonBgnRow Then Exit Sub
+    If myXlonEndCol < myXlonBgnCol Then Exit Sub
+    If coXlonRowStep <= 0 Or coXlonRowStep > UBound(myZdouOrgData, 1) Then Exit Sub
+    If coXlonColStep <= 0 Or coXlonColStep > UBound(myZdouOrgData, 2) Then Exit Sub
+    myXdouTmp = myZdouOrgData(myXlonBgnRow, myXlonBgnCol)
+    Li = LBound(myZdouOrgData, 1)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    myXlonExtrctRowCnt = Int((myXlonEndRow - myXlonBgnRow + 0.9) / coXlonRowStep) + 1
+    myXlonExtrctColCnt = Int((myXlonEndCol - myXlonBgnCol + 0.9) / coXlonColStep) + 1
+    i = myXlonExtrctRowCnt + Lo - 1: j = myXlonExtrctColCnt + Lo - 1
+    ReDim myZdouExtrctData(i, j) As Double
+  Dim m As Long, n As Long: m = Lo - 1
+    For i = myXlonBgnRow To myXlonEndRow Step coXlonRowStep
+        m = m + 1: n = Lo - 1
+        For j = myXlonBgnCol To myXlonEndCol Step coXlonColStep
+            n = n + 1: myZdouExtrctData(m, n) = myZdouOrgData(i, j)
+        Next j
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の指定行のデータ一覧を取得する
+Private Sub PfixArrayEntireRowString( _
+            myXlonDataCnt As Long, myZstrRowData() As String, _
+            ByRef myZstrOrgData() As String, ByVal myXlonGetRow As Long)
+'myZstrRowData(1, j) : 行データ配列
+'myZstrOrgData(i, j) : 元データ配列
+    myXlonDataCnt = Empty: Erase myZstrRowData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If myXlonGetRow < LBound(myZstrOrgData, 1) _
+        Or myXlonGetRow > UBound(myZstrOrgData, 1) Then Exit Sub
+    Li = LBound(myZstrOrgData, 2): myXstrTmp = myZstrOrgData(myXlonGetRow, Li)
+    On Error GoTo 0
+    myXlonDataCnt = UBound(myZstrOrgData, 2) - LBound(myZstrOrgData, 2) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim j As Long
+    j = myXlonDataCnt + Lo - 1: ReDim myZstrRowData(Lo, j) As String
+    For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+        myZstrRowData(Lo, j) = myZstrOrgData(myXlonGetRow, j)
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の指定列のデータ一覧を取得する
+Private Sub PfixArrayEntireColumnString( _
+            myXlonDataCnt As Long, myZstrColData() As String, _
+            ByRef myZstrOrgData() As String, ByVal myXlonGetCol As Long)
+'myZstrColData(i, 1) : 列データ配列
+'myZstrOrgData(i, j) : 元データ配列
+    myXlonDataCnt = Empty: Erase myZstrColData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If myXlonGetCol < LBound(myZstrOrgData, 2) _
+        Or myXlonGetCol > UBound(myZstrOrgData, 2) Then Exit Sub
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, myXlonGetCol)
+    On Error GoTo 0
+    myXlonDataCnt = UBound(myZstrOrgData, 1) - LBound(myZstrOrgData, 1) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long
+    i = myXlonDataCnt + Lo - 1: ReDim myZstrColData(i, Lo) As String
+    For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+        myZstrColData(i, Lo) = myZstrOrgData(i, myXlonGetCol)
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元数値配列の指定行のデータ一覧を取得する
+Private Sub PfixArrayEntireRowNumeric( _
+            myXlonDataCnt As Long, myZdouRowData() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonGetRow As Long)
+'myZdouRowData(1, j) : 行データ配列
+'myZdouOrgData(i, j) : 元データ配列
+    myXlonDataCnt = Empty: Erase myZdouRowData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    If myXlonGetRow < LBound(myZdouOrgData, 1) _
+        Or myXlonGetRow > UBound(myZdouOrgData, 1) Then Exit Sub
+    Li = LBound(myZdouOrgData, 2): myXdouTmp = myZdouOrgData(myXlonGetRow, Li)
+    On Error GoTo 0
+    myXlonDataCnt = UBound(myZdouOrgData, 2) - LBound(myZdouOrgData, 2) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim j As Long
+    j = myXlonDataCnt + Lo - 1: ReDim myZdouRowData(Lo, j) As Double
+    For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
+        myZdouRowData(Lo, j) = myZdouOrgData(myXlonGetRow, j)
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元数値配列の指定列のデータ一覧を取得する
+Private Sub PfixArrayEntireColumnNumeric( _
+            myXlonDataCnt As Long, myZdouColData() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonGetCol As Long)
+'myZdouColData(i, 1) : 列データ配列
+'myZdouOrgData(i, j) : 元データ配列
+    myXlonDataCnt = Empty: Erase myZdouColData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    If myXlonGetCol < LBound(myZdouOrgData, 2) _
+        Or myXlonGetCol > UBound(myZdouOrgData, 2) Then Exit Sub
+    Li = LBound(myZdouOrgData, 1): myXdouTmp = myZdouOrgData(Li, myXlonGetCol)
+    On Error GoTo 0
+    myXlonDataCnt = UBound(myZdouOrgData, 1) - LBound(myZdouOrgData, 1) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long
+    i = myXlonDataCnt + Lo - 1: ReDim myZdouColData(i, Lo) As Double
+    For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+        myZdouColData(i, Lo) = myZdouOrgData(i, myXlonGetCol)
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元数値配列の2軸指定列のデータ一覧を取得する
+Private Sub Pfix2AxesArrayEntireColumnNumeric( _
+            myXlonDataCnt As Long, myZdouColData() As Double, _
+            ByRef myZdouOrgData() As Double, _
+            ByVal myXlon1stCol As Long, ByVal myXlon2ndCol As Long)
+'myZdouColData(i, 2) : 2軸列データ配列
+'myZdouOrgData(i, j) : 元データ配列
+    myXlonDataCnt = Empty: Erase myZdouColData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    If myXlon1stCol < LBound(myZdouOrgData, 2) _
+        Or myXlon1stCol > UBound(myZdouOrgData, 2) _
+        Or myXlon2ndCol < LBound(myZdouOrgData, 2) _
+        Or myXlon2ndCol > UBound(myZdouOrgData, 2) Then Exit Sub
+    Li = LBound(myZdouOrgData, 1)
+    myXdouTmp = myZdouOrgData(Li, myXlon1stCol)
+    myXdouTmp = myZdouOrgData(Li, myXlon2ndCol)
+    On Error GoTo 0
+    myXlonDataCnt = UBound(myZdouOrgData, 1) - LBound(myZdouOrgData, 1) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long
+    i = myXlonDataCnt + Lo - 1: ReDim myZdouColData(i, Lo + 1) As Double
+    For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+        myZdouColData(i, Lo + 0) = myZdouOrgData(i, myXlon1stCol)
+        myZdouColData(i, Lo + 1) = myZdouOrgData(i, myXlon2ndCol)
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元数値配列の2軸のデータ一覧を入れ替える
+Private Sub PfixChange2AxesArrayEntireColumnNumeric( _
+            myXlonDataCnt As Long, myZdouColData() As Double, _
+            ByRef myZdouOrgData() As Double)
+'myZdouColData(i, 2) : 2軸列データ配列
+'myZdouOrgData(i, 2) : 2軸元データ配列
+    myXlonDataCnt = Empty: Erase myZdouColData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 1)
+    myXdouTmp = myZdouOrgData(Li, Li + 0)
+    myXdouTmp = myZdouOrgData(Li, Li + 1)
+    On Error GoTo 0
+    myXlonDataCnt = UBound(myZdouOrgData, 1) - LBound(myZdouOrgData, 1) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long
+    i = myXlonDataCnt + Lo - 1: ReDim myZdouColData(i, Lo + 1) As Double
+    For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+        myZdouColData(i, Lo + 0) = myZdouOrgData(i, Lo + 1)
+        myZdouColData(i, Lo + 1) = myZdouOrgData(i, Lo + 0)
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の指定行から一部を1次元配列で取得する
+Private Sub PfixArrayPartRowString( _
+            myXlonExtrctCnt As Long, myZstrExtrctData() As String, _
+            ByRef myZstrOrgData() As String, ByVal myXlonExtrctRow As Long, _
+            ByVal myXlonBgnCol As Long, ByVal myXlonEndCol As Long, _
+            Optional ByVal coXlonStep As Long = 1)
+'myZstrExtrctData(i) : 抽出データ配列
+'myZstrOrgData(i, j) : 元データ配列
+    myXlonExtrctCnt = Empty: Erase myZstrExtrctData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If myXlonBgnCol < LBound(myZstrOrgData, 2) Then Exit Sub
+    If myXlonEndCol > UBound(myZstrOrgData, 2) Then Exit Sub
+    If myXlonEndCol < myXlonBgnCol Then Exit Sub
+    If myXlonExtrctRow < LBound(myZstrOrgData, 1) _
+        Or myXlonExtrctRow > UBound(myZstrOrgData, 1) Then Exit Sub
+    If coXlonStep <= 0 Or coXlonStep > UBound(myZstrOrgData, 2) Then Exit Sub
+    myXstrTmp = myZstrOrgData(myXlonExtrctRow, myXlonBgnCol)
+    Li = LBound(myZstrOrgData, 2)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim j As Long, n As Long: n = Lo - 1
+    For j = myXlonBgnCol To myXlonEndCol Step coXlonStep
+        n = n + 1: ReDim Preserve myZstrExtrctData(n) As String
+        myZstrExtrctData(n) = myZstrOrgData(myXlonExtrctRow, j)
+    Next j
+    myXlonExtrctCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の指定列から一部を1次元配列で取得する
+Private Sub PfixArrayPartColumnString( _
+            myXlonExtrctCnt As Long, myZstrExtrctData() As String, _
+            ByRef myZstrOrgData() As String, ByVal myXlonExtrctCol As Long, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonEndRow As Long, _
+            Optional ByVal coXlonStep As Long = 1)
+'myZstrExtrctData(i) : 抽出データ配列
+'myZstrOrgData(i, j) : 元データ配列
+    myXlonExtrctCnt = Empty: Erase myZstrExtrctData
+  Dim myXdouTmp As String, Li As Long
+    On Error GoTo ExitPath
+    If myXlonBgnRow < LBound(myZstrOrgData, 1) Then Exit Sub
+    If myXlonEndRow > UBound(myZstrOrgData, 1) Then Exit Sub
+    If myXlonEndRow < myXlonBgnRow Then Exit Sub
+    If myXlonExtrctCol < LBound(myZstrOrgData, 2) _
+        Or myXlonExtrctCol > UBound(myZstrOrgData, 2) Then Exit Sub
+    If coXlonStep <= 0 Or coXlonStep > UBound(myZstrOrgData, 1) Then Exit Sub
+    myXdouTmp = myZstrOrgData(myXlonBgnRow, myXlonExtrctCol)
+    Li = LBound(myZstrOrgData, 1)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    For i = myXlonBgnRow To myXlonEndRow Step coXlonStep
+        n = n + 1: ReDim Preserve myZstrExtrctData(n) As String
+        myZstrExtrctData(n) = myZstrOrgData(i, myXlonExtrctCol)
+    Next i
+    myXlonExtrctCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元の数値配列の指定行から一部を1次元配列で取得する
+Private Sub PfixArrayPartRowNumeric( _
+            myXlonExtrctCnt As Long, myZdouExtrctData() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonExtrctRow As Long, _
+            ByVal myXlonBgnCol As Long, ByVal myXlonEndCol As Long, _
+            Optional ByVal coXlonStep As Long = 1)
+'myZdouExtrctData(i) : 抽出データ配列
+'myZdouOrgData(i, j) : 元データ配列
+    myXlonExtrctCnt = Empty: Erase myZdouExtrctData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    If myXlonBgnCol < LBound(myZdouOrgData, 2) Then Exit Sub
+    If myXlonEndCol > UBound(myZdouOrgData, 2) Then Exit Sub
+    If myXlonEndCol < myXlonBgnCol Then Exit Sub
+    If myXlonExtrctRow < LBound(myZdouOrgData, 1) _
+        Or myXlonExtrctRow > UBound(myZdouOrgData, 1) Then Exit Sub
+    If coXlonStep <= 0 Or coXlonStep > UBound(myZdouOrgData, 2) Then Exit Sub
+    myXdouTmp = myZdouOrgData(myXlonExtrctRow, myXlonBgnCol)
+    Li = LBound(myZdouOrgData, 2)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim j As Long, n As Long: n = Lo - 1
+    For j = myXlonBgnCol To myXlonEndCol Step coXlonStep
+        n = n + 1: ReDim Preserve myZdouExtrctData(n) As Double
+        myZdouExtrctData(n) = myZdouOrgData(myXlonExtrctRow, j)
+    Next j
+    myXlonExtrctCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元の数値配列の指定列から一部を1次元配列で取得する
+Private Sub PfixArrayPartColumnNumeric( _
+            myXlonExtrctCnt As Long, myZdouExtrctData() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonExtrctCol As Long, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonEndRow As Long, _
+            Optional ByVal coXlonStep As Long = 1)
+'myZdouExtrctData(i) : 抽出データ配列
+'myZdouOrgData(i, j) : 元データ配列
+    myXlonExtrctCnt = Empty: Erase myZdouExtrctData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    If myXlonBgnRow < LBound(myZdouOrgData, 1) Then Exit Sub
+    If myXlonEndRow > UBound(myZdouOrgData, 1) Then Exit Sub
+    If myXlonEndRow < myXlonBgnRow Then Exit Sub
+    If myXlonExtrctCol < LBound(myZdouOrgData, 2) _
+        Or myXlonExtrctCol > UBound(myZdouOrgData, 2) Then Exit Sub
+    If coXlonStep <= 0 Or coXlonStep > UBound(myZdouOrgData, 1) Then Exit Sub
+    myXdouTmp = myZdouOrgData(myXlonBgnRow, myXlonExtrctCol)
+    Li = LBound(myZdouOrgData, 1)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    For i = myXlonBgnRow To myXlonEndRow Step coXlonStep
+        n = n + 1: ReDim Preserve myZdouExtrctData(n) As Double
+        myZdouExtrctData(n) = myZdouOrgData(i, myXlonExtrctCol)
+    Next i
+    myXlonExtrctCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元配列の指定位置のデータを削除した配列を作る
+Private Sub PfixArrayPartDeleteString( _
+            myXlonNewDataCnt As Long, myZstrNewData() As String, _
+            ByRef myZstrOrgData() As String, ByVal myXlonDelPstn As Long)
+'myZstrNewData(i) : 削除後データ配列
+'myZstrOrgData(i) : 元データ配列
+'myXlonDelPstn : 削除するデータ位置を指定
+    myXlonNewDataCnt = Empty: Erase myZstrNewData
+  Dim myXstrTmp As String, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData): myXstrTmp = myZstrOrgData(Li)
+    Ui = UBound(myZstrOrgData)
+    On Error GoTo 0
+    If myXlonDelPstn < Li Or myXlonDelPstn > Ui Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    i = Ui - 1: ReDim myZstrNewData(i) As String
+    myXlonNewDataCnt = Ui - Lo
+    For i = Li To Ui
+        If i = myXlonDelPstn Then GoTo NextPath
+        n = n + 1: myZstrNewData(n) = myZstrOrgData(i)
+NextPath:
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元数値配列の指定位置のデータを削除した配列を作る
+Private Sub PfixArrayPartDeleteNumeric( _
+            myXlonNewDataCnt As Long, myZdouNewData() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonDelPstn As Long)
+'myZdouNewData(i) : 削除後データ配列
+'myZdouOrgData(i) : 元データ配列
+'myXlonDelPstn : 削除するデータ位置を指定
+    myXlonNewDataCnt = Empty: Erase myZdouNewData
+  Dim myXstrTmp As String, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData): myXstrTmp = myZdouOrgData(Li)
+    Ui = UBound(myZdouOrgData)
+    On Error GoTo 0
+    If myXlonDelPstn < Li _
+        Or myXlonDelPstn > Ui Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    i = Ui - 1: ReDim myZdouNewData(i) As Double
+    myXlonNewDataCnt = Ui - Lo
+    For i = Li To Ui
+        If i = myXlonDelPstn Then GoTo NextPath
+        n = n + 1: myZdouNewData(n) = myZdouOrgData(i)
+NextPath:
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の指定行を削除した配列を作る
+Private Sub PfixArrayRowDeleteString( _
+            myXlonNewRowCnt As Long, myXlonNewColCnt As Long, _
+            myZstrNewData() As String, _
+            ByRef myZstrOrgData() As String, ByVal myXlonDelRow As Long)
+'myZstrNewData(i, j) : 削除後データ配列
+'myZstrOrgData(i, j) : 元データ配列
+'myXlonDelRow : 削除する行番号を指定
+    myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZstrNewData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+    If myXlonDelRow < LBound(myZstrOrgData, 1) _
+        Or myXlonDelRow > UBound(myZstrOrgData, 1) Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    i = UBound(myZstrOrgData, 1) - 1: j = UBound(myZstrOrgData, 2)
+    ReDim myZstrNewData(i, j) As String
+    myXlonNewRowCnt = i - Lo + 1
+    myXlonNewColCnt = j - Lo + 1
+    For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+        If i = myXlonDelRow Then GoTo NextPath
+        n = n + 1
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            myZstrNewData(n, j) = myZstrOrgData(i, j)
+        Next j
+NextPath:
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の指定列を削除した配列を作る
+Private Sub PfixArrayColumnDeleteString( _
+            myXlonNewRowCnt As Long, myXlonNewColCnt As Long, _
+            myZstrNewData() As String, _
+            ByRef myZstrOrgData() As String, ByVal myXlonDelCol As Long)
+'myZstrNewData(i, j) : 削除後データ配列
+'myZstrOrgData(i, j) : 元データ配列
+'myXlonDelCol : 削除する行番号を指定
+    myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZstrNewData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 2): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+    If myXlonDelCol < LBound(myZstrOrgData, 2) _
+        Or myXlonDelCol > UBound(myZstrOrgData, 2) Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    i = UBound(myZstrOrgData, 1): j = UBound(myZstrOrgData, 2) - 1
+    ReDim myZstrNewData(i, j) As String
+    myXlonNewRowCnt = i - Lo + 1
+    myXlonNewColCnt = j - Lo + 1
+    For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+        If j = myXlonDelCol Then GoTo NextPath
+        n = n + 1
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myZstrNewData(i, n) = myZstrOrgData(i, j)
+        Next i
+NextPath:
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元配列を指定位置で2個の配列に分割する
+Private Sub PfixArraySplitString( _
+            myXlonPreCnt As Long, myZstrPre() As String, _
+            myXlonPstCnt As Long, myZstrPst() As String, _
+            ByRef myZstrOrgData() As String, ByVal myXlonSpltPstn As Long)
+'myZstrPre(i) : 分割後の前半部データ配列
+'myZstrPst(i) : 分割後の後半部データ配列
+'myZstrOrgData(i) : 元データ配列
+'myXlonSpltPstn : 分割する位置を指定(指定位置以降を分割)
+    myXlonPreCnt = Empty: Erase myZstrPre
+    myXlonPstCnt = Empty: Erase myZstrPst
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData): myXstrTmp = myZstrOrgData(Li)
+    On Error GoTo 0
+    If myXlonSpltPstn < LBound(myZstrOrgData) + 1 _
+        Or myXlonSpltPstn > UBound(myZstrOrgData) Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, m As Long, n As Long: m = Lo - 1: n = Lo - 1
+    myXlonPreCnt = myXlonSpltPstn - LBound(myZstrOrgData)
+    myXlonPstCnt = UBound(myZstrOrgData) - myXlonSpltPstn + 1
+    i = myXlonPreCnt + Lo - 1: ReDim myZstrPre(i) As String
+    i = myXlonPstCnt + Lo - 1: ReDim myZstrPst(i) As String
+    For i = LBound(myZstrOrgData) To myXlonSpltPstn - 1
+        m = m + 1: myZstrPre(m) = myZstrOrgData(i)
+    Next i
+    For i = myXlonSpltPstn To UBound(myZstrOrgData)
+        n = n + 1: myZstrPst(n) = myZstrOrgData(i)
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列を指定行で2個の配列に分割する
+Private Sub PfixArrayRowSplitString( _
+            myXlonUpRowCnt As Long, myZstrUp() As String, _
+            myXlonDwnRowCnt As Long, myZstrDwn() As String, _
+            ByRef myZstrOrgData() As String, ByVal myXlonSpltRow As Long)
+'myZstrUp(i, j)  : 分割後の上側データ配列
+'myZstrDwn(i, j) : 分割後の下側データ配列
+'myZstrOrgData(i, j) : 元データ配列
+'myXlonSpltRow : 分割する行番号を指定(指定行以下を分割)
+    myXlonUpRowCnt = Empty: Erase myZstrUp
+    myXlonDwnRowCnt = Empty: Erase myZstrDwn
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+    If myXlonSpltRow < LBound(myZstrOrgData, 1) + 1 _
+        Or myXlonSpltRow > UBound(myZstrOrgData, 1) Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, m As Long, n As Long: m = Lo - 1: n = Lo - 1
+    myXlonUpRowCnt = myXlonSpltRow - LBound(myZstrOrgData, 1)
+    myXlonDwnRowCnt = UBound(myZstrOrgData, 1) - myXlonSpltRow + 1
+    j = UBound(myZstrOrgData, 2)
+    i = myXlonUpRowCnt + Lo - 1: ReDim myZstrUp(i, j) As String
+    i = myXlonDwnRowCnt + Lo - 1: ReDim myZstrDwn(i, j) As String
+    For i = LBound(myZstrOrgData, 1) To myXlonSpltRow - 1
+        m = m + 1
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            myZstrUp(m, j) = myZstrOrgData(i, j)
+        Next j
+    Next i
+    For i = myXlonSpltRow To UBound(myZstrOrgData, 1)
+        n = n + 1
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            myZstrDwn(n, j) = myZstrOrgData(i, j)
+        Next j
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列を指定列で2個の配列に分割する
+Private Sub PfixArrayColumnSplitString( _
+            myXlonLftColCnt As Long, myZstrLft() As String, _
+            myXlonRghtColCnt As Long, myZstrRght() As String, _
+            ByRef myZstrOrgData() As String, ByVal myXlonSpltCol As Long)
+'myZstrLft(i, j)  : 分割後の左側データ配列
+'myZstrRght(i, j) : 分割後の右側データ配列
+'myZstrOrgData(i, j) : 元データ配列
+'myXlonSpltCol : 分割する列番号を指定(指定列を含む右側を分割)
+    myXlonLftColCnt = Empty: Erase myZstrLft
+    myXlonRghtColCnt = Empty: Erase myZstrRght
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 2): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+    If myXlonSpltCol < LBound(myZstrOrgData, 2) + 1 _
+        Or myXlonSpltCol > UBound(myZstrOrgData, 2) Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, m As Long, n As Long: m = Lo - 1: n = Lo - 1
+    myXlonLftColCnt = myXlonSpltCol - LBound(myZstrOrgData, 2)
+    myXlonRghtColCnt = UBound(myZstrOrgData, 2) - myXlonSpltCol + 1
+    i = UBound(myZstrOrgData, 1)
+    j = myXlonLftColCnt + Lo - 1: ReDim myZstrLft(i, j) As String
+    j = myXlonRghtColCnt + Lo - 1: ReDim myZstrRght(i, j) As String
+    For j = LBound(myZstrOrgData, 2) To myXlonSpltCol - 1
+        m = m + 1
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myZstrLft(i, m) = myZstrOrgData(i, j)
+        Next i
+    Next j
+    For j = myXlonSpltCol To UBound(myZstrOrgData, 2)
+        n = n + 1
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myZstrRght(i, n) = myZstrOrgData(i, j)
+        Next i
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元数値配列を指定位置で2個の配列に分割する
+Private Sub PfixArraySplitNumeric( _
+            myXlonPreCnt As Long, myZdouPre() As Double, _
+            myXlonPstCnt As Long, myZdouPst() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonSpltPstn As Long)
+'myZdouPre(i) : 分割後の前半部データ配列
+'myZdouPst(i) : 分割後の後半部データ配列
+'myZdouOrgData(i) : 元データ配列
+'myXlonSpltPstn : 分割する位置を指定(指定位置以降を分割)
+    myXlonPreCnt = Empty: Erase myZdouPre
+    myXlonPstCnt = Empty: Erase myZdouPst
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData): myXdouTmp = myZdouOrgData(Li)
+    On Error GoTo 0
+    If myXlonSpltPstn < LBound(myZdouOrgData) + 1 _
+        Or myXlonSpltPstn > UBound(myZdouOrgData) Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, m As Long, n As Long: m = Lo - 1: n = Lo - 1
+    myXlonPreCnt = myXlonSpltPstn - LBound(myZdouOrgData)
+    myXlonPstCnt = UBound(myZdouOrgData) - myXlonSpltPstn + 1
+    i = myXlonPreCnt + Lo - 1: ReDim myZdouPre(i) As Double
+    i = myXlonPstCnt + Lo - 1: ReDim myZdouPst(i) As Double
+    For i = LBound(myZdouOrgData) To myXlonSpltPstn - 1
+        m = m + 1: myZdouPre(m) = myZdouOrgData(i)
+    Next i
+    For i = myXlonSpltPstn To UBound(myZdouOrgData)
+        n = n + 1: myZdouPst(n) = myZdouOrgData(i)
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元数値配列を指定行で2個の配列に分割する
+Private Sub PfixArrayRowSplitNumeric( _
+            myXlonUpRowCnt As Long, myZdouUp() As Double, _
+            myXlonDwnRowCnt As Long, myZdouDwn() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonSpltRow As Long)
+'myZdouUp(i, j)  : 分割後の上側データ配列
+'myZdouDwn(i, j) : 分割後の下側データ配列
+'myZdouOrgData(i, j) : 元データ配列
+'myXlonSpltRow : 分割する行番号を指定(指定行以下を分割)
+    myXlonUpRowCnt = Empty: Erase myZdouUp
+    myXlonDwnRowCnt = Empty: Erase myZdouDwn
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 1): myXdouTmp = myZdouOrgData(Li, Li)
+    On Error GoTo 0
+    If myXlonSpltRow < LBound(myZdouOrgData, 1) + 1 _
+        Or myXlonSpltRow > UBound(myZdouOrgData, 1) Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, m As Long, n As Long: m = Lo - 1: n = Lo - 1
+    myXlonUpRowCnt = myXlonSpltRow - LBound(myZdouOrgData, 1)
+    myXlonDwnRowCnt = UBound(myZstrOrgData, 1) - myXlonSpltRow + 1
+    j = UBound(myZdouOrgData, 2)
+    i = myXlonUpRowCnt + Lo - 1: ReDim myZdouUp(i, j) As Double
+    i = myXlonDwnRowCnt + Lo - 1: ReDim myZdouDwn(i, j) As Double
+    For i = LBound(myZdouOrgData, 1) To myXlonSpltRow - 1
+        m = m + 1
+        For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
+            myZdouUp(m, j) = myZdouOrgData(i, j)
+        Next j
+    Next i
+    For i = myXlonSpltRow To UBound(myZdouOrgData, 1)
+        n = n + 1
+        For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
+            myZdouDwn(n, j) = myZdouOrgData(i, j)
+        Next j
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元数値配列を指定列で2個の配列に分割する
+Private Sub PfixArrayColumnSplitNumeric( _
+            myXlonLftColCnt As Long, myZdouLft() As Double, _
+            myXlonRghtColCnt As Long, myZdouRght() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonSpltCol As Long)
+'myZdouLft(i, j)  : 分割後の左側データ配列
+'myZdouRght(i, j) : 分割後の右側データ配列
+'myZdouOrgData(i, j) : 元データ配列
+'myXlonSpltCol : 分割する列番号を指定(指定列を含む右側を分割)
+    myXlonLftColCnt = Empty: Erase myZdouLft
+    myXlonRghtColCnt = Empty: Erase myZdouRght
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 2): myXdouTmp = myZdouOrgData(Li, Li)
+    On Error GoTo 0
+    If myXlonSpltCol < LBound(myZdouOrgData, 2) + 1 _
+        Or myXlonSpltCol > UBound(myZdouOrgData, 2) Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, m As Long, n As Long: m = Lo - 1: n = Lo - 1
+    myXlonLftColCnt = myXlonSpltCol - LBound(myZdouOrgData, 2)
+    myXlonRghtColCnt = UBound(myZdouOrgData, 2) - myXlonSpltCol + 1
+    i = UBound(myZdouOrgData, 1)
+    j = myXlonLftColCnt + Lo - 1: ReDim myZdouLft(i, j) As Double
+    j = myXlonRghtColCnt + Lo - 1: ReDim myZdouRght(i, j) As Double
+    For j = LBound(myZdouOrgData, 2) To myXlonSpltCol - 1
+        m = m + 1
+        For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+            myZdouLft(i, m) = myZdouOrgData(i, j)
+        Next i
+    Next j
+    For j = myXlonSpltCol To UBound(myZdouOrgData, 2)
+        n = n + 1
+        For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+            myZdouRght(i, n) = myZdouOrgData(i, j)
+        Next i
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_2個の1次元配列を1個の1次元配列に結合する
+Private Sub PfixArrayCombineString( _
+            myXlonNewDataCnt As Long, myZstrNewData() As String, _
+            ByRef myZstrPreOrg() As String, ByRef myZstrPstOrg() As String)
+'myZstrNewData(i) : 結合後のデータ配列
+'myZstrPreOrg(i) : 結合前の前半部の元データ配列
+'myZstrPstOrg(i) : 結合前の後半部の元データ配列
+    myXlonNewDataCnt = Empty: Erase myZstrNewData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrPreOrg)
+    myXstrTmp = myZstrPreOrg(Li): myXstrTmp = myZstrPstOrg(Li)
+    On Error GoTo 0
+  Dim myXlonPreCnt As Long, myXlonPstCnt As Long
+    myXlonPreCnt = UBound(myZstrPreOrg) - LBound(myZstrPreOrg) + 1
+    myXlonPstCnt = UBound(myZstrPstOrg) - LBound(myZstrPstOrg) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    myXlonNewDataCnt = myXlonPreCnt + myXlonPstCnt
+    i = myXlonNewDataCnt + Lo - 1: ReDim myZstrNewData(i) As String
+    For i = LBound(myZstrPreOrg) To UBound(myZstrPreOrg)
+        n = n + 1: myZstrNewData(n) = myZstrPreOrg(i)
+    Next i
+    For i = LBound(myZstrPstOrg) To UBound(myZstrPstOrg)
+        n = n + 1: myZstrNewData(n) = myZstrPstOrg(i)
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2個の2次元配列を1個の2次元配列に上下で結合する
+Private Sub PfixArrayRowCombineString( _
+            myXlonNewRowCnt As Long, myXlonNewColCnt As Long, _
+            myZstrNewData() As String, _
+            ByRef myZstrUpOrg() As String, ByRef myZstrDwnOrg() As String)
+'myZstrNewData(i, j) : 結合後のデータ配列
+'myZstrUpOrg(i, j)  : 結合前の前半部の元データ配列
+'myZstrDwnOrg(i, j) : 結合前の後半部の元データ配列
+    myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZstrNewData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrUpOrg, 1)
+    myXstrTmp = myZstrUpOrg(Li, Li): myXstrTmp = myZstrDwnOrg(Li, Li)
+    On Error GoTo 0
+  Dim myXlonUpCnt As Long, myXlonDwnCnt As Long
+    myXlonUpCnt = UBound(myZstrUpOrg, 1) - LBound(myZstrUpOrg, 1) + 1
+    myXlonDwnCnt = UBound(myZstrDwnOrg, 1) - LBound(myZstrDwnOrg, 1) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    If UBound(myZstrUpOrg, 2) <> UBound(myZstrDwnOrg, 2) Then Exit Sub
+    myXlonNewRowCnt = myXlonUpCnt + myXlonDwnCnt
+    myXlonNewColCnt = UBound(myZstrUpOrg, 2) - LBound(myZstrUpOrg, 2) + 1
+    i = myXlonNewRowCnt + Lo - 1: j = myXlonNewColCnt + Lo - 1
+    ReDim myZstrNewData(i, j) As String
+    For i = LBound(myZstrUpOrg, 1) To UBound(myZstrUpOrg, 1)
+        n = n + 1
+        For j = LBound(myZstrUpOrg, 2) To UBound(myZstrUpOrg, 2)
+            myZstrNewData(n, j) = myZstrUpOrg(i, j)
+        Next j
+    Next i
+    For i = LBound(myZstrDwnOrg, 1) To UBound(myZstrDwnOrg, 1)
+        n = n + 1
+        For j = LBound(myZstrDwnOrg, 2) To UBound(myZstrDwnOrg, 2)
+            myZstrNewData(n, j) = myZstrDwnOrg(i, j)
+        Next j
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2個の2次元配列を1個の2次元配列に左右で結合する
+Private Sub PfixArrayColumnCombineString( _
+            myXlonNewRowCnt As Long, myXlonNewColCnt As Long, _
+            myZstrNewData() As String, _
+            ByRef myZstrLftOrg() As String, ByRef myZstrRghtOrg() As String)
+'myZstrNewData(i, j) : 結合後のデータ配列
+'myZstrLftOrg(i, j) : 結合前の前半部の元データ配列
+'myZstrPstOrg(i, j) : 結合前の後半部の元データ配列
+    myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZstrNewData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrLftOrg, 2)
+    myXstrTmp = myZstrLftOrg(Li, Li): myXstrTmp = myZstrRghtOrg(Li, Li)
+    On Error GoTo 0
+  Dim myXlonLftCnt As Long, myXlonRghtCnt As Long
+    myXlonLftCnt = UBound(myZstrLftOrg, 2) - LBound(myZstrLftOrg, 2) + 1
+    myXlonRghtCnt = UBound(myZstrRghtOrg, 2) - LBound(myZstrRghtOrg, 2) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    If UBound(myZstrLftOrg, 1) <> UBound(myZstrRghtOrg, 1) Then Exit Sub
+    myXlonNewRowCnt = UBound(myZstrLftOrg, 1) - LBound(myZstrLftOrg, 1) + 1
+    myXlonNewColCnt = myXlonLftCnt + myXlonRghtCnt
+    i = myXlonNewRowCnt + Lo - 1: j = myXlonNewColCnt + Lo - 1
+    ReDim myZstrNewData(i, j) As String
+    For j = LBound(myZstrLftOrg, 2) To UBound(myZstrLftOrg, 2)
+        n = n + 1
+        For i = LBound(myZstrLftOrg, 1) To UBound(myZstrLftOrg, 1)
+            myZstrNewData(i, n) = myZstrLftOrg(i, j)
+        Next i
+    Next j
+    For j = LBound(myZstrRghtOrg, 2) To UBound(myZstrRghtOrg, 2)
+        n = n + 1
+        For i = LBound(myZstrRghtOrg, 1) To UBound(myZstrRghtOrg, 1)
+            myZstrNewData(i, n) = myZstrRghtOrg(i, j)
+        Next i
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_2個の2次元数値配列を1個の2次元配列に上下で結合する
+Private Sub PfixArrayRowCombineNumeric( _
+            myXlonNewRowCnt As Long, myXlonNewColCnt As Long, _
+            myZdouNewData() As Double, _
+            ByRef myZdouUpOrg() As Double, ByRef myZdouDwnOrg() As Double)
+'myZdouNewData(i, j) : 結合後のデータ配列
+'myZdouUpOrg(i, j)   : 結合前の前半部の元データ配列
+'myZdouDwnOrg(i, j)  : 結合前の後半部の元データ配列
+    myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZdouNewData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouUpOrg, 1)
+    myXdouTmp = myZdouUpOrg(Li, Li): myXdouTmp = myZdouDwnOrg(Li, Li)
+    On Error GoTo 0
+  Dim myXlonUpCnt As Long, myXlonDwnCnt As Long
+    myXlonUpCnt = UBound(myZdouUpOrg, 1) - LBound(myZdouUpOrg, 1) + 1
+    myXlonDwnCnt = UBound(myZdouDwnOrg, 1) - LBound(myZdouDwnOrg, 1) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    If UBound(myZdouUpOrg, 2) <> UBound(myZdouDwnOrg, 2) Then Exit Sub
+    myXlonNewRowCnt = myXlonUpCnt + myXlonDwnCnt
+    myXlonNewColCnt = UBound(myZdouUpOrg, 2) - LBound(myZdouUpOrg, 2) + 1
+    i = myXlonNewRowCnt + Lo - 1: j = myXlonNewColCnt + Lo - 1
+    ReDim myZdouNewData(i, j) As Double
+    For i = LBound(myZdouUpOrg, 1) To UBound(myZdouUpOrg, 1)
+        n = n + 1
+        For j = LBound(myZdouUpOrg, 2) To UBound(myZdouUpOrg, 2)
+            myZdouNewData(n, j) = myZdouUpOrg(i, j)
+        Next j
+    Next i
+    For i = LBound(myZdouDwnOrg, 1) To UBound(myZdouDwnOrg, 1)
+        n = n + 1
+        For j = LBound(myZdouDwnOrg, 2) To UBound(myZdouDwnOrg, 2)
+            myZdouNewData(n, j) = myZdouDwnOrg(i, j)
+        Next j
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2個の2次元数値配列を1個の2次元配列に左右で結合する
+Private Sub PfixArrayColumnCombineNumeric( _
+            myXlonNewRowCnt As Long, myXlonNewColCnt As Long, _
+            myZdouNewData() As Double, _
+            ByRef myZdouLftOrg() As Double, ByRef myZdouRghtOrg() As Double)
+'myZdouNewData(i, j) : 結合後のデータ配列
+'myZdouLftOrg(i, j)  : 結合前の前半部の元データ配列
+'myZdouRghtOrg(i, j) : 結合前の後半部の元データ配列
+    myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZdouNewData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouUpOrg, 2)
+    myXdouTmp = myZdouLftOrg(Li, Li): myXdouTmp = myZdouRghtOrg(Li, Li)
+    On Error GoTo 0
+  Dim myXlonLftCnt As Long, myXlonRghtCnt As Long
+    myXlonLftCnt = UBound(myZdouLftOrg, 2) - LBound(myZdouLftOrg, 2) + 1
+    myXlonRghtCnt = UBound(myZdouRghtOrg, 2) - LBound(myZdouRghtOrg, 2) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    If UBound(myZdouLftOrg, 1) <> UBound(myZdouRghtOrg, 1) Then Exit Sub
+    myXlonNewRowCnt = UBound(myZdouLftOrg, 1) - LBound(myZdouLftOrg, 1) + 1
+    myXlonNewColCnt = myXlonLftCnt + myXlonRghtCnt
+    i = myXlonNewRowCnt + Lo - 1: j = myXlonNewColCnt + Lo - 1
+    ReDim myZdouNewData(i, j) As Double
+    For j = LBound(myZdouLftOrg, 2) To UBound(myZdouLftOrg, 2)
+        n = n + 1
+        For i = LBound(myZdouLftOrg, 1) To UBound(myZdouLftOrg, 1)
+            myZdouNewData(i, n) = myZdouLftOrg(i, j)
+        Next i
+    Next j
+    For j = LBound(myZdouRghtOrg, 2) To UBound(myZdouRghtOrg, 2)
+        n = n + 1
+        For i = LBound(myZdouRghtOrg, 1) To UBound(myZdouRghtOrg, 1)
+            myZdouNewData(i, n) = myZdouRghtOrg(i, j)
+        Next i
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元のVariant配列内の行と列を入れ替える
+Private Sub PfixArrayTransverseVariant( _
+            myXlonTrvRowCnt As Long, myXlonTrvColCnt As Long, _
+            myZvarTrvData() As Variant, _
+            ByRef myZvarOrgData() As Variant)
+'myZvarTrvData(i, j) : 転置後データ配列
+'myZvarOrgData(i, j) : 元データ配列
+    myXlonTrvRowCnt = Empty: myXlonTrvColCnt = Empty: Erase myZvarTrvData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZvarOrgData, 1): myXstrTmp = myZvarOrgData(Li, Li)
+    On Error GoTo 0
+  Dim i As Long, j As Long
+    i = UBound(myZvarOrgData, 2): j = UBound(myZvarOrgData, 1)
+    ReDim myZvarTrvData(i, j) As Variant
+    myXlonTrvRowCnt = i - Li + 1
+    myXlonTrvColCnt = j - Li + 1
+    For j = LBound(myZvarOrgData, 2) To UBound(myZvarOrgData, 2)
+        For i = LBound(myZvarOrgData, 1) To UBound(myZvarOrgData, 1)
+            myZvarTrvData(j, i) = myZvarOrgData(i, j)
+        Next i
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元の文字列配列内の行と列を入れ替える
+Private Sub PfixArrayTransverseString( _
+            myXlonTrvRowCnt As Long, myXlonTrvColCnt As Long, _
+            myZstrTrvData() As String, _
+            ByRef myZstrOrgData() As String)
+'myZstrTrvData(i, j) : 転置後データ配列
+'myZstrOrgData(i, j) : 元データ配列
+    myXlonTrvRowCnt = Empty: myXlonTrvColCnt = Empty: Erase myZstrTrvData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+  Dim i As Long, j As Long
+    i = UBound(myZstrOrgData, 2): j = UBound(myZstrOrgData, 1)
+    ReDim myZstrTrvData(i, j) As String
+    myXlonTrvRowCnt = i - Li + 1
+    myXlonTrvColCnt = j - Li + 1
+    For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myZstrTrvData(j, i) = myZstrOrgData(i, j)
+        Next i
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元の数値配列内の行と列を入れ替える
+Private Sub PfixArrayTransverseNumeric( _
+            myXlonTrvRowCnt As Long, myXlonTrvColCnt As Long, _
+            myZdouTrvData() As Double, _
+            ByRef myZdouOrgData() As Double)
+'myZdouTrvData(i, j) : 転置後データ配列
+'myZdouOrgData(i, j) : 元データ配列
+    myXlonTrvRowCnt = Empty: myXlonTrvColCnt = Empty: Erase myZdouTrvData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 1): myXdouTmp = myZdouOrgData(Li, Li)
+    On Error GoTo 0
+  Dim i As Long, j As Long
+    i = UBound(myZdouOrgData, 2): j = UBound(myZdouOrgData, 1)
+    ReDim myZdouTrvData(i, j) As Double
+    myXlonTrvRowCnt = i - Li + 1
+    myXlonTrvColCnt = j - Li + 1
+    For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
+        For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+            myZdouTrvData(j, i) = myZdouOrgData(i, j)
+        Next i
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元のオブジェクト配列内の行と列を入れ替える
+Private Sub PfixArrayTransverseObject( _
+            myXlonTrvRowCnt As Long, myXlonTrvColCnt As Long, _
+            myZobjTrvData() As Object, _
+            ByRef myZobjOrgData() As Object)
+'myZobjTrvData(i, j) : 転置後データ配列
+'myZobjOrgData(i, j) : 元データ配列
+    myXlonTrvRowCnt = Empty: myXlonTrvColCnt = Empty: Erase myZobjTrvData
+  Dim myXobjTmp As Object, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZobjOrgData, 1): Set myXobjTmp = myZobjOrgData(Li, Li)
+    On Error GoTo 0
+  Dim i As Long, j As Long
+    i = UBound(myZobjOrgData, 2): j = UBound(myZobjOrgData, 1)
+    ReDim myZobjTrvData(i, j) As Object
+    myXlonTrvRowCnt = i - Li + 1
+    myXlonTrvColCnt = j - Li + 1
+    For j = LBound(myZobjOrgData, 2) To UBound(myZobjOrgData, 2)
+        For i = LBound(myZobjOrgData, 1) To UBound(myZobjOrgData, 1)
+            Set myZobjTrvData(j, i) = myZobjOrgData(i, j)
+        Next i
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元の文字列配列を2次元配列に入れ替える
+Private Sub PfixArrayTransposeString1Dto2D( _
+            myXlonDataCnt As Long, myZstrNewData() As String, _
+            ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisRowDrctn As Boolean = True)
+'myZstrNewData(i, 1) or myZstrNewData(1, j) : 入れ替え後データ配列
+'myZstrOrgData(i) : 元データ配列
+'coXbisRowDrctn = True   : 行方向に並べる
+'coXbisRowDrctn = False  : 列方向に並べる
+    myXlonDataCnt = Empty: Erase myZstrNewData
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData): myXstrTmp = myZstrOrgData(Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    If coXbisRowDrctn = True Then
+        i = UBound(myZstrOrgData): myXlonDataCnt = i - Li + 1
+        ReDim myZstrNewData(i, Lo) As String
+        For i = LBound(myZstrOrgData) To UBound(myZstrOrgData)
+            myZstrNewData(i, Lo) = myZstrOrgData(i)
+        Next i
+    Else
+        j = UBound(myZstrOrgData): myXlonDataCnt = i - Li + 1
+        ReDim myZstrNewData(Lo, j) As String
+        For j = LBound(myZstrOrgData) To UBound(myZstrOrgData)
+            myZstrNewData(Lo, j) = myZstrOrgData(j)
+        Next j
+    End If
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元の数値配列を2次元配列に入れ替える
+Private Sub PfixArrayTransposeNumeric1Dto2D( _
+            myXlonDataCnt As Long, myZdouNewData() As Double, _
+            ByRef myZdouOrgData() As Double, _
+            Optional ByVal coXbisRowDrctn As Boolean = True)
+'myZdouNewData(i, 1) or myZdouNewData(1, j) : 入れ替え後データ配列
+'myZdouOrgData(i) : 元データ配列
+'coXbisRowDrctn = True   : 行方向に並べる
+'coXbisRowDrctn = False  : 列方向に並べる
+    myXlonDataCnt = Empty: Erase myZdouNewData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData): myXdouTmp = myZdouOrgData(Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    If coXbisRowDrctn = True Then
+        i = UBound(myZdouOrgData): myXlonDataCnt = i - Li + 1
+        ReDim myZdouNewData(i, Lo) As Double
+        For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+            myZdouNewData(i, Lo) = myZdouOrgData(i)
+        Next i
+    Else
+        j = UBound(myZdouOrgData): myXlonDataCnt = j - Li + 1
+        ReDim myZdouNewData(Lo, j) As Double
+        For j = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+            myZdouNewData(Lo, j) = myZdouOrgData(j)
+        Next j
+    End If
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元のオブジェクト配列を2次元配列に入れ替える
+Private Sub PfixArrayTransposeObject1Dto2D( _
+            myXlonDataCnt As Long, myZobjNewData() As Object, _
+            myZobjOrgData() As Object, _
+            Optional coXbisRowDrctn As Boolean = True)
+'myZobjNewData(i, 1) or myZobjNewData(1, j) : 入れ替え後データ配列
+'myZobjOrgData(i) : 元データ配列
+'coXbisRowDrctn = True   : 行方向に並べる
+'coXbisRowDrctn = False  : 列方向に並べる
+    myXlonDataCnt = Empty: Erase myZobjNewData
+  Dim myXobjTmp As Object, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZobjOrgData): Set myXobjTmp = myZobjOrgData(Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    If coXbisRowDrctn = True Then
+        i = UBound(myZobjOrgData): myXlonDataCnt = i - Li + 1
+        ReDim myZobjNewData(i, Lo) As Object
+        For i = LBound(myZobjOrgData) To UBound(myZobjOrgData)
+            Set myZobjNewData(i, Lo) = myZobjOrgData(i)
+        Next i
+    Else
+        j = UBound(myZobjOrgData): myXlonDataCnt = j - Li + 1
+        ReDim myZobjNewData(Lo, j) As Object
+        For j = LBound(myZobjOrgData) To UBound(myZobjOrgData)
+            Set myZobjNewData(Lo, j) = myZobjOrgData(j)
+        Next j
+    End If
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元の文字列配列の1次元目の配列長を変更する
+Private Sub PfixReDimArrayString( _
+            myXlonRowCnt As Long, myXlonColCnt As Long, myZstrData() As String, _
+            ByVal myXlonAddRows As Long)
+'myZstrData(i, j) : 対象データ配列
+    myXlonRowCnt = Empty: myXlonColCnt = Empty
+    If myXlonAddRows <= 0 Then Exit Sub
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrData, 1): myXstrTmp = myZstrData(Li, Li)
+    On Error GoTo 0
+  Dim myZstrTmp() As String, m As Long, n As Long
+    m = UBound(myZstrData, 1): n = UBound(myZstrData, 2)
+    ReDim myZstrTmp(m, n) As String
+    myXlonRowCnt = m - Li + 1
+    myXlonColCnt = n - Li + 1
+  Dim i As Long, j As Long
+    For i = LBound(myZstrData, 1) To UBound(myZstrData, 1)
+        For j = LBound(myZstrData, 2) To UBound(myZstrData, 2)
+            myZstrTmp(i, j) = myZstrData(i, j)
+        Next j
+    Next i
+    Erase myZstrData
+    m = m + myXlonAddRows: ReDim myZstrData(m, n) As String
+    myXlonRowCnt = myXlonRowCnt + myXlonAddRows
+    For i = LBound(myZstrTmp, 1) To UBound(myZstrTmp, 1)
+        For j = LBound(myZstrTmp, 2) To UBound(myZstrTmp, 2)
+            myZstrData(i, j) = myZstrTmp(i, j)
+        Next j
+    Next i
+    Erase myZstrTmp
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元の数値配列の1次元目の配列長を変更する
+Private Sub PfixReDimArrayNumeric( _
+            myXlonRowCnt As Long, myXlonColCnt As Long, myZdouData() As Double, _
+            ByVal myXlonAddRows As Long)
+'myZdouData(i, j) : 対象データ配列
+    myXlonRowCnt = Empty: myXlonColCnt = Empty
+    If myXlonAddRows <= 0 Then Exit Sub
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouData, 1): myXdouTmp = myZdouData(Li, Li)
+    On Error GoTo 0
+  Dim myZdouTmp() As Double, m As Long, n As Long
+    m = UBound(myZdouData, 1): n = UBound(myZdouData, 2)
+    ReDim myZdouTmp(m, n) As Double
+    myXlonRowCnt = m - Li + 1
+    myXlonColCnt = n - Li + 1
+  Dim i As Long, j As Long
+    For i = LBound(myZdouData, 1) To UBound(myZdouData, 1)
+        For j = LBound(myZdouData, 2) To UBound(myZdouData, 2)
+            myZdouTmp(i, j) = myZdouData(i, j)
+        Next j
+    Next i
+    Erase myZdouData
+    m = m + myXlonAddRows: ReDim myZdouData(m, n) As Double
+    myXlonRowCnt = myXlonRowCnt + myXlonAddRows
+    For i = LBound(myZdouTmp, 1) To UBound(myZdouTmp, 1)
+        For j = LBound(myZdouTmp, 2) To UBound(myZdouTmp, 2)
+            myZdouData(i, j) = myZdouTmp(i, j)
+        Next j
+    Next i
+    Erase myZdouTmp
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元のオブジェクト配列の1次元目の配列長を変更する
+Private Sub PfixReDimArrayObject( _
+            myXlonRowCnt As Long, myXlonColCnt As Long, myZobjData() As Object, _
+            ByVal myXlonAddRows As Long)
+'myZobjData(i, j) : 対象データ配列
+    myXlonRowCnt = Empty: myXlonColCnt = Empty
+    If myXlonAddRows <= 0 Then Exit Sub
+  Dim myXobjTmp As Object, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZobjData, 1): Set myXobjTmp = myZobjData(Li, Li)
+    On Error GoTo 0
+  Dim myZobjTmp() As Object, m As Long, n As Long
+    m = UBound(myZobjData, 1): n = UBound(myZobjData, 2)
+    ReDim myZobjTmp(m, n) As Object
+    myXlonRowCnt = m - Li + 1
+    myXlonColCnt = n - Li + 1
+  Dim i As Long, j As Long
+    For i = LBound(myZobjData, 1) To UBound(myZobjData, 1)
+        For j = LBound(myZobjData, 2) To UBound(myZobjData, 2)
+            Set myZobjTmp(i, j) = myZobjData(i, j)
+        Next j
+    Next i
+    Erase myZobjData
+    m = m + myXlonAddRows: ReDim myZobjData(m, n) As Object
+    myXlonRowCnt = myXlonRowCnt + myXlonAddRows
+    For i = LBound(myZobjTmp, 1) To UBound(myZobjTmp, 1)
+        For j = LBound(myZobjTmp, 2) To UBound(myZobjTmp, 2)
+            Set myZobjData(i, j) = myZobjTmp(i, j)
+        Next j
+    Next i
+    Erase myZobjTmp
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元の文字列配列のクイックソート
+Private Sub PfixQuickSortOfString1DArray( _
+            myZstrSrtData() As String, _
+            ByVal myXlonLbnd As Long, ByVal myXlonUbnd As Long, _
+            Optional ByVal coXlonOrder As Long = 1, _
+            Optional ByVal coXlonMode As Long = 1)
+'myZstrSrtData(i) : 文字列情報
+'coXlonOrder = 1    : 昇順 (Ascending Order)
+'coXlonOrder = -1   : 降順 (Descending Order)
+'coXlonMode = vbBinaryCompare  = 0 : バイナリモードの比較
+'coXlonMode = vbTextCompare    = 1 : テキストモードの比較
+'→SetProc:定型プロシージャ使用前のコード部分に記述
+'    myXlonLbnd = LBound(myZstrSrtData)
+'    myXlonUbnd = UBound(myZstrSrtData)
+'    If myXlonUbnd <= myXlonLbnd Then Exit Sub
+'←EndProc
+  Dim myXlonMed As Long, myXstrMed As String
+    myXlonMed = Int((myXlonLbnd + myXlonUbnd) / 2)
+    myXstrMed = myZstrSrtData(myXlonMed)
+  Dim i As Long, j As Long
+    i = myXlonLbnd: j = myXlonUbnd
+  Dim myXstrBufi As String, myXstrBufj As String, myXstrTmp As String
+    Do
+        myXstrBufi = myZstrSrtData(i)
+        Do While StrComp(myXstrBufi, myXstrMed, coXlonMode) = -1 * coXlonOrder
+            i = i + 1: myXstrBufi = myZstrSrtData(i)
+        Loop
+        myXstrBufj = myZstrSrtData(j)
+        Do While StrComp(myXstrBufj, myXstrMed, coXlonMode) = coXlonOrder
+            j = j - 1: myXstrBufj = myZstrSrtData(j)
+        Loop
+        If i >= j Then Exit Do
+        myXstrTmp = myZstrSrtData(i)
+        myZstrSrtData(i) = myZstrSrtData(j)
+        myZstrSrtData(j) = myXstrTmp
+        i = i + 1: j = j - 1
+    Loop
+    If myXlonLbnd < i - 1 Then _
+        Call PfixQuickSortOfString1DArray( _
+                myZstrSrtData, myXlonLbnd, i - 1, coXlonOrder, coXlonMode)
+    If myXlonUbnd > j + 1 Then _
+        Call PfixQuickSortOfString1DArray( _
+                myZstrSrtData, j + 1, myXlonUbnd, coXlonOrder, coXlonMode)
+End Sub
+
+ '定型Ｐ_2次元の文字列配列のクイックソート
+Private Sub PfixQuickSortOfString2DArray( _
+            myZstrSrtData() As String, myXlonSrtCol As Long, _
+            ByVal myXlonLbnd As Long, ByVal myXlonUbnd As Long, _
+            Optional ByVal coXlonOrder As Long = 1, _
+            Optional ByVal coXlonMode As Long = 1)
+'myZstrSrtData(i, j) : 文字列情報
+'coXlonOrder = 1    : 昇順 (Ascending Order)
+'coXlonOrder = -1   : 降順 (Descending Order)
+'coXlonMode = vbBinaryCompare  = 0 : バイナリモードの比較
+'coXlonMode = vbTextCompare    = 1 : テキストモードの比較
+'→SetProc:定型プロシージャ使用前のコード部分に記述
+'    myXlonLbnd = LBound(myZstrSrtData, 1)
+'    myXlonUbnd = UBound(myZstrSrtData, 1)
+'    If myXlonUbnd <= myXlonLbnd Then Exit Sub
+'←EndProc
+  Dim myXlonMed As Long, myXstrMed As String
+    myXlonMed = Int((myXlonLbnd + myXlonUbnd) / 2)
+    myXstrMed = myZstrSrtData(myXlonMed, myXlonSrtCol)
+  Dim i As Long, j As Long, k As Long
+    i = myXlonLbnd: j = myXlonUbnd
+  Dim myXstrBufi As String, myXstrBufj As String, myXstrTmp As String
+    Do
+        myXstrBufi = myZstrSrtData(i, myXlonSrtCol)
+        Do While StrComp(myXstrBufi, myXstrMed, coXlonMode) = -1 * coXlonOrder
+            i = i + 1: myXstrBufi = myZstrSrtData(i, myXlonSrtCol)
+        Loop
+        myXstrBufj = myZstrSrtData(j, myXlonSrtCol)
+        Do While StrComp(myXstrBufj, myXstrMed, coXlonMode) = coXlonOrder
+            j = j - 1: myXstrBufj = myZstrSrtData(j, myXlonSrtCol)
+        Loop
+        If i >= j Then Exit Do
+        For k = LBound(myZstrSrtData, 2) To UBound(myZstrSrtData, 2)
+            myXstrTmp = myZstrSrtData(i, k)
+            myZstrSrtData(i, k) = myZstrSrtData(j, k)
+            myZstrSrtData(j, k) = myXstrTmp
+        Next k
+        i = i + 1: j = j - 1
+    Loop
+    If myXlonLbnd < i - 1 Then _
+        Call PfixQuickSortOfString2DArray(myZstrSrtData, myXlonSrtCol, _
+                myXlonLbnd, i - 1, coXlonOrder, coXlonMode)
+    If myXlonUbnd > j + 1 Then _
+        Call PfixQuickSortOfString2DArray(myZstrSrtData, myXlonSrtCol, _
+                j + 1, myXlonUbnd, coXlonOrder, coXlonMode)
+End Sub
+
+ '定型Ｐ_オブジェクト配列の文字列によるクイックソート
+Private Sub PfixQuickSortOfStringObject2DArray( _
+            myZvarStrAndObj As Variant, _
+            ByVal myXlonLbnd As Long, ByVal myXlonUbnd As Long, _
+            Optional ByVal coXlonOrder As Long = 1, _
+            Optional ByVal coXlonMode As Long = 1)
+'myZvarStrAndObj(i, 1) : 文字列情報
+'myZvarStrAndObj(i, 2) : オブジェクト
+'coXlonOrder = 1  : 昇順 (Ascending Order)
+'coXlonOrder = -1 : 降順 (Descending Order)
+'coXlonMode = vbBinaryCompare  = 0 : バイナリモードの比較
+'coXlonMode = vbTextCompare    = 1 : テキストモードの比較
+'→SetProc:定型プロシージャ使用前のコード部分に記述
+'    myXlonLbnd = LBound(myZvarStrAndObj, 1)
+'    myXlonUbnd = UBound(myZvarStrAndObj, 1)
+'    If myXlonUbnd <= myXlonLbnd Then Exit Sub
+'←EndProc
+  Dim Li As Long, myXlonMed As Long, myXstrMed As String
+    Li = LBound(myZvarStrAndObj, 2)
+    myXlonMed = Int((myXlonLbnd + myXlonUbnd) / 2)
+    myXstrMed = myZvarStrAndObj(myXlonMed, Li)
+  Dim i As Long, j As Long
+    i = myXlonLbnd: j = myXlonUbnd
+  Dim myXstrBufi As String, myXstrBufj As String, myXstrTmp As String, myXobjTmp As Object
+    Do
+        myXstrBufi = myZvarStrAndObj(i, Li)
+        Do While StrComp(myXstrBufi, myXstrMed, coXlonMode) = -1 * coXlonOrder
+            i = i + 1: myXstrBufi = myZvarStrAndObj(i, Li)
+        Loop
+        myXstrBufj = myZvarStrAndObj(j, Li)
+        Do While StrComp(myXstrBufj, myXstrMed, coXlonMode) = coXlonOrder
+            j = j - 1: myXstrBufj = myZvarStrAndObj(j, Li)
+        Loop
+        If i >= j Then Exit Do
+        myXstrTmp = CStr(myZvarStrAndObj(i, Li + 0))
+        myZvarStrAndObj(i, Li + 0) = myZvarStrAndObj(j, Li + 0)
+        myZvarStrAndObj(j, Li + 0) = myXstrTmp
+        Set myXobjTmp = myZvarStrAndObj(i, Li + 1)
+        Set myZvarStrAndObj(i, Li + 1) = myZvarStrAndObj(j, Li + 1)
+        Set myZvarStrAndObj(j, Li + 1) = myXobjTmp
+        i = i + 1: j = j - 1
+    Loop
+    If myXlonLbnd < i - 1 Then _
+        Call PfixQuickSortOfStringObject2DArray( _
+                myZvarStrAndObj, myXlonLbnd, i - 1, coXlonOrder, coXlonMode)
+    If myXlonUbnd > j + 1 Then _
+        Call PfixQuickSortOfStringObject2DArray( _
+                myZvarStrAndObj, j + 1, myXlonUbnd, coXlonOrder, coXlonMode)
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元の数値配列のクイックソート
+Private Sub PfixQuickSortOfNumeric1DArray( _
+            myZdouSrtData() As Double, _
+            ByVal myXlonLbnd As Long, ByVal myXlonUbnd As Long, _
+            Optional ByVal coXlonOrder As Long = 1)
+'myZdouSrtData(i) : 数値情報
+'coXlonOrder = 1    : 昇順 (Ascending Order)
+'coXlonOrder = -1   : 降順 (Descending Order)
+'→SetProc:定型プロシージャ使用前のコード部分に記述
+'    myXlonLbnd = LBound(myZdouSrtData)
+'    myXlonUbnd = UBound(myZdouSrtData)
+'    If myXlonUbnd <= myXlonLbnd Then Exit Sub
+'←EndProc
+  Dim myXlonMed As Long, myXdouMed As Double
+    myXlonMed = Int((myXlonLbnd + myXlonUbnd) / 2)
+    myXdouMed = myZdouSrtData(myXlonMed)
+  Dim i As Long, j As Long
+    i = myXlonLbnd: j = myXlonUbnd
+  Dim myXdouBufi As Double, myXdouBufj As Double, myXdouTmp As Double
+    Do
+        myXdouBufi = myZdouSrtData(i)
+        Do While coXlonOrder * (myXdouBufi - myXdouMed) < 0
+            i = i + 1: myXdouBufi = myZdouSrtData(i)
+        Loop
+        myXdouBufj = myZdouSrtData(j)
+        Do While coXlonOrder * (myXdouBufj - myXdouMed) > 0
+            j = j - 1: myXdouBufj = myZdouSrtData(j)
+        Loop
+        If i >= j Then Exit Do
+        myXdouTmp = myZdouSrtData(i)
+        myZdouSrtData(i) = myZdouSrtData(j)
+        myZdouSrtData(j) = myXdouTmp
+        i = i + 1: j = j - 1
+    Loop
+    If myXlonLbnd < i - 1 Then _
+        Call PfixQuickSortOfNumeric1DArray(myZdouSrtData, myXlonLbnd, i - 1, coXlonOrder)
+    If myXlonUbnd > j + 1 Then _
+        Call PfixQuickSortOfNumeric1DArray(myZdouSrtData, j + 1, myXlonUbnd, coXlonOrder)
+End Sub
+
+ '定型Ｐ_2次元の数値配列のクイックソート
+Private Sub PfixQuickSortOfNumeric2DArray( _
+            myZdouSrtData() As Double, myXlonSrtCol As Long, _
+            ByVal myXlonLbnd As Long, ByVal myXlonUbnd As Long, _
+            Optional ByVal coXlonOrder As Long = 1)
+'myZdouSrtData(i, j) : 数値情報
+'coXlonOrder = 1    : 昇順 (Ascending Order)
+'coXlonOrder = -1   : 降順 (Descending Order)
+'→SetProc:定型プロシージャ使用前のコード部分に記述
+'    myXlonLbnd = LBound(myZdouSrtData, 1)
+'    myXlonUbnd = UBound(myZdouSrtData, 1)
+'    If myXlonUbnd <= myXlonLbnd Then Exit Sub
+'←EndProc
+  Dim myXlonMed As Long, myXdouMed As Double
+    myXlonMed = Int((myXlonLbnd + myXlonUbnd) / 2)
+    myXdouMed = myZdouSrtData(myXlonMed, myXlonSrtCol)
+  Dim i As Long, j As Long, k As Long
+    i = myXlonLbnd: j = myXlonUbnd
+  Dim myXdouBufi As Double, myXdouBufj As Double, myXdouTmp As Double
+   Do
+        myXdouBufi = myZdouSrtData(i, myXlonSrtCol)
+        Do While coXlonOrder * (myXdouBufi - myXdouMed) < 0
+            i = i + 1: myXdouBufi = myZdouSrtData(i, myXlonSrtCol)
+        Loop
+        myXdouBufj = myZdouSrtData(j, myXlonSrtCol)
+        Do While coXlonOrder * (myXdouBufj - myXdouMed) > 0
+            j = j - 1: myXdouBufj = myZdouSrtData(j, myXlonSrtCol)
+        Loop
+        If i >= j Then Exit Do
+        For k = LBound(myZdouSrtData, 2) To UBound(myZdouSrtData, 2)
+            myXdouTmp = myZdouSrtData(i, k)
+            myZdouSrtData(i, k) = myZdouSrtData(j, k)
+            myZdouSrtData(j, k) = myXdouTmp
+        Next k
+        i = i + 1: j = j - 1
+    Loop
+    If myXlonLbnd < i - 1 Then _
+        Call PfixQuickSortOfNumeric2DArray( _
+                myZdouSrtData, myXlonSrtCol, myXlonLbnd, i - 1, coXlonOrder)
+    If myXlonUbnd > j + 1 Then _
+        Call PfixQuickSortOfNumeric2DArray( _
+                myZdouSrtData, myXlonSrtCol, j + 1, myXlonUbnd, coXlonOrder)
+End Sub
+
+ '定型Ｐ_オブジェクト配列の数値によるクイックソート
+Private Sub PfixQuickSortOfNumericObject2DArray( _
+            myZvarNumAndObj As Variant, _
+            ByVal myXlonLbnd As Long, ByVal myXlonUbnd As Long, _
+            Optional ByVal coXlonOrder As Long = 1)
+'myZvarNumAndObj(i, 1) : 数値情報
+'myZvarNumAndObj(i, 2) : オブジェクト
+'coXlonOrder = 1    : 昇順 (Ascending Order)
+'coXlonOrder = -1   : 降順 (Descending Order)
+'→SetProc:定型プロシージャ使用前のコード部分に記述
+'    myXlonLbnd = LBound(myZvarNumAndObj, 1)
+'    myXlonUbnd = UBound(myZvarNumAndObj, 1)
+'    If myXlonUbnd <= myXlonLbnd Then Exit Sub
+'←EndProc
+  Dim Li As Long, myXlonMed As Long, myXdouMed As Double
+    Li = LBound(myZvarNumAndObj, 2)
+    myXlonMed = Int((myXlonLbnd + myXlonUbnd) / 2)
+    myXdouMed = myZvarNumAndObj(myXlonMed, Li)
+  Dim i As Long, j As Long
+    i = myXlonLbnd: j = myXlonUbnd
+  Dim myXdouBufi As Double, myXdouBufj As Double, myXdouTmp As Double, myXobjTmp As Object
+    Do
+        myXdouBufi = myZvarNumAndObj(i, Li)
+        Do While coXlonOrder * (myXdouBufi - myXdouMed) < 0
+            i = i + 1: myXdouBufi = myZvarNumAndObj(i, Li)
+        Loop
+        myXdouBufj = myZvarNumAndObj(j, Li)
+        Do While coXlonOrder * (myXdouBufj - myXdouMed) > 0
+            j = j - 1: myXdouBufj = myZvarNumAndObj(j, Li)
+        Loop
+        If i >= j Then Exit Do
+        myXdouTmp = CDbl(myZvarNumAndObj(i, Li + 0))
+        myZvarNumAndObj(i, Li + 0) = myZvarNumAndObj(j, Li + 0)
+        myZvarNumAndObj(j, Li + 0) = myXdouTmp
+        Set myXobjTmp = myZvarNumAndObj(i, Li + 1)
+        Set myZvarNumAndObj(i, Li + 1) = myZvarNumAndObj(j, Li + 1)
+        Set myZvarNumAndObj(j, Li + 1) = myXobjTmp
+        i = i + 1: j = j - 1
+        Set myXobjTmp = Nothing
+    Loop
+    If myXlonLbnd < i - 1 Then _
+        Call PfixQuickSortOfNumericObject2DArray( _
+                myZvarNumAndObj, myXlonLbnd, i - 1, coXlonOrder)
+    If myXlonUbnd > j + 1 Then _
+        Call PfixQuickSortOfNumericObject2DArray( _
+                myZvarNumAndObj, j + 1, myXlonUbnd, coXlonOrder)
+End Sub
+
+ '定型Ｐ_2次元の数値配列の行方向に等間隔で間引いたデータ配列を取得する
+Private Sub PfixVNumericDecimationFilterRegularStep( _
+        myXlonDcmtRowCnt As Long, myXlonDcmtColCnt As Long, _
+        myZdouDcmtData() As Double, _
+        ByRef myZdouOrgData() As Double, ByVal myXlonDcmtStep As Long, _
+        Optional ByVal coXlonBgnRow As Long = 1, _
+        Optional ByVal coXlonEndRow As Long = 0)
+'myZdouDcmtData(i, j) : 間引きデータ配列
+'myZdouOrgData(i, j)  : 元データ配列
+    myXlonDcmtRowCnt = Empty: myXlonDcmtColCnt = Empty: Erase myZdouDcmtData
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 1): Ui = UBound(myZdouOrgData, 1)
+    If myXlonDcmtStep <= 0 Or myXlonDcmtStep > Ui Then Exit Sub
+    If coXlonBgnRow < Li Then coXlonBgnRow = Li
+    If coXlonEndRow > Ui Then coXlonEndRow = Ui
+    If coXlonEndRow < coXlonBgnRow Then coXlonEndRow = Ui
+    myXdouTmp = myZdouOrgData(coXlonBgnRow, Li)
+    On Error GoTo 0
+    myXlonDcmtRowCnt = Int((coXlonEndRow - coXlonBgnRow + 0.9) / myXlonDcmtStep) + 1
+    myXlonDcmtColCnt = UBound(myZdouOrgData, 2) - LBound(myZdouOrgData, 2) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    i = myXlonDcmtRowCnt + Lo - 1: j = myXlonDcmtColCnt + Lo - 1
+    ReDim myZdouDcmtData(i, j) As Double
+    For i = coXlonBgnRow To coXlonEndRow Step myXlonDcmtStep
+        n = n + 1
+        For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
+            myZdouDcmtData(n, j) = myZdouOrgData(i, j)
+        Next j
+    Next i
+    Exit Sub
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元の数値配列の列方向に等間隔で間引いたデータ配列を取得する
+Private Sub PfixHNumericDecimationFilterRegularStep( _
+        myXlonDcmtRowCnt As Long, myXlonDcmtColCnt As Long, _
+        myZdouDcmtData() As Double, _
+        ByRef myZdouOrgData() As Double, ByVal myXlonDcmtStep As Long, _
+        Optional ByVal coXlonBgnCol As Long = 1, _
+        Optional ByVal coXlonEndCol As Long = 0)
+'myZdouDcmtData(i, j) : 間引きデータ配列
+'myZdouOrgData(i, j)  : 元データ配列
+    myXlonDcmtRowCnt = Empty: myXlonDcmtColCnt = Empty: Erase myZdouDcmtData
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 2): Ui = UBound(myZdouOrgData, 2)
+    If myXlonDcmtStep <= 0 Or myXlonDcmtStep > Ui Then Exit Sub
+    If coXlonBgnCol < Li Then coXlonBgnCol = Li
+    If coXlonEndCol = Ui Then coXlonEndCol = Ui
+    If coXlonEndCol < coXlonBgnCol Then coXlonEndCol = Ui
+    myXdouTmp = myZdouOrgData(Li, coXlonBgnCol)
+    On Error GoTo 0
+    myXlonDcmtRowCnt = UBound(myZdouOrgData, 1) - LBound(myZdouOrgData, 1) + 1
+    myXlonDcmtColCnt = Int((coXlonEndCol - coXlonBgnCol + 0.9) / myXlonDcmtStep) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    i = myXlonDcmtRowCnt + Lo - 1: j = myXlonDcmtColCnt + Lo - 1
+    ReDim myZdouDcmtData(i, j) As Double
+    For j = coXlonBgnCol To coXlonEndCol Step myXlonDcmtStep
+        n = n + 1
+        For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+            myZdouDcmtData(i, n) = myZdouOrgData(i, j)
+        Next i
+    Next j
+    Exit Sub
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の行方向に等間隔で間引いたデータ配列を取得する
+Private Sub PfixVStringDecimationFilterRegularStep( _
+        myXlonDcmtRowCnt As Long, myXlonDcmtColCnt As Long, _
+        myZstrDcmtData() As String, _
+        ByRef myZstrOrgData() As String, ByVal myXlonDcmtStep As Long, _
+        Optional ByVal coXlonBgnRow As Long = 1, _
+        Optional ByVal coXlonEndRow As Long = 0)
+'myZstrDcmtData(i, j) : 間引きデータ配列
+'myZstrOrgData(i, j)  : 元データ配列
+    myXlonDcmtRowCnt = Empty: myXlonDcmtColCnt = Empty: Erase myZstrDcmtData
+  Dim myXstrTmp As String, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1): Ui = UBound(myZstrOrgData, 1)
+    If myXlonDcmtStep <= 0 Or myXlonDcmtStep > Ui Then Exit Sub
+    If coXlonBgnRow < Li Then coXlonBgnRow = Li
+    If coXlonEndRow = Ui Then coXlonEndRow = Ui
+    If coXlonEndRow < coXlonBgnRow Then coXlonEndRow = Ui
+    myXstrTmp = myZstrOrgData(coXlonBgnRow, Li)
+    On Error GoTo 0
+    myXlonDcmtRowCnt = Int((coXlonEndRow - coXlonBgnRow + 0.9) / myXlonDcmtStep) + 1
+    myXlonDcmtColCnt = UBound(myZstrOrgData, 2) - LBound(myZstrOrgData, 2) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    i = myXlonDcmtRowCnt + Lo - 1: j = myXlonDcmtColCnt + Lo - 1
+    ReDim myZstrDcmtData(i, j) As String
+    For i = coXlonBgnRow To coXlonEndRow Step myXlonDcmtStep
+        n = n + 1
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            myZstrDcmtData(n, j) = myZstrOrgData(i, j)
+        Next j
+    Next i
+    Exit Sub
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元配列の列方向に等間隔で間引いたデータ配列を取得する
+Private Sub PfixHStringDecimationFilterRegularStep( _
+        myXlonDcmtRowCnt As Long, myXlonDcmtColCnt As Long, _
+        myZstrDcmtData() As String, _
+        ByRef myZstrOrgData() As String, ByVal myXlonDcmtStep As Long, _
+        Optional ByVal coXlonBgnCol As Long = 1, _
+        Optional ByVal coXlonEndCol As Long = 0)
+'myZstrDcmtData(i, j) : 間引きデータ配列
+'myZstrOrgData(i, j)  : 元データ配列
+    myXlonDcmtRowCnt = Empty: myXlonDcmtColCnt = Empty: Erase myZstrDcmtData
+  Dim myXstrTmp As String, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 2): Ui = UBound(myZstrOrgData, 2)
+    If myXlonDcmtStep <= 0 Or myXlonDcmtStep > Ui Then Exit Sub
+    If coXlonBgnCol < Li Then coXlonBgnCol = Li
+    If coXlonEndCol = Ui Then coXlonEndCol = Ui
+    If coXlonEndCol < coXlonBgnCol Then coXlonEndCol = Ui
+    myXstrTmp = myZstrOrgData(Li, coXlonBgnCol)
+    On Error GoTo 0
+    myXlonDcmtRowCnt = UBound(myZstrOrgData, 1) - LBound(myZstrOrgData, 1) + 1
+    myXlonDcmtColCnt = Int((coXlonEndCol - coXlonBgnCol + 0.9) / myXlonDcmtStep) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    i = myXlonDcmtRowCnt + Lo - 1: j = myXlonDcmtColCnt + Lo - 1
+    ReDim myZstrDcmtData(i, j) As String
+    For j = coXlonBgnCol To coXlonEndCol Step myXlonDcmtStep
+        n = n + 1
+        For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+            myZstrDcmtData(i, n) = myZstrOrgData(i, j)
+        Next i
+    Next j
+    Exit Sub
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元の数値配列の指定列を指定間隔値に近い値で間引いたデータ配列を取得する
+Private Sub PincVNumericDecimationFilterIrregularStep( _
+        myXlonDcmtRowCnt As Long, myXlonDcmtColCnt As Long, _
+        myZdouDcmtData() As Double, _
+        ByRef myZdouOrgData() As Double, ByVal myXlonCalCol As Long, _
+        ByVal myXdouDcmtStep As Double, _
+        Optional ByVal coXlonBgnRow As Long = 1, _
+        Optional ByVal coXlonEndRow As Long = 0)
+'Includes PfixQuotationRemainder
+'myZdouDcmtData(i, j) : 間引きデータ配列
+'myZdouOrgData(i, j)  : 元データ配列
+  Const coXlonTrgtVal As Long = 1
+    myXlonDcmtRowCnt = Empty: myXlonDcmtColCnt = Empty: Erase myZdouDcmtData
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 1): Ui = UBound(myZdouOrgData, 1)
+    If myXlonCalCol < LBound(myZdouOrgData, 2) _
+        Or myXlonCalCol > UBound(myZdouOrgData, 2) Then Exit Sub
+    If myXdouDcmtStep <= 0 Or myXdouDcmtStep > Ui Then Exit Sub
+    If coXlonBgnRow < Li Then coXlonBgnRow = Li
+    If coXlonEndRow > Ui Then coXlonEndRow = Ui
+    If coXlonEndRow < coXlonBgnRow Then coXlonEndRow = Ui
+    myXdouTmp = myZdouOrgData(coXlonBgnRow, myXlonCalCol)
+    On Error GoTo 0
+'//指定間隔値に近い値にターゲットフラグを付ける
+'myZdouCal(r, 1) : 間引き計算対象のデータ
+'myZdouCal(r, 2) : ターゲットフラグ
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim myXlonTrgtCol As Long: myXlonTrgtCol = Lo + 0
+  Dim myXlonDcmtCol As Long: myXlonDcmtCol = Lo + 1
+  Dim myZdouCal() As Double, r As Long
+    r = Ui + Lo - Li: ReDim myZdouCal(r, myXlonDcmtCol) As Double
+    For r = Li To Ui
+        myZdouCal(r + Lo - Li, myXlonDcmtCol) = myZdouOrgData(r, myXlonCalCol)
+    Next r
+  Dim myXlonTrgtCnt As Long, myXlonBgnRow As Long, myXlonEndRow As Long
+    myXlonBgnRow = coXlonBgnRow + Lo - Li
+    myXlonEndRow = coXlonEndRow + Lo - Li
+    Call PsubVNumericDecimation(myXlonTrgtCnt, myZdouCal, _
+            myXlonBgnRow, myXlonEndRow, myXdouDcmtStep, _
+            myXlonTrgtCol, myXlonDcmtCol, coXlonTrgtVal)
+    If myXlonTrgtCnt <= 0 Then Exit Sub
+'//ターゲットフラグの付いたデータを抜粋
+    myXlonDcmtRowCnt = myXlonTrgtCnt
+    myXlonDcmtColCnt = UBound(myZdouOrgData, 2) - LBound(myZdouOrgData, 2) + 1
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    i = myXlonDcmtRowCnt + Lo - 1: j = myXlonDcmtColCnt + Lo - 1
+    ReDim myZdouDcmtData(i, j) As Double
+    For i = coXlonBgnRow To coXlonEndRow
+        If myZdouCal(i, myXlonTrgtCol) <> coXlonTrgtVal Then GoTo NextPath
+        n = n + 1
+        For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
+            myZdouDcmtData(n, j + Lo - Li) = myZdouOrgData(i, j)
+        Next j
+NextPath:
+    Next i
+    Erase myZdouCal
+ExitPath:
+End Sub
+Private Sub PsubVNumericDecimation( _
+            myXlonTrgtCnt As Long, myZdouCal() As Double, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonEndRow As Long, _
+            ByVal myXlonStep As Double, _
+            ByVal myXlonTrgtCol As Long, ByVal myXlonDcmtCol As Long, _
+            ByVal myXlonTrgtVal As Long)
+'//指定間隔値に近い値にターゲットフラグを付ける
+    myXlonTrgtCnt = Empty
+  Dim myXlonBgnVal As Double, myXlonEndVal As Double
+    On Error GoTo ExitPath
+    myXlonBgnVal = myZdouCal(myXlonBgnRow, myXlonDcmtCol)
+    myXlonEndVal = myZdouCal(myXlonEndRow, myXlonDcmtCol)
+    On Error GoTo 0
+  Dim myXdouAveStep As Double, myXdouAveIntvl As Double, myXlonJump As Long
+    If myXlonEndRow - myXlonBgnRow = 0 Then Exit Sub
+    myXdouAveStep = (myXlonEndVal - myXlonBgnVal) / (myXlonEndRow - myXlonBgnRow)
+    myXdouAveIntvl = myXlonStep / myXdouAveStep
+    If myXdouAveIntvl < 1 Then Exit Sub
+    myXlonJump = Int(myXdouAveIntvl) - 2
+  Dim myXdouQuot As Double, myXdouRemain As Double, myXdouNumer As Double
+  Dim n As Long: n = 0
+    myXdouNumer = myZdouCal(myXlonBgnRow, myXlonDcmtCol)
+    Call PfixQuotationRemainder(myXdouQuot, myXdouRemain, myXdouNumer, myXlonStep)
+    If myXdouRemain = 0 Then
+        n = n + 1: myZdouCal(myXlonBgnRow, myXlonTrgtCol) = myXlonTrgtVal
+    End If
+  Dim myXdouPrsntQ As Double, myXdouPrsntR As Double, _
+        myXdouPrvsQ As Double, myXdouPrvsR As Double, i As Long
+    For i = myXlonBgnRow + 1 To myXlonEndRow
+        myXdouNumer = myZdouCal(i, myXlonDcmtCol)
+        Call PfixQuotationRemainder(myXdouPrsntQ, myXdouPrsntR, myXdouNumer, myXlonStep)
+        If myXdouPrsntQ = myXdouQuot Then GoTo NextPath
+        myXdouQuot = myXdouPrsntQ
+        If myXdouPrsntR = 0 Then
+            myZdouCal(i, myXlonTrgtCol) = myXlonTrgtVal
+            n = n + 1: i = i + myXlonJump: GoTo NextPath
+        End If
+        myXdouNumer = myZdouCal(i - 1, myXlonDcmtCol)
+        Call PfixQuotationRemainder(myXdouPrvsQ, myXdouPrvsR, myXdouNumer, myXlonStep)
+        If myXdouPrsntR <= myXlonStep - myXdouPrvsR Then
+            myZdouCal(i, myXlonTrgtCol) = myXlonTrgtVal
+        Else
+            myZdouCal(i - 1, myXlonTrgtCol) = myXlonTrgtVal
+        End If
+        n = n + 1: i = i + myXlonJump
+NextPath:
+    Next i
+    myXlonTrgtCnt = n
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元の数値配列の指定行を指定間隔値に近い値で間引いたデータ配列を取得する
+Private Sub PincHNumericDecimationFilterIrregularStep( _
+        myXlonDcmtRowCnt As Long, myXlonDcmtColCnt As Long, _
+        myZdouDcmtData() As Double, _
+        ByRef myZdouOrgData() As Double, ByVal myXlonCalRow As Long, _
+        ByVal myXdouDcmtStep As Double, _
+        Optional ByVal coXlonBgnCol As Long = 1, _
+        Optional ByVal coXlonEndCol As Long = 0)
+'Includes PfixQuotationRemainder
+'myZdouDcmtData(i, j) : 間引きデータ配列
+'myZdouOrgData(i, j)  : 元データ配列
+  Const coXlonTrgtVal As Long = 1
+    myXlonDcmtRowCnt = Empty: myXlonDcmtColCnt = Empty: Erase myZdouDcmtData
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData, 2): Ui = UBound(myZdouOrgData, 2)
+    If myXlonCalRow < LBound(myZdouOrgData, 1) _
+        Or myXlonCalRow > UBound(myZdouOrgData, 1) Then Exit Sub
+    If myXdouDcmtStep <= 0 Or myXdouDcmtStep > Ui Then Exit Sub
+    If coXlonBgnCol <= 0 Then coXlonBgnCol = Li
+    If coXlonEndCol = Ui Then coXlonEndCol = Ui
+    If coXlonEndCol < coXlonBgnCol Then coXlonEndCol = Ui
+    myXdouTmp = myZdouOrgData(myXlonCalRow, coXlonBgnCol)
+    On Error GoTo 0
+'//指定間隔値に近い値にターゲットフラグを付ける
+'myZdouCal(1, c) : 間引き計算対象のデータ
+'myZdouCal(2, c) : ターゲットフラグ
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim myXlonTrgtRow As Long: myXlonTrgtRow = Lo + 0
+  Dim myXlonDcmtRow As Long: myXlonDcmtRow = Lo + 1
+  Dim myZdouCal() As Double, c As Long
+    c = Ui + Lo - Li: ReDim myZdouCal(myXlonDcmtRow, c) As Double
+    For c = Li To Ui
+        myZdouCal(myXlonDcmtRow, c + Lo - Li) = myZdouOrgData(myXlonCalRow, c)
+    Next c
+  Dim myXlonTrgtCnt As Long, myXlonBgnCol As Long, myXlonEndCol As Long
+    myXlonBgnCol = coXlonBgnCol + Lo - Li
+    myXlonEndCol = coXlonEndCol + Lo - Li
+    Call PsubHNumericDecimation(myXlonTrgtCnt, myZdouCal, _
+            myXlonBgnCol, myXlonEndCol, myXdouDcmtStep, _
+            myXlonTrgtRow, myXlonDcmtRow, coXlonTrgtVal)
+    If myXlonTrgtCnt <= 0 Then Exit Sub
+'//ターゲットフラグの付いたデータを抜粋
+    myXlonDcmtRowCnt = UBound(myZdouOrgData, 1)
+    myXlonDcmtColCnt = myXlonTrgtCnt
+  Dim i As Long, j As Long, n As Long: n = Lo - 1
+    i = myXlonDcmtRowCnt + Lo - 1: j = myXlonDcmtColCnt + Lo - 1
+    ReDim myZdouDcmtData(i, j) As Double
+    For j = coXlonBgnCol To coXlonEndCol
+        If myZdouCal(myXlonTrgtRow, j) <> coXlonTrgtVal Then GoTo NextPath
+        n = n + 1
+        For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+            myZdouDcmtData(i + Lo - Li, n) = myZdouOrgData(i, j)
+        Next i
+NextPath:
+    Next j
+    Erase myZdouCal
+ExitPath:
+End Sub
+Private Sub PsubHNumericDecimation( _
+            myXlonTrgtCnt As Long, myZdouCal() As Double, _
+            ByVal myXlonBgnCol As Long, ByVal myXlonEndCol As Long, _
+            ByVal myXlonStep As Double, _
+            ByVal myXlonTrgtRow As Long, ByVal myXlonDcmtRow As Long, _
+            ByVal myXlonTrgtVal As Long)
+'//指定間隔値に近い値にターゲットフラグを付ける
+    myXlonTrgtCnt = Empty
+  Dim myXlonBgnVal As Double, myXlonEndVal As Double
+    On Error GoTo ExitPath
+    myXlonBgnVal = myZdouCal(myXlonDcmtRow, myXlonBgnCol)
+    myXlonEndVal = myZdouCal(myXlonDcmtRow, myXlonEndCol)
+    On Error GoTo 0
+  Dim myXdouAveStep As Double, myXdouAveIntvl As Double, myXlonJump As Long
+    If myXlonEndCol - myXlonBgnCol = 0 Then Exit Sub
+    myXdouAveStep = (myXlonEndVal - myXlonBgnVal) / (myXlonEndCol - myXlonBgnCol)
+    myXdouAveIntvl = myXlonStep / myXdouAveStep
+    If myXdouAveIntvl < 1 Then Exit Sub
+    myXlonJump = Int(myXdouAveIntvl) - 2
+  Dim myXdouQuot As Double, myXdouRemain As Double, myXdouNumer As Double
+  Dim n As Long: n = 0
+    myXdouNumer = myZdouCal(myXlonDcmtRow, myXlonBgnCol)
+    Call PfixQuotationRemainder(myXdouQuot, myXdouRemain, myXdouNumer, myXlonStep)
+    If myXdouRemain = 0 Then
+        myZdouCal(myXlonTrgtRow, myXlonBgnCol) = myXlonTrgtVal: n = n + 1
+    End If
+  Dim myXdouPrsntQ As Double, myXdouPrsntR As Double, _
+        myXdouPrvsQ As Double, myXdouPrvsR As Double, j As Long
+    For j = myXlonBgnCol + 1 To myXlonEndCol
+        myXdouNumer = myZdouCal(myXlonDcmtRow, j)
+        Call PfixQuotationRemainder(myXdouPrsntQ, myXdouPrsntR, myXdouNumer, myXlonStep)
+        If myXdouPrsntQ = myXdouQuot Then GoTo NextPath
+        myXdouQuot = myXdouPrsntQ
+        If myXdouPrsntR = 0 Then
+            myZdouCal(myXlonTrgtRow, j) = myXlonTrgtVal
+            n = n + 1: j = j + myXlonJump: GoTo NextPath
+        End If
+        myXdouNumer = myZdouCal(myXlonDcmtRow, j - 1)
+        Call PfixQuotationRemainder(myXdouPrvsQ, myXdouPrvsR, myXdouNumer, myXlonStep)
+        If myXdouPrsntR <= myXlonStep - myXdouPrvsR Then
+            myZdouCal(myXlonTrgtRow, j) = myXlonTrgtVal
+        Else
+            myZdouCal(myXlonTrgtRow, j - 1) = myXlonTrgtVal
+        End If
+        n = n + 1: j = j + myXlonJump
+NextPath:
+    Next j
+    myXlonTrgtCnt = n
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元数値配列から空白とゼロを除去した配列を取得する
+Private Sub Pfix1DArrayWithoutBlankZeroNumeric( _
+            myXlonNewDataCnt As Long, myZdouNewData() As Double, _
+            ByRef myZdouOrgData() As Double)
+'myZdouNewData(i) : 取得データ配列
+'myZdouOrgData(i) : 元データ配列
+    myXlonNewDataCnt = Empty: Erase myZdouNewData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData): myXdouTmp = myZdouOrgData(Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        myXdouTmp = Empty
+        myXdouTmp = myZdouOrgData(i)
+        If myXdouTmp = 0 Then GoTo NextPath
+        n = n + 1: ReDim Preserve myZdouNewData(n) As Double
+        myZdouNewData(n) = myXdouTmp
+NextPath:
+    Next i
+    myXlonNewDataCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元数値配列の指定列から空白とゼロを除去した配列を取得する
+Private Sub Pfix2DArrayEntireColumnWithoutBlankZeroNumeric( _
+            myXlonNewRowCnt As Long, myXlonNewColCnt As Long, _
+            myZdouNewData() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonGetCol As Long)
+'myZdouNewData(i, 1) : 取得データ配列
+'myZdouOrgData(i, j) : 元データ配列
+    myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZdouNewData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    If myXlonGetCol < LBound(myZdouOrgData, 1) _
+        Or myXlonGetCol > UBound(myZdouOrgData, 1) Then Exit Sub
+    Li = LBound(myZdouOrgData, 1): myXdouTmp = myZdouOrgData(Li, myXlonGetCol)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim myZdouTmp() As Double, i As Long, j As Long, n As Long: n = Lo - 1
+    For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+        myXdouTmp = Empty
+        myXdouTmp = myZdouOrgData(i, myXlonGetCol)
+        If myXdouTmp = 0 Then GoTo NextPath
+        n = n + 1: ReDim Preserve myZdouTmp(n) As Double
+        myZdouTmp(n) = myXdouTmp
+NextPath:
+    Next i
+    myXlonNewRowCnt = n - Lo + 1: myXlonNewColCnt = 1
+'//取得データ配列に格納
+    i = myXlonNewRowCnt + Lo - 1: j = myXlonNewColCnt + Lo - 1
+    ReDim myZdouNewData(i, j) As Double
+    For i = LBound(myZdouTmp) To UBound(myZdouTmp)
+        myZdouNewData(i, j) = myZdouTmp(i)
+    Next i
+ExitPath:
+End Sub
+
+ '定型Ｐ_2次元数値配列の指定行から空白とゼロを除去した配列を取得する
+Private Sub Pfix2DArrayEntireRowWithoutBlankZeroNumeric( _
+            myXlonNewRowCnt As Long, myXlonNewColCnt As Long, _
+            myZdouNewData() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonGetRow As Long)
+'myZdouNewData(1, j) : 取得データ配列
+'myZdouOrgData(i, j) : 元データ配列
+    myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZdouNewData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    If myXlonGetRow < LBound(myZdouOrgData, 1) _
+        Or myXlonGetRow > UBound(myZdouOrgData, 1) Then Exit Sub
+    Li = LBound(myZdouOrgData, 2): myXdouTmp = myZdouOrgData(myXlonGetRow, Li)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim myZdouTmp() As Double, i As Long, j As Long, n As Long: n = Lo - 1
+    For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
+        myXdouTmp = Empty
+        myXdouTmp = myZdouOrgData(myXlonGetRow, j)
+        If myXdouTmp = 0 Then GoTo NextPath
+        n = n + 1: ReDim Preserve myZdouTmp(n) As Double
+        myZdouTmp(n) = myXdouTmp
+NextPath:
+    Next j
+    myXlonNewRowCnt = 1: myXlonNewColCnt = n - Lo + 1
+'//取得データ配列に格納
+    i = myXlonNewRowCnt + Lo - 1: j = myXlonNewColCnt + Lo - 1
+    ReDim myZdouNewData(i, j) As Double
+    For j = LBound(myZdouTmp) To UBound(myZdouTmp)
+        myZdouNewData(i, j) = myZdouTmp(j)
+    Next j
+ExitPath:
+End Sub
+
+ '定型Ｐ_配列変数の次元数を確認して2次元配列に調整する
+Private Sub PfixSet2DArray( _
+            myXlonNewRowCnt As Long, myXlonNewColCnt As Long, _
+            myZvarNewData() As Variant, _
+            ByRef myZvarOrgData As Variant)
+'myZvarNewData(i, j) : 配列データ
+    myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZvarNewData
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+'//配列変数の次元数を取得
+  Dim myXlonAryIndx As Long
+    If IsArray(myZvarOrgData) = False Then
+        myXlonAryIndx = 0: GoTo JumpPath
+    End If
+  Dim myXvarTmp As Variant, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXvarTmp = UBound(myZvarOrgData, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    myXlonAryIndx = k - 1
+JumpPath:
+'//配列変数の次元数に応じて処理を実施
+  Dim i As Long, j As Long
+    If myXlonAryIndx = 0 Then
+        myXlonNewRowCnt = 1
+        myXlonNewColCnt = 1
+        i = myXlonNewRowCnt - (1 - L)
+        j = myXlonNewColCnt - (1 - L)
+        ReDim myZvarNewData(i, j) As Variant
+        myZvarNewData(i, j) = myZvarOrgData
+    ElseIf myXlonAryIndx = 1 Then
+        myXlonNewRowCnt = UBound(myZvarOrgData) - LBound(myZvarOrgData) + 1
+        myXlonNewColCnt = 1
+        i = myXlonNewRowCnt - (1 - L)
+        j = myXlonNewColCnt - (1 - L)
+        ReDim myZvarNewData(i, j) As Variant
+        For i = LBound(myZvarOrgData) To UBound(myZvarOrgData)
+            myZvarNewData(i, j) = myZvarOrgData(i)
+        Next i
+    ElseIf myXlonAryIndx = 2 Then
+        myXlonNewRowCnt = UBound(myZvarOrgData, 1) - LBound(myZvarOrgData, 1) + 1
+        myXlonNewColCnt = UBound(myZvarOrgData, 2) - LBound(myZvarOrgData, 2) + 1
+        i = myXlonNewRowCnt - (1 - L)
+        j = myXlonNewColCnt - (1 - L)
+        ReDim myZvarNewData(i, j) As Variant
+        For i = LBound(myZvarOrgData, 1) To UBound(myZvarOrgData, 1)
+            For j = LBound(myZvarOrgData, 2) To UBound(myZvarOrgData, 2)
+                myZvarNewData(i, j) = myZvarOrgData(i, j)
+            Next j
+        Next i
+    Else
+        Exit Sub
+    End If
+End Sub
+
+ '定型Ｐ_一覧形式の配列表の指定列の同一値ごとの行範囲を取得する
+Private Sub PfixGetVarietyRowsFromTable( _
+            myXlonVrtyCnt As Long, myZvarVrty() As Variant, _
+            ByRef myZvarOrgData As Variant, _
+            Optional ByVal coXlonDataSetCol As Long = 1, _
+            Optional ByVal coXlonBgnRow As Long = 1)
+'  Dim myXlonVrtyCnt As Long, myZvarVrty() As Variant, myZvarOrgData() As Variant
+    'myZvarVrty(1, i) = 指定列データ
+    'myZvarVrty(2, i) = 開始行
+    'myZvarVrty(3, i) = 最終行
+    'myZvarOrgData(i, j) : 元データ
+'    coXlonDataSetCol : 行範囲を取得したい列
+'    coXlonBgnRow : 開始行
+    myXlonVrtyCnt = Empty: Erase myZvarVrty
+  Dim Li As Long, myXvarTmp As Variant
+    On Error GoTo ExitPath
+    Li = LBound(myZvarOrgData, 1): myXvarTmp = myZvarOrgData(Li, Li)
+    On Error GoTo 0
+    If coXlonDataSetCol < LBound(myZvarOrgData, 2) Or _
+            coXlonDataSetCol > UBound(myZvarOrgData, 2) Then Exit Sub
+    If coXlonBgnRow < LBound(myZvarOrgData, 1) Or _
+            coXlonBgnRow > UBound(myZvarOrgData, 1) Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim m As Long, n As Long: m = Lo - 1: n = Lo - 1
+    m = m + 1: n = Lo + 2
+    ReDim Preserve myZvarVrty(n, m) As Variant
+  Dim myXstrPrvsVal As String, myXstrPrsntVal As String
+    myXstrPrsntVal = CStr(myZvarOrgData(coXlonBgnRow, coXlonDataSetCol))
+    myZvarVrty(Lo + 0, m) = myXstrPrsntVal
+    myZvarVrty(Lo + 1, m) = coXlonBgnRow
+    myZvarVrty(Lo + 2, m) = coXlonBgnRow
+    myXstrPrvsVal = myXstrPrsntVal
+  Dim i As Long, j As Long, k As Long
+    For i = coXlonBgnRow + Li To UBound(myZvarOrgData, 1)
+        myXstrPrvsVal = myXstrPrsntVal
+        myXstrPrsntVal = CStr(myZvarOrgData(i, coXlonDataSetCol))
+        If i = UBound(myZvarOrgData, 1) Then
+            myZvarVrty(Lo + 2, m) = i
+            Exit For
+        ElseIf myXstrPrsntVal = "" Then
+            myZvarVrty(Lo + 2, m) = i - 1
+            Exit For
+        End If
+        If myXstrPrsntVal = myXstrPrvsVal Then GoTo NextPath
+        myZvarVrty(Lo + 2, m) = i - 1
+        m = m + 1
+        ReDim Preserve myZvarVrty(n, m) As Variant
+        myZvarVrty(Lo + 0, m) = myXstrPrsntVal
+        myZvarVrty(Lo + 1, m) = i
+NextPath:
+    Next i
+    myXlonVrtyCnt = m
+ExitPath:
+End Sub
+
+ '定型Ｐ_指定期間の日付を1ヶ月ごとに1次元文字列配列に格納する
+Private Sub PfixSetDateEachMonth( _
+            myXlonDateCnt As Long, myZdatDate() As Date, _
+            ByVal myXdatBgnDate As Date, ByVal myXdatEndDate As Date)
+    'myZdatDate(i) : 1ヶ月ごとの日付データ
+    myXlonDateCnt = Empty: Erase myZdatDate
+    If myXdatBgnDate = CDate(0) Then Exit Sub
+    If myXdatEndDate = CDate(0) Then myXdatEndDate = Date
+  Dim myXlonYears As Long, myXlonMnths As Long, myXlonTerm As Long
+    myXlonYears = Year(myXdatEndDate) - Year(myXdatBgnDate)
+    myXlonMnths = Month(myXdatEndDate) - Month(myXdatBgnDate) + 1
+    myXlonTerm = myXlonYears * 12 + myXlonMnths
+    myXlonDateCnt = myXlonTerm
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long
+    i = myXlonDateCnt + L - 1
+    ReDim myZdatDate(i) As Date
+  Dim myXdatTmpDate As Date
+    myXdatTmpDate = DateAdd("m", -1, myXdatBgnDate)
+    For i = L To myXlonTerm + L - 1
+        myXdatTmpDate = DateAdd("m", 1, myXdatTmpDate)
+        myZdatDate(i) = myXdatTmpDate
+    Next i
+End Sub
+
+ '定型Ｐ_2次元配列の指定列の値が連続データの値と一致する行の値を取得する
+Private Sub PfixGetRowsFrom2DArrayMatchSeriesData( _
+            myXlonArngDataCnt As Long, myZvarArngData() As Variant, _
+            ByRef myZvarOrgData As Variant, ByRef myZstrSrsData() As String, _
+            Optional ByVal coXlonSrchCol As Long = 1)
+    'myZvarArngData(i, j) : 取得データ
+    'myZvarOrgData(i, j) : 元データ
+    'myZstrSrsData(k) : 参照元の連続データ
+    myXlonArngDataCnt = Empty: Erase myZvarArngData
+  Dim L1 As Long, L2 As Long, myXvarTmp As Variant
+    On Error GoTo ExitPath
+    L1 = LBound(myZvarOrgData, 1): myXvarTmp = myZvarOrgData(L1, L1)
+    L2 = LBound(myZstrSrsData): myXvarTmp = myZstrSrsData(L2)
+    On Error GoTo 0
+    If coXlonSrchCol < LBound(myZvarOrgData, 2) Or _
+            coXlonSrchCol > UBound(myZvarOrgData, 2) Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim k As Long, i As Long, j As Long, m As Long
+    k = UBound(myZstrSrsData) + Lo - L2
+    j = UBound(myZvarOrgData, 2) + Lo - L1
+    ReDim myZvarArngData(k, j) As Variant
+  Dim myXstrOrgVal As String, myXstrSrchVal As String
+    m = 0
+    For k = LBound(myZstrSrsData) To UBound(myZstrSrsData)
+        myXstrOrgVal = myZstrSrsData(k)
+        For i = LBound(myZvarOrgData, 1) To UBound(myZvarOrgData, 1)
+            myXstrSrchVal = myZvarOrgData(i, coXlonSrchCol)
+            If myXstrSrchVal = myXstrOrgVal Then
+                m = m + 1
+                For j = LBound(myZvarOrgData, 2) To UBound(myZvarOrgData, 2)
+                    myZvarArngData(k, j) = myZvarOrgData(i, j)
+                Next j
+            End If
+        Next i
+    Next k
+    myXlonArngDataCnt = m
+ExitPath:
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
