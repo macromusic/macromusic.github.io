@@ -1,1 +1,358 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfixClearAllCommentOnSheet
+'Includes PincCopyAllCellValueToCommentOnSheet
+'Includes PfixAddCommentAndWriteText
+'Includes PincCopyAllCommentTextToCellOnSheet
+'Includes PfncstrCommentText
+'Includes PfixWriteCellValue
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_コメントを処理する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CCmntCtrl"
+  
+'//PropertyGet_出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//PropertySetLet_入力データ
+  Private myXobjSheet As Object
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getCmpltFlag() As Boolean
+    getCmpltFlag = myXbisCmpltFlag
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Set setSheet(ByVal RHS As Object)
+    Set myXobjSheet = RHS
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_シート上の全コメントを消去する
+Public Sub exeProcClearComment()
+    
+'//処理実行
+    Call ctrProcClearComment
+    
+End Sub
+
+'CtrlP_
+Private Sub ctrProcClearComment()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+
+'//シート上の全コメントを消去
+    Call PfixClearAllCommentOnSheet(myXbisExitFlag, myXobjSheet)
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_シート上の全セル内容をコメントに転記する
+Public Sub exeProcCellToComment()
+    
+'//処理実行
+    Call ctrProcCellToComment
+    
+End Sub
+
+'CtrlP_
+Private Sub ctrProcCellToComment()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+
+'//シート上の全セル内容をコメントに転記
+    Call PincCopyAllCellValueToCommentOnSheet(myXbisExitFlag, myXobjSheet)
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_シート上の全コメント内容をセルに転記する
+Public Sub exeProcCommentToCell()
+    
+'//処理実行
+    Call ctrProcCommentToCell
+    
+End Sub
+
+'CtrlP_
+Private Sub ctrProcCommentToCell()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+
+'//シート上の全コメント内容をセルに転記
+    Call PincCopyAllCommentTextToCellOnSheet(myXbisExitFlag, myXobjSheet)
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_シート上の全コメントを消去する
+Private Sub PfixClearAllCommentOnSheet(myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object)
+    myXbisExitFlag = False
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+  Dim myXobjDataRng As Object, myXobjTmpRng As Object
+    With myXobjSheet
+        Set myXobjDataRng = .Range(.Cells(1, 1), .Cells.SpecialCells(xlCellTypeLastCell))
+    End With
+    If myXobjDataRng Is Nothing Then GoTo ExitPath
+    On Error Resume Next
+    For Each myXobjTmpRng In myXobjDataRng
+        myXobjTmpRng.ClearComments
+    Next
+    On Error GoTo 0
+    Set myXobjDataRng = Nothing: Set myXobjTmpRng = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_シート上の全セル内容をコメントに転記する
+Private Sub PincCopyAllCellValueToCommentOnSheet(myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object)
+'Includes PfixAddCommentAndWriteText
+    myXbisExitFlag = False
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+'//シート上のデータ記載全範囲をオブジェクト配列に取込む
+  Dim myXobjDataRng As Object
+    With myXobjSheet
+        Set myXobjDataRng = .Range(.Cells(1, 1), .Cells.SpecialCells(xlCellTypeLastCell))
+    End With
+    If myXobjDataRng Is Nothing Then GoTo ExitPath
+'//セルのコメント内容を取得してセルに指定文字列を記入
+  Dim myXobjTmpRng As Object
+    For Each myXobjTmpRng In myXobjDataRng
+      Dim myXvarRngVal As Variant: myXvarRngVal = myXobjTmpRng.Value
+        If myXvarRngVal = "" Then GoTo NextPath
+        Call PfixAddCommentAndWriteText(myXbisExitFlag, myXobjTmpRng, myXvarRngVal, False)
+NextPath:
+    Next
+    Set myXobjDataRng = Nothing: Set myXobjTmpRng = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_コメントを追加してコメントに指定文字列を記入する
+Private Sub PfixAddCommentAndWriteText(myXbisExitFlag As Boolean, _
+            ByVal myXobjRng As Object, ByVal myXvarInput As Variant, _
+            Optional ByVal coXbisAppend As Boolean = False)
+'coXbisAppend = False : コメントの内容を上書きする
+'coXbisAppend = True  : コメントの元内容に追加する
+    myXbisExitFlag = False
+    If myXobjRng Is Nothing Then GoTo ExitPath
+    If myXvarInput = "" Then GoTo ExitPath
+'//コメント有無確認
+  Dim myXbisCmntExist As Boolean
+    Select Case TypeName(myXobjRng.Comment)
+        Case "Comment": myXbisCmntExist = True
+        Case "Nothing": myXbisCmntExist = False
+        Case Else: myXbisCmntExist = False
+    End Select
+'//コメント入力文字の設定
+  Dim myXstrCmntTxt As String
+    If myXbisCmntExist = True And coXbisAppend = True Then
+        myXstrCmntTxt = CStr(myXobjRng.Comment.Text & myXvarInput)
+    Else
+        myXstrCmntTxt = CStr(myXvarInput)
+    End If
+'//コメント追加と設定
+    If myXbisCmntExist = True Then myXobjRng.ClearComments
+    Call myXobjRng.AddComment.Text(myXstrCmntTxt)
+    With myXobjRng.Comment.Shape.TextFrame
+        .HorizontalAlignment = xlLeft
+        .VerticalAlignment = xlTop
+        .AutoSize = True
+        With .Characters.Font
+            .Name = "ＭＳ Ｐゴシック"
+            .FontStyle = "標準"
+            .Size = 11
+            .ColorIndex = 1
+        End With
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_シート上の全コメント内容をセルに転記する
+Private Sub PincCopyAllCommentTextToCellOnSheet(myXbisExitFlag As Boolean, _
+            ByVal myXobjSheet As Object)
+'Includes PfncstrCommentText
+'Includes PfixWriteCellValue
+    myXbisExitFlag = False
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+'//シート上のデータ記載全範囲をオブジェクト配列に取込む
+  Dim myXobjDataRng As Object
+    With myXobjSheet
+        Set myXobjDataRng = .Range(.Cells(1, 1), .Cells.SpecialCells(xlCellTypeLastCell))
+    End With
+    If myXobjDataRng Is Nothing Then GoTo ExitPath
+'//セルのコメント内容を取得してセルに指定文字列を記入
+  Dim myXobjTmpRng As Object, myXvarCmntTxt As Variant
+    For Each myXobjTmpRng In myXobjDataRng
+        myXvarCmntTxt = PfncstrCommentText(myXobjTmpRng)
+        If myXvarCmntTxt = "" Then GoTo NextPath
+        Call PfixWriteCellValue(myXbisExitFlag, myXobjTmpRng, myXvarCmntTxt, False)
+NextPath:
+    Next
+    Set myXobjDataRng = Nothing: Set myXobjTmpRng = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_セルのコメント内容を取得する
+Private Function PfncstrCommentText(ByVal myXobjRng As Object) As String
+    PfncstrCommentText = Empty
+    If myXobjRng Is Nothing Then Exit Function
+'//コメント有無確認
+  Dim myXbisCmntExist As Boolean
+    Select Case TypeName(myXobjRng.Comment)
+        Case "Comment": myXbisCmntExist = True
+        Case "Nothing": myXbisCmntExist = False
+        Case Else: myXbisCmntExist = False
+    End Select
+    If myXbisCmntExist = False Then Exit Function
+'//コメント内容取得
+  Dim myXstrTmpCmnt As String: myXstrTmpCmnt = Empty
+    On Error Resume Next
+    myXstrTmpCmnt = myXobjRng.Comment.Text
+    On Error GoTo 0
+    PfncstrCommentText = myXstrTmpCmnt
+End Function
+
+ '定型Ｐ_セルに指定文字列を記入する
+Private Sub PfixWriteCellValue(myXbisExitFlag As Boolean, _
+            ByVal myXobjRng As Object, ByVal myXvarInput As Variant, _
+            Optional ByVal coXbisAppend As Boolean = False)
+'coXbisAppend = False : セルの値を上書きする
+'coXbisAppend = True  : セルの元値に追加する
+    myXbisExitFlag = False
+    If myXobjRng Is Nothing Then GoTo ExitPath
+  Dim myXvarRngVal As Variant
+    Select Case coXbisAppend
+        Case True: myXvarRngVal = myXobjRng.Value & myXvarInput
+        Case Else: myXvarRngVal = myXvarInput
+    End Select
+    myXobjRng.Value = myXvarRngVal
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_コメントを処理する
+'Private Sub instClearComment()
+''//シート上の全コメントを消去する
+'  Dim myXbisCmpltFlag As Boolean
+'  Dim myXinsCmntCtrl As CCmntCtrl: Set myXinsCmntCtrl = New CCmntCtrl
+'    With myXinsCmntCtrl
+'        Set .setSheet = ActiveSheet
+'        .exeProcClearComment
+'        myXbisCmpltFlag = .getCmpltFlag
+'    End With
+'    Set myXinsCmntCtrl = Nothing
+''    Debug.Print "完了: " & myXbisCmpltFlag
+'End Sub
+'
+''◆ClassProc名_コメントを処理する
+'Private Sub instCellToComment()
+''//シート上の全セル内容をコメントに転記する
+'  Dim myXbisCmpltFlag As Boolean
+'  Dim myXinsCmntCtrl As CCmntCtrl: Set myXinsCmntCtrl = New CCmntCtrl
+'    With myXinsCmntCtrl
+'        Set .setSheet = ActiveSheet
+'        .exeProcCellToComment
+'        myXbisCmpltFlag = .getCmpltFlag
+'    End With
+'    Set myXinsCmntCtrl = Nothing
+''    Debug.Print "完了: " & myXbisCmpltFlag
+'End Sub
+'
+''◆ClassProc名_コメントを処理する
+'Private Sub instCommentToCell()
+''//シート上の全コメント内容をセルに転記する
+'  Dim myXbisCmpltFlag As Boolean
+'  Dim myXinsCmntCtrl As CCmntCtrl: Set myXinsCmntCtrl = New CCmntCtrl
+'    With myXinsCmntCtrl
+'        Set .setSheet = ActiveSheet
+'        .exeProcCommentToCell
+'        myXbisCmpltFlag = .getCmpltFlag
+'    End With
+'    Set myXinsCmntCtrl = Nothing
+''    Debug.Print "完了: " & myXbisCmpltFlag
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
