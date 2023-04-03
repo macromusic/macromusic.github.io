@@ -1,1 +1,409 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfixGetSheetRangeData
+'Includes PfixHVMatchString
+'Includes PfncobjInputBoxRange
+'Includes PfixWriteArrayVariablesToWorkSheet
 
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_シート上の表から文字列検索用入力コードの配列変数を作成する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "SrchCndtnCode"
+  
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXobjSheet As Object, myXstrIfCndtn As String
+  Private myZstrSrchData() As String
+  Private myZstrConstData() As String
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    Set myXobjSheet = Nothing: myXstrIfCndtn = Empty
+    Erase myZstrSrchData
+    Erase myZstrConstData
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    
+'//処理実行
+    Call ctrProc
+    
+'//処理結果表示
+    Select Case myXbisCmpltFlag
+        Case True: MsgBox "実行完了"
+        Case Else: MsgBox "異常あり", vbExclamation
+    End Select
+    
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables
+    
+'//S:
+    Call snsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//Run:
+    Call runProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+
+    Set myXobjSheet = ActiveSheet
+    myXstrIfCndtn = "検索文字列"
+    
+End Sub
+
+'SnsP_
+Private Sub snsProc()
+    myXbisExitFlag = False
+    
+'//シート上の指定範囲またはデータ全範囲のデータを配列に取込む
+  Dim myXobjFrstCell As Object, myXobjLastCell As Object
+  Dim myXlonRowCnt As Long, myXlonColCnt As Long, myZstrShtData() As String
+    Call PfixGetSheetRangeData( _
+            myXlonRowCnt, myXlonColCnt, myZstrShtData, _
+            myXobjSheet, myXobjFrstCell, myXobjLastCell)
+    If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then GoTo ExitPath
+    
+'//2次元配列で文字列を検索して最初のデータ位置を取得
+  Dim myXlonBgnRow As Long, myXlonBgnCol As Long
+    Call PfixHVMatchString(myXlonBgnRow, myXlonBgnCol, myXstrIfCndtn, myZstrShtData, False)
+    If myXlonBgnRow <= 0 Or myXlonBgnCol <= 0 Then GoTo ExitPath
+    
+    myXlonBgnRow = myXlonBgnRow + 2
+    
+'//最後のデータ位置を取得
+  Dim myXlonEndRow As Long, myXlonEndCol As Long
+  Dim i As Long, j As Long, myXstrTmp As String
+    For i = UBound(myZstrShtData, 1) To LBound(myZstrShtData, 1) Step -1
+        myXstrTmp = Empty
+        myXstrTmp = myZstrShtData(i, myXlonBgnCol)
+        If myXstrTmp <> "" Then
+            myXlonEndRow = i
+            Exit For
+        End If
+    Next i
+    For j = UBound(myZstrShtData, 2) To LBound(myZstrShtData, 2) Step -1
+        myXstrTmp = Empty
+        myXstrTmp = myZstrShtData(myXlonBgnRow, j)
+        If myXstrTmp <> "" Then
+            myXlonEndCol = j
+            Exit For
+        End If
+    Next j
+    If myXlonEndRow < myXlonBgnRow Or myXlonEndCol < myXlonBgnCol Then GoTo ExitPath
+  
+'//検索用データ配列を取得
+  Dim L As Long: L = LBound(myZstrShtData, 1)
+  Dim myXlonRows As Long, myXlonCols As Long
+    myXlonRows = myXlonEndRow - myXlonBgnRow + 1
+    myXlonCols = myXlonEndCol - myXlonBgnCol + 1
+    
+    i = myXlonRows + L - 1: j = myXlonCols + L - 1
+    ReDim myZstrSrchData(i, j) As String
+  Dim m As Long, n As Long
+    n = L - 1
+    For j = myXlonBgnCol To myXlonEndCol
+        n = n + 1
+        m = L - 1
+        For i = myXlonBgnRow To myXlonEndRow
+            m = m + 1
+            myZstrSrchData(m, n) = myZstrShtData(i, j)
+        Next i
+    Next j
+    
+    Set myXobjFrstCell = Nothing: Set myXobjFrstCell = Nothing
+    Erase myZstrShtData
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_
+Private Sub runProc()
+    myXbisExitFlag = False
+    
+  Dim myXlonSrchDataCnt As Long
+    myXlonSrchDataCnt = UBound(myZstrSrchData, 1) - LBound(myZstrSrchData, 1) + 1
+    
+  Dim L As Long: L = LBound(myZstrSrchData, 1)
+  Dim n As Long: n = L - 1
+  Dim myZstrTmp() As String
+    n = n + 1
+    ReDim Preserve myZstrTmp(n) As String
+    myZstrTmp(n) = "  Dim myXlonShtSrchCnt As Long, myZvarSrchCndtn As Variant"
+    n = n + 1
+    ReDim Preserve myZstrTmp(n) As String
+    myZstrTmp(n) = "  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)"
+    n = n + 1
+    ReDim Preserve myZstrTmp(n) As String
+    myZstrTmp(n) = "    myXlonShtSrchCnt = " & myXlonSrchDataCnt
+    n = n + 1
+    ReDim Preserve myZstrTmp(n) As String
+    myZstrTmp(n) = "    ReDim myZvarSrchCndtn(myXlonShtSrchCnt + L - 1, L + 3) As Variant"
+    n = n + 1
+    ReDim Preserve myZstrTmp(n) As String
+    myZstrTmp(n) = "    'myZvarSrchCndtn(i, 1) : 検索文字列"
+    n = n + 1
+    ReDim Preserve myZstrTmp(n) As String
+    myZstrTmp(n) = "    'myZvarSrchCndtn(i, 2) : オフセット行数"
+    n = n + 1
+    ReDim Preserve myZstrTmp(n) As String
+    myZstrTmp(n) = "    'myZvarSrchCndtn(i, 3) : オフセット列数"
+    n = n + 1
+    ReDim Preserve myZstrTmp(n) As String
+    myZstrTmp(n) = "    'myZvarSrchCndtn(i, 4) : シート上文字列検索[=0]orコメント内文字列検索[=1]"
+    n = n + 1
+    ReDim Preserve myZstrTmp(n) As String
+    myZstrTmp(n) = "  Dim i As Long: i = L - 1"
+    
+'Chr(34) : ダブルコーテーション(")
+  Const coXstrConst1 As String = "    i = i + 1   'i = "
+  Const coXstrConst2 As String = "    myZvarSrchCndtn(i, L + 0) = "
+  Const coXstrConst3 As String = "    myZvarSrchCndtn(i, L + 1) = "
+  Const coXstrConst4 As String = "    myZvarSrchCndtn(i, L + 2) = "
+  Const coXstrConst5 As String = "    myZvarSrchCndtn(i, L + 3) = "
+    
+  Dim i As Long, m As Long: m = L - 1
+  Dim myXstrTmp As String, myXlonTmp1 As Long, myXlonTmp2 As Long, myXlonTmp3 As Long
+    For i = LBound(myZstrSrchData, 1) To UBound(myZstrSrchData, 1)
+        myXstrTmp = Empty: myXlonTmp1 = Empty: myXlonTmp2 = Empty: myXlonTmp3 = Empty
+        
+        myXstrTmp = myZstrSrchData(i, L + 0)
+        myXlonTmp1 = CLng(myZstrSrchData(i, L + 1))
+        myXlonTmp2 = CLng(myZstrSrchData(i, L + 2))
+        myXlonTmp3 = CLng(myZstrSrchData(i, L + 3))
+        
+        m = m + 1
+        n = n + 1
+        ReDim Preserve myZstrTmp(n) As String
+        myZstrTmp(n) = coXstrConst1 & m
+        n = n + 1
+        ReDim Preserve myZstrTmp(n) As String
+        myZstrTmp(n) = coXstrConst2 & Chr(34) & myXstrTmp & Chr(34)
+        n = n + 1
+        ReDim Preserve myZstrTmp(n) As String
+        myZstrTmp(n) = coXstrConst3 & myXlonTmp1
+        n = n + 1
+        ReDim Preserve myZstrTmp(n) As String
+        myZstrTmp(n) = coXstrConst4 & myXlonTmp2
+        n = n + 1
+        ReDim Preserve myZstrTmp(n) As String
+        myZstrTmp(n) = coXstrConst5 & myXlonTmp3
+    Next i
+    
+    ReDim myZstrConstData(n, L) As String
+    For i = LBound(myZstrTmp) To UBound(myZstrTmp)
+        myZstrConstData(i, L) = myZstrTmp(i)
+    Next i
+    
+'//InputBoxメソッドでセル範囲の入力を促す
+  Dim myXstrPrompt As String, myXstrTitle As String, myXstrDefault As String
+    myXstrTitle = "貼り付け位置の選択"
+    myXstrPrompt = "データを貼り付けたい位置を選択"
+    myXstrDefault = Selection.Address(ReferenceStyle:=Application.ReferenceStyle)
+    
+  Dim myXobjPstCell As Object
+    Set myXobjPstCell = PfncobjInputBoxRange(myXstrPrompt, myXstrTitle, myXstrDefault)
+    If myXobjPstCell Is Nothing Then GoTo ExitPath
+
+'//2次元配列変数のデータ一覧をシートに一括書出し
+    Call PfixWriteArrayVariablesToWorkSheet(myXbisExitFlag, myXobjPstCell, myZstrConstData, False)
+    If myXbisExitFlag = True Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_シート上の指定範囲またはデータ全範囲のデータを配列に取込む
+Private Sub PfixGetSheetRangeData( _
+            myXlonRowCnt As Long, myXlonColCnt As Long, myZstrShtData() As String, _
+            ByVal myXobjSheet As Object, _
+            ByVal myXobjFrstCell As Object, ByVal myXobjLastCell As Object)
+'myZstrShtData(i, j) : データ
+    myXlonRowCnt = Empty: myXlonColCnt = Empty: Erase myZstrShtData
+    If myXobjSheet Is Nothing Then Exit Sub
+'//シート上の指定範囲をオブジェクト配列に取込む
+  Dim myXobjShtRng As Object
+    If myXobjFrstCell Is Nothing Then Set myXobjFrstCell = myXobjSheet.Cells(1, 1)
+    If myXobjLastCell Is Nothing Then _
+        Set myXobjLastCell = myXobjSheet.Cells.SpecialCells(xlCellTypeLastCell)
+    Set myXobjShtRng = myXobjSheet.Range(myXobjFrstCell, myXobjLastCell)
+    myXlonRowCnt = myXobjShtRng.Rows.Count
+    myXlonColCnt = myXobjShtRng.Columns.Count
+    If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then Exit Sub
+'//オブジェクト配列からデータを取得
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZvarRngData As Variant, i As Long, j As Long
+    i = myXlonRowCnt + L - 1: j = myXlonColCnt + L - 1
+    ReDim myZstrShtData(i, j) As String
+    myZvarRngData = myXobjShtRng.Value
+    On Error Resume Next
+    If myXlonRowCnt * myXlonColCnt = 1 Then
+        myZstrShtData(L, L) = myZvarRngData
+    Else
+        For j = LBound(myZvarRngData, 2) To UBound(myZvarRngData, 2)
+            For i = LBound(myZvarRngData, 1) To UBound(myZvarRngData, 1)
+                myZstrShtData(i, j) = myZvarRngData(i, j)
+            Next i
+        Next j
+    End If
+    On Error GoTo 0
+    Set myXobjShtRng = Nothing: myZvarRngData = Empty
+End Sub
+
+ '定型Ｐ_2次元配列で文字列を検索して最初のデータ位置を取得する
+Private Sub PfixHVMatchString(myXlonRow As Long, myXlonCol As Long, _
+            ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
+            Optional ByVal coXbisInStrOptn As Boolean = False)
+'myZstrOrgData(i, j) : 元データ配列
+'coXbisInStrOptn = False : 指定文字列と一致する条件
+'coXbisInStrOptn = True  : 指定文字列とを含む条件
+    myXlonRow = Empty: myXlonCol = Empty
+    If myXstrIfCndtn = "" Then Exit Sub
+  Dim myXstrTmp As String, Li As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZstrOrgData, 1): myXstrTmp = myZstrOrgData(Li, Li)
+    On Error GoTo 0
+  Dim i As Long, j As Long, r As Long, c As Long: r = Li - 1: c = Li - 1
+    If coXbisInStrOptn = True Then
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+                myXstrTmp = myZstrOrgData(i, j)
+                If InStr(myXstrTmp, myXstrIfCndtn) > 0 Then
+                    r = i: c = j: GoTo JumpPath
+                End If
+            Next i
+        Next j
+    Else
+        For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
+            For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
+                myXstrTmp = myZstrOrgData(i, j)
+                If myXstrTmp = myXstrIfCndtn Then
+                    r = i: c = j: GoTo JumpPath
+                End If
+            Next i
+        Next j
+    End If
+JumpPath:
+    myXlonRow = r: myXlonCol = c
+ExitPath:
+End Sub
+
+ '定型Ｆ_InputBoxメソッドでセル範囲の入力を促す
+Private Function PfncobjInputBoxRange( _
+                    ByVal myXstrPrompt As String, ByVal myXstrTitle As String, _
+                    ByVal myXstrDefault As String) As Object
+    Set PfncobjInputBoxRange = Nothing
+    If myXstrTitle = "" Then myXstrTitle = "セル範囲の選択"
+    If myXstrPrompt = "" Then myXstrPrompt = myXstrTitle
+  Dim myXobjRng As Object
+    On Error Resume Next
+    Set myXobjRng = Application.InputBox(prompt:=myXstrPrompt, Title:=myXstrTitle, _
+                                            Default:=myXstrDefault, Type:=8)
+    On Error GoTo 0
+'    Debug.Print "入力値: " & myXobjRng.Address(ReferenceStyle:=Application.ReferenceStyle, _
+'                                RowAbsolute:=True, ColumnAbsolute:=True, external:=True)    'Debug.Print
+    Set PfncobjInputBoxRange = myXobjRng
+    Set myXobjRng = Nothing
+End Function
+
+ '定型Ｐ_2次元配列変数のデータ一覧をシートに一括書出しする
+Private Sub PfixWriteArrayVariablesToWorkSheet( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjFrstCell As Object, ByRef myZvarOrgData As Variant, _
+            Optional ByVal coXbisEachWrtON As Boolean = False)
+    myXbisExitFlag = False
+    If myXobjFrstCell Is Nothing Then GoTo ExitPath
+  Dim Li As Long, myXvarTmp As Variant
+    On Error GoTo ExitPath
+    Li = LBound(myZvarOrgData, 1): myXvarTmp = myZvarOrgData(Li, Li)
+    On Error GoTo 0
+'//指定範囲内に配列変数が書出し可能かチェック
+  Dim myXlonDataRows As Long, myXlonDataCols As Long
+    myXlonDataRows = UBound(myZvarOrgData, 1) - LBound(myZvarOrgData, 1) + 1
+    myXlonDataCols = UBound(myZvarOrgData, 2) - LBound(myZvarOrgData, 2) + 1
+    If myXlonDataRows <= 0 Or myXlonDataCols <= 0 Then GoTo ExitPath
+  Dim myXlonRngRows As Long, myXlonRngCols As Long
+    With myXobjFrstCell
+        myXlonRngRows = .Parent.Rows.Count - .Row + 1
+        myXlonRngCols = .Parent.Columns.Count - .Column + 1
+        If myXlonRngRows < myXlonDataRows Then GoTo ExitPath
+        If myXlonRngCols < myXlonDataCols Then GoTo ExitPath
+    End With
+'//格納データをシートに書出し
+    On Error GoTo ErrPath
+    If coXbisEachWrtON = False Then
+        myXobjFrstCell.Resize(myXlonDataRows, myXlonDataCols) = myZvarOrgData
+    Else
+      Dim i As Long, j As Long
+        For i = LBound(myZvarOrgData, 1) To UBound(myZvarOrgData, 1)
+            For j = LBound(myZvarOrgData, 2) To UBound(myZvarOrgData, 2)
+                myXobjFrstCell.Offset(i - Li, j - Li).Value = myZvarOrgData(i, j)
+            Next j
+        Next i
+    End If
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+    Exit Sub
+ErrPath:
+'//セルの書式を文字列に設定
+    myXobjFrstCell.Resize(myXlonDataRows, myXlonDataCols).NumberFormatLocal = "@"
+    Resume
+End Sub
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
