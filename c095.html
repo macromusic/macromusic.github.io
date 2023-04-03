@@ -1,1 +1,702 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
 
+
+ '定型ＷＳＦ_10進数を16進数に変換[MyFunction]
+Public Function SfncstrDECtoHEX( _
+            ByVal myXobjRng As Object, _
+            Optional ByVal coXlonDigit As Long = 0, _
+            Optional ByVal coXbisSigned As Boolean = False) As String
+'Includes PfncstrDECtoHEX
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+    SfncstrDECtoHEX = Empty
+  Dim myXlonOrg As Long: myXlonOrg = myXobjRng.Value
+    SfncstrDECtoHEX = PfncstrDECtoHEX(myXlonOrg, coXlonDigit, coXbisSigned)
+End Function
+
+ '定型Ｆ_10進数を16進数に変換[MyFunction]
+Private Function PfncstrDECtoHEX( _
+            ByVal myXlonDec As Long, _
+            Optional ByVal coXlonDigit As Long = 0, _
+            Optional ByVal coXbisSigned As Boolean = False) As String
+'Includes PfncstrOrgDECtoHEX
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+  Const coXlonBase As Long = 16
+  Const coXlonMaxDigit As Long = 8
+    PfncstrDECtoHEX = Empty
+    If myXlonDec < 0 Then coXbisSigned = True
+'//出力するビット数を決める
+  Dim myXlonTmpDec As Long
+    If myXlonDec >= 0 Then
+        myXlonTmpDec = myXlonDec
+    Else
+        myXlonTmpDec = myXlonDec + 1
+        myXlonTmpDec = Abs(myXlonTmpDec)
+    End If
+  Dim myXlonBits As Long, i As Long: i = 1
+    Do Until myXlonTmpDec < coXlonBase ^ i
+        i = i + 1
+    Loop
+    If coXbisSigned = False Then
+        myXlonBits = i
+    Else
+        If myXlonTmpDec < (coXlonBase ^ i) * 0.5 Then
+            myXlonBits = i
+        Else
+            myXlonBits = i + 1
+        End If
+    End If
+  Dim myXlonTmpDigit As Long
+    If coXlonDigit < 0 Or coXlonDigit > coXlonMaxDigit Then
+        Exit Function
+    ElseIf coXlonDigit = 0 Then
+        myXlonTmpDigit = coXlonMaxDigit
+    Else
+        If coXlonDigit >= myXlonBits Then
+            myXlonTmpDigit = coXlonDigit
+        Else
+            myXlonTmpDigit = myXlonBits
+        End If
+    End If
+'//符号有無で処理分岐
+    If coXbisSigned = False Then
+    '//符号無しの場合
+        If myXlonDec >= coXlonBase ^ myXlonTmpDigit Then Exit Function
+    Else
+    '//符号付きの場合
+        If myXlonDec >= 0 Then
+        '正の10進数の場合
+            If myXlonDec >= (coXlonBase ^ myXlonTmpDigit) * 0.5 Then Exit Function
+        Else
+        '負の10進数の場合
+            If myXlonDec < (-1) * (coXlonBase ^ myXlonTmpDigit) * 0.5 Then Exit Function
+        End If
+    End If
+'//10進数を指定進数に変換
+  Dim myXstrConv As String: myXstrConv = PfncstrOrgDECtoHEX(myXlonDec, myXlonTmpDigit)
+    PfncstrDECtoHEX = myXstrConv
+End Function
+
+ '定型Ｆ_10進数を16進数に変換(入力制限処理無)[MyFunction]
+Private Function PfncstrOrgDECtoHEX( _
+            ByVal myXvarDec As Variant, _
+            Optional ByVal coXlonDigit As Long = 0) As String
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+  Const coXlonBase As Long = 16
+  Const coXlonMaxDigit As Long = 8
+    PfncstrOrgDECtoHEX = Empty
+  Dim myXlonTmpDigit As Long, myXvarTmpDec As Variant
+    If coXlonDigit = 0 Then
+        myXlonTmpDigit = coXlonMaxDigit
+    Else
+        myXlonTmpDigit = coXlonDigit
+    End If
+    If myXvarDec >= 0 Then
+        myXvarTmpDec = myXvarDec
+    Else
+        myXvarTmpDec = coXlonBase ^ myXlonTmpDigit + myXvarDec
+    End If
+'//0以外が最上位となるビット長を取得
+  Dim myXlonBits As Long, i As Long: i = 1
+    Do Until myXvarTmpDec < coXlonBase ^ i
+        i = i + 1
+    Loop
+    myXlonBits = i
+'//各桁のビット値を取得して並べる
+  Dim myXvarCal1 As Variant, myXvarCal2 As Variant, myXvarCal3 As Variant, _
+        myXstrCalHex As String, myXstrSubHex As String, myXstrHex As String
+    For i = myXlonBits To 1 Step -1
+        myXvarCal1 = coXlonBase ^ (i - 1)
+        myXvarCal2 = Int(myXvarTmpDec / myXvarCal1)
+        myXvarCal3 = myXvarCal2 - Int(myXvarCal2 / coXlonBase) * coXlonBase
+        If myXvarCal3 < 0 Or myXvarCal3 > 15 Then Exit Function
+        myXstrCalHex = CStr(myXvarCal3)
+        If Len(myXstrCalHex) = 1 Then
+            myXstrSubHex = myXstrCalHex
+        ElseIf Len(myXstrCalHex) = 2 Then
+            Select Case myXstrCalHex
+                Case "10": myXstrSubHex = "A"
+                Case "11": myXstrSubHex = "B"
+                Case "12": myXstrSubHex = "C"
+                Case "13": myXstrSubHex = "D"
+                Case "14": myXstrSubHex = "E"
+                Case "15": myXstrSubHex = "F"
+                Case Else: Exit Function
+            End Select
+        Else
+            Exit Function
+        End If
+        myXstrHex = myXstrHex & myXstrSubHex
+    Next i
+'//指定桁数分となるように0を追加
+    If coXlonDigit <> 0 And myXlonBits < coXlonDigit Then
+        For i = 1 To coXlonDigit - myXlonBits
+            myXstrHex = CStr(0) & myXstrHex
+        Next i
+    End If
+    PfncstrOrgDECtoHEX = myXstrHex
+End Function
+
+ '定型ＷＳＦ_10進数を2進数に変換[MyFunction]
+Public Function SfncstrDECtoBIN( _
+            ByVal myXobjRng As Object, _
+            Optional ByVal coXlonDigit As Long = 0, _
+            Optional ByVal coXbisSigned As Boolean = False) As String
+'Includes PincstrDECtoBIN
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+    SfncstrDECtoBIN = Empty
+  Dim myXlonOrg As Long: myXlonOrg = myXobjRng.Value
+    SfncstrDECtoBIN = PincstrDECtoBIN(myXlonOrg, coXlonDigit, coXbisSigned)
+End Function
+
+ '定型ＷＳＦ_10進数を2進数に変換して1ビットごとに分離[MyFunction]
+Public Function SfncstrDECtoBINbit( _
+            ByVal myXobjRng As Object, ByVal myXlonBitNo As Long, _
+            Optional ByVal coXlonDigit As Long = 0, _
+            Optional ByVal coXbisSigned As Boolean = False) As String
+'Includes PincstrDECtoBIN
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+  Const coXlonMaxDigit As Long = 32
+    SfncstrDECtoBINbit = Empty
+    If myXlonBitNo < 0 Or myXlonBitNo > coXlonMaxDigit Then Exit Function
+  Dim myXlonDec As Long: myXlonDec = myXobjRng.Value
+  Dim myXstrBin As String
+    myXstrBin = PincstrDECtoBIN(myXlonDec, coXlonDigit, coXbisSigned)
+    If Len(myXstrBin) < 0 Or Len(myXstrBin) > coXlonMaxDigit Then Exit Function
+  Dim n As Long: n = Len(myXstrBin) - myXlonBitNo
+    SfncstrDECtoBINbit = Mid(myXstrBin, n, 1)
+End Function
+
+ '定型Ｆ_10進数を2進数に変換[MyFunction]
+Private Function PincstrDECtoBIN( _
+            ByVal myXlonDec As Long, _
+            Optional ByVal coXlonDigit As Long = 0, _
+            Optional ByVal coXbisSigned As Boolean = False) As String
+'Includes PfncstrOrgDECtoBIN
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+  Const coXlonBase As Long = 2
+  Const coXlonMaxDigit As Long = 32
+    PincstrDECtoBIN = Empty
+    If myXlonDec < 0 Then coXbisSigned = True
+'//出力するビット数を決める
+  Dim myXlonTmpDec As Long
+    If myXlonDec >= 0 Then
+        myXlonTmpDec = myXlonDec
+    Else
+        myXlonTmpDec = myXlonDec + 1
+        myXlonTmpDec = Abs(myXlonTmpDec)
+    End If
+  Dim myXlonBits As Long, i As Long: i = 1
+    Do Until myXlonTmpDec < coXlonBase ^ i
+        i = i + 1
+    Loop
+    If coXbisSigned = False Then
+        myXlonBits = i
+    Else
+        myXlonBits = i + 1
+    End If
+  Dim myXlonTmpDigit As Long
+    If coXlonDigit < 0 Or coXlonDigit > coXlonMaxDigit Then
+        Exit Function
+    ElseIf coXlonDigit = 0 Then
+        myXlonTmpDigit = coXlonMaxDigit
+    Else
+        If coXlonDigit >= myXlonBits Then
+            myXlonTmpDigit = coXlonDigit
+        Else
+            myXlonTmpDigit = myXlonBits
+        End If
+    End If
+'//符号有無で処理分岐
+    If coXbisSigned = False Then
+    '//符号無しの場合
+        If myXlonDec >= coXlonBase ^ myXlonTmpDigit Then Exit Function
+    Else
+    '//符号付きの場合
+        If myXlonDec >= 0 Then
+        '正の10進数の場合
+            If myXlonDec >= (coXlonBase ^ myXlonTmpDigit) * 0.5 Then Exit Function
+        Else
+        '負の10進数の場合
+            If myXlonDec < (-1) * (coXlonBase ^ myXlonTmpDigit) * 0.5 Then Exit Function
+        End If
+    End If
+'//10進数を指定進数に変換
+  Dim myXstrConv As String: myXstrConv = PfncstrOrgDECtoBIN(myXlonDec, myXlonTmpDigit)
+    PincstrDECtoBIN = myXstrConv
+End Function
+
+ '定型Ｆ_10進数を2進数に変換(入力制限処理無)[MyFunction]
+Private Function PfncstrOrgDECtoBIN( _
+            ByVal myXvarDec As Variant, _
+            Optional ByVal coXlonDigit As Long = 0) As String
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+  Const coXlonBase As Long = 2
+  Const coXlonMaxDigit As Long = 32
+    PfncstrOrgDECtoBIN = Empty
+  Dim myXlonTmpDigit As Long, myXvarTmpDec As Variant
+    If myXvarDec >= 0 Then
+        myXvarTmpDec = myXvarDec
+    Else
+        myXvarTmpDec = coXlonBase ^ coXlonMaxDigit + myXvarDec
+    End If
+'//0以外が最上位となるビット長を取得
+  Dim myXlonBits As Long, i As Long: i = 1
+    Do Until myXvarTmpDec < coXlonBase ^ i
+        i = i + 1
+    Loop
+    myXlonBits = i
+'//各桁のビット値を取得して並べる
+  Dim myXvarCal1 As Variant, myXvarCal2 As Variant, myXvarCal3 As Variant, _
+        myXstrCalBin As String, myXstrBin As String
+    For i = myXlonBits To 1 Step -1
+        myXvarCal1 = coXlonBase ^ (i - 1)
+        myXvarCal2 = Int(myXvarTmpDec / myXvarCal1)
+        myXvarCal3 = myXvarCal2 - Int(myXvarCal2 / coXlonBase) * coXlonBase
+        myXstrCalBin = CStr(myXvarCal3)
+        myXstrBin = myXstrBin & myXstrCalBin
+    Next i
+'//指定桁数分となるように0を追加
+    If myXlonBits < coXlonDigit Then
+        For i = 1 To coXlonDigit - myXlonBits
+            myXstrBin = CStr(0) & myXstrBin
+        Next i
+    End If
+'//必要桁数分となるように1を削除
+    If myXvarDec < 0 And coXlonDigit <> 0 Then
+        For i = myXlonBits To coXlonDigit + 1 Step -1
+            If Mid(myXstrBin, 1, 1) = "1" And Mid(myXstrBin, 2, 1) = "1" Then
+                myXstrBin = Mid(myXstrBin, 2)
+            ElseIf Mid(myXstrBin, 1, 1) = "1" And Mid(myXstrBin, 2, 1) = "0" Then
+                Exit For
+            End If
+        Next i
+    End If
+    PfncstrOrgDECtoBIN = myXstrBin
+End Function
+
+ '定型ＷＳＦ_16進数を10進数に変換[MyFunction]
+Public Function SfnclonHEXtoDEC( _
+            ByVal myXobjRng As Object, _
+            Optional ByVal coXbisSigned As Boolean = False) As Long
+'Includes PinclonHEXtoDEC
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+    SfnclonHEXtoDEC = Empty
+  Dim myXstrOrg As String: myXstrOrg = myXobjRng.Value
+    SfnclonHEXtoDEC = PinclonHEXtoDEC(myXstrOrg, coXbisSigned)
+End Function
+
+ '定型Ｆ_16進数を10進数に変換[MyFunction]
+Private Function PinclonHEXtoDEC( _
+            ByVal myXstrHex As String, _
+            Optional ByVal coXbisSigned As Boolean = False) As Long
+'Includes PfncvarOrgHEXtoDEC
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+  Const coXlonBase As Long = 16
+  Const coXlonMaxDigit As Long = 8
+    PinclonHEXtoDEC = Empty
+    If myXstrHex = "" Then Exit Function
+    If coXbisSigned = False Then
+    '//符号無しの場合
+        If Len(myXstrHex) > coXlonMaxDigit Then
+            Exit Function
+        ElseIf Len(myXstrHex) = coXlonMaxDigit Then
+          Dim myXstrCal As String
+            myXstrCal = Left(myXstrHex, 1): myXstrCal = UCase(myXstrCal)
+            If myXstrCal <> "1" And _
+                myXstrCal <> "2" And _
+                myXstrCal <> "3" And _
+                myXstrCal <> "4" And _
+                myXstrCal <> "5" And _
+                myXstrCal <> "6" And _
+                myXstrCal <> "7" And _
+                myXstrCal <> "8" Then Exit Function
+        End If
+    Else
+    '//符号付きの場合
+        If Len(myXstrHex) > coXlonMaxDigit Then Exit Function
+    End If
+'//16進数を指定進数に変換
+  Dim myXlonConv As Long: myXlonConv = CLng(PfncvarOrgHEXtoDEC(myXstrHex, coXbisSigned))
+    PinclonHEXtoDEC = myXlonConv
+End Function
+
+ '定型Ｆ_16進数を10進数に変換(入力制限処理無)[MyFunction]
+Private Function PfncvarOrgHEXtoDEC( _
+            ByVal myXstrHex As String, _
+            Optional ByVal coXbisSigned As Boolean = False) As Variant
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+  Const coXlonBase As Long = 16
+  Const coXlonMaxDigit As Long = 8
+    PfncvarOrgHEXtoDEC = Empty
+'//各桁のビット値を取得して10進数に計算処理
+  Dim myXstrCal As String, myXlonSubDec As Long, myXvarCalDec As Variant, _
+        myXvarDec As Variant, i As Long, k As Long
+  Dim myXlonBitNo As Long: myXlonBitNo = -1
+    For i = Len(myXstrHex) To 1 Step -1
+        myXstrCal = Mid(myXstrHex, i, 1): myXstrCal = UCase(myXstrCal)
+        Select Case myXstrCal
+            Case "0": myXlonSubDec = 0
+            Case "1": myXlonSubDec = 1
+            Case "2": myXlonSubDec = 2
+            Case "3": myXlonSubDec = 3
+            Case "4": myXlonSubDec = 4
+            Case "5": myXlonSubDec = 5
+            Case "6": myXlonSubDec = 6
+            Case "7": myXlonSubDec = 7
+            Case "8": myXlonSubDec = 8
+            Case "9": myXlonSubDec = 9
+            Case "A": myXlonSubDec = 10
+            Case "B": myXlonSubDec = 11
+            Case "C": myXlonSubDec = 12
+            Case "D": myXlonSubDec = 13
+            Case "E": myXlonSubDec = 14
+            Case "F": myXlonSubDec = 15
+            Case Else: Exit Function
+        End Select
+        If myXlonSubDec < 0 Or myXlonSubDec > 15 Then Exit Function
+        myXlonBitNo = myXlonBitNo + 1
+        myXvarCalDec = coXlonBase ^ myXlonBitNo
+        myXvarDec = myXvarDec + myXlonSubDec * myXvarCalDec
+    Next i
+'//符号付きの場合
+    If coXbisSigned = True Then
+        myXlonBitNo = myXlonBitNo + 1
+        If myXvarDec >= (coXlonBase ^ myXlonBitNo) * 0.5 Then _
+            myXvarDec = myXvarDec - (coXlonBase ^ myXlonBitNo)
+    End If
+    PfncvarOrgHEXtoDEC = myXvarDec
+End Function
+
+ '定型ＷＳＦ_16進数を2進数に変換[MyFunction]
+Public Function SfncstrHEXtoBIN( _
+            ByVal myXobjRng As Object, _
+            Optional ByVal coXlonDigit As Long = 0, _
+            Optional ByVal coXbisSigned As Boolean = False) As String
+'Includes PincstrHEXtoBIN
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+    SfncstrHEXtoBIN = Empty
+  Dim myXlonOrg As Long: myXlonOrg = myXobjRng.Value
+    SfncstrHEXtoBIN = PincstrHEXtoBIN(myXlonOrg, coXlonDigit, coXbisSigned)
+End Function
+
+ '定型ＷＳＦ_16進数を2進数に変換して1ビットごとに分離[MyFunction]
+Public Function SfncstrHEXtoBINbit( _
+            ByVal myXobjRng As Object, ByVal myXlonBitNo As Long, _
+            Optional ByVal coXlonDigit As Long = 0, _
+            Optional ByVal coXbisSigned As Boolean = False) As String
+'Includes PincstrHEXtoBIN
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+  Const coXlonMaxDigit As Long = 32
+    SfncstrHEXtoBINbit = Empty
+    If myXlonBitNo < 0 Or myXlonBitNo > coXlonMaxDigit Then Exit Function
+  Dim myXstrHex As String: myXstrHex = myXobjRng.Value
+  Dim myXstrBin As String
+    myXstrBin = PincstrHEXtoBIN(myXstrHex, coXlonDigit, coXbisSigned)
+    If Len(myXstrBin) < 0 Or Len(myXstrBin) > coXlonMaxDigit Then Exit Function
+  Dim n As Long: n = Len(myXstrBin) - myXlonBitNo
+    SfncstrHEXtoBINbit = Mid(myXstrBin, n, 1)
+End Function
+
+ '定型Ｆ_16進数を2進数に変換[MyFunction]
+Private Function PincstrHEXtoBIN( _
+            ByVal myXstrHex As String, _
+            Optional ByVal coXlonDigit As Long = 0, _
+            Optional ByVal coXbisSigned As Boolean = False) As String
+'Includes PinclonHEXtoDEC
+'Includes PincstrDECtoBIN
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+    PincstrHEXtoBIN = Empty
+  Dim myXlonDec As Long
+    myXlonDec = PinclonHEXtoDEC(myXstrHex, coXbisSigned)
+    PincstrHEXtoBIN = PincstrDECtoBIN(myXlonDec, coXlonDigit, coXbisSigned)
+End Function
+
+ '定型ＷＳＦ_2進数を10進数に変換[MyFunction]
+Public Function SfnclonBINtoDEC( _
+            ByVal myXobjRng As Object, _
+            Optional ByVal coXbisSigned As Boolean = False) As Long
+'Includes PinclonBINtoDEC
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+    SfnclonBINtoDEC = Empty
+  Dim myXstrOrg As String: myXstrOrg = myXobjRng.Value
+    SfnclonBINtoDEC = PinclonBINtoDEC(myXstrOrg, coXbisSigned)
+End Function
+
+ '定型ＷＳＦ_1ビットごと範囲の2進数を10進数に変換[MyFunction]
+Public Function SfnclonBINBitsRangetoDEC( _
+            ByVal myXobjRng As Object, _
+            Optional ByVal coXbisSigned As Boolean = False) As Long
+'Includes PinclonBINtoDEC
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+    SfnclonBINBitsRangetoDEC = Empty
+  Dim myXstrOrg As String, i As Long, j As Long
+    i = myXobjRng.Rows.Count
+    j = myXobjRng.Columns.Count
+    If i > 1 And j > 1 Then
+        Exit Function
+    ElseIf i * j = 1 Then
+        myXstrOrg = myXobjRng.Value
+    Else
+      Dim myXvarOrg As Variant, myXstrTmp As String
+        myXvarOrg = myXobjRng.Value
+        For j = LBound(myXvarOrg, 2) To UBound(myXvarOrg, 2)
+            For i = LBound(myXvarOrg, 1) To UBound(myXvarOrg, 1)
+                myXstrTmp = CStr(myXvarOrg(i, j))
+                If Len(myXstrTmp) > 1 Then Exit Function
+                myXstrOrg = myXstrOrg & myXstrTmp
+            Next i
+        Next j
+    End If
+    SfnclonBINBitsRangetoDEC = PinclonBINtoDEC(myXstrOrg, coXbisSigned)
+End Function
+
+ '定型ＷＳＦ_1ビットごとの2進数を10進数に変換[MyFunction]
+Public Function SfnclonBINBitstoDEC( _
+            ByVal myXbisSigned As Boolean, _
+            ParamArray myZvarRng() As Variant) As Long
+'Includes PinclonBINtoDEC
+'myXbisSigned = False : 符号無しの場合
+'myXbisSigned = True  : 符号付きの場合
+    SfnclonBINBitstoDEC = Empty
+  Dim myXstrOrg As String, myXstrTmp As String, i As Long
+    For i = LBound(myZvarRng) To UBound(myZvarRng)
+        myXstrTmp = myZvarRng(i).Value
+        If Len(myXstrTmp) > 1 Then Exit Function
+        myXstrOrg = myXstrOrg & myXstrTmp
+    Next i
+    SfnclonBINBitstoDEC = PinclonBINtoDEC(myXstrOrg, myXbisSigned)
+End Function
+
+ '定型Ｆ_2進数を10進数に変換[MyFunction]
+Private Function PinclonBINtoDEC( _
+            ByVal myXstrBin As String, _
+            Optional ByVal coXbisSigned As Boolean = False) As Long
+'Includes PfncvarOrgBINtoDEC
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+  Const coXlonBase As Long = 2
+  Const coXlonMaxDigit As Long = 32
+    PinclonBINtoDEC = Empty
+    If myXstrBin = "" Then Exit Function
+    If coXbisSigned = False Then
+    '//符号無しの場合
+        If Len(myXstrBin) > coXlonMaxDigit Then
+            Exit Function
+        ElseIf Len(myXstrBin) = coXlonMaxDigit Then
+            If Left(myXstrBin, 1) = 1 Then Exit Function
+        End If
+    Else
+    '//符号付きの場合
+        If Len(myXstrBin) > coXlonMaxDigit Then Exit Function
+    End If
+'//16進数を指定進数に変換
+  Dim myXlonConv As Long: myXlonConv = CLng(PfncvarOrgBINtoDEC(myXstrBin, coXbisSigned))
+    PinclonBINtoDEC = myXlonConv
+End Function
+
+ '定型Ｆ_2進数を10進数に変換(入力制限処理無)[MyFunction]
+Private Function PfncvarOrgBINtoDEC( _
+            ByVal myXstrBin As String, _
+            Optional ByVal coXbisSigned As Boolean = False) As Variant
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+  Const coXlonBase As Long = 2
+  Const coXlonMaxDigit As Long = 32
+    PfncvarOrgBINtoDEC = Empty
+  Dim myXstrCal As String, myXlonSubDec As Long, myXvarCalDec As Variant, _
+        myXvarDec As Variant, i As Long
+  Dim myXlonBitNo As Long: myXlonBitNo = -1
+    For i = Len(myXstrBin) To 1 Step -1
+        myXstrCal = Mid(myXstrBin, i, 1)
+        If myXstrCal <> "0" And myXstrCal <> "1" Then Exit Function
+        myXlonSubDec = CLng(myXstrCal)
+        myXlonBitNo = myXlonBitNo + 1
+        myXvarCalDec = coXlonBase ^ myXlonBitNo
+        myXvarDec = myXvarDec + myXlonSubDec * myXvarCalDec
+    Next i
+'//符号付きの場合
+    If coXbisSigned = True Then
+        myXlonBitNo = myXlonBitNo + 1
+        If myXvarDec >= (coXlonBase ^ myXlonBitNo) * 0.5 Then _
+            myXvarDec = myXvarDec - (coXlonBase ^ myXlonBitNo)
+    End If
+    PfncvarOrgBINtoDEC = myXvarDec
+End Function
+
+ '定型ＷＳＦ_2進数を16進数に変換[MyFunction]
+Public Function SfncstrBINtoHEX( _
+            ByVal myXobjRng As Object, _
+            Optional ByVal coXlonDigit As Long = 0, _
+            Optional ByVal coXbisSigned As Boolean = False) As String
+'Includes PincstrBINtoHEX
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+    SfncstrBINtoHEX = Empty
+  Dim myXstrOrg As String: myXstrOrg = myXobjRng.Value
+    SfncstrBINtoHEX = PincstrBINtoHEX(myXstrOrg, coXlonDigit, coXbisSigned)
+End Function
+
+ '定型ＷＳＦ_1ビットごと範囲の2進数を16進数に変換[MyFunction]
+Public Function SfncstrBINBitsRangetoHEX( _
+            ByVal myXobjRng As Object, _
+            Optional ByVal coXlonDigit As Long = 0, _
+            Optional ByVal coXbisSigned As Boolean = False) As String
+'Includes PincstrBINtoHEX
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+    SfncstrBINBitsRangetoHEX = Empty
+  Dim myXstrOrg As String, i As Long, j As Long
+    i = myXobjRng.Rows.Count
+    j = myXobjRng.Columns.Count
+    If i > 1 And j > 1 Then
+        Exit Function
+    ElseIf i * j = 1 Then
+        myXstrOrg = myXobjRng.Value
+    Else
+      Dim myXvarOrg As Variant, myXstrTmp As String
+        myXvarOrg = myXobjRng.Value
+        For j = LBound(myXvarOrg, 2) To UBound(myXvarOrg, 2)
+            For i = LBound(myXvarOrg, 1) To UBound(myXvarOrg, 1)
+                myXstrTmp = CStr(myXvarOrg(i, j))
+                If Len(myXstrTmp) > 1 Then Exit Function
+                myXstrOrg = myXstrOrg & myXstrTmp
+            Next i
+        Next j
+    End If
+    SfncstrBINBitsRangetoHEX = PincstrBINtoHEX(myXstrOrg, coXlonDigit, coXbisSigned)
+End Function
+
+ '定型ＷＳＦ_1ビットごとの2進数を16進数に変換[MyFunction]
+Public Function SfncstrBINBitstoHEX( _
+            ByVal myXlonDigit As Boolean, ByVal myXbisSigned As Boolean, _
+            ParamArray myZvarRng() As Variant) As String
+'Includes PincstrBINtoHEX
+'myXlonDigit = 0  : 桁数を指定しない
+'myXlonDigit <> 0 : 桁数を指定する
+'myXbisSigned = False : 符号無しの場合
+'myXbisSigned = True  : 符号付きの場合
+    SfncstrBINBitstoHEX = Empty
+  Dim myXstrOrg As String, i As Long
+    For i = LBound(myZvarRng) To UBound(myZvarRng)
+        myXstrOrg = myXstrOrg & myZvarRng(i).Value
+    Next i
+    SfncstrBINBitstoHEX = PincstrBINtoHEX(myXstrOrg, myXlonDigit, myXbisSigned)
+End Function
+
+ '定型Ｆ_2進数を16進数に変換[MyFunction]
+Private Function PincstrBINtoHEX( _
+            ByVal myXstrBin As String, _
+            Optional ByVal coXlonDigit As Long = 0, _
+            Optional ByVal coXbisSigned As Boolean = False) As String
+'Includes PinclonBINtoDEC
+'Includes PfncstrDECtoHEX
+'coXlonDigit = 0  : 桁数を指定しない
+'coXlonDigit <> 0 : 桁数を指定する
+'coXbisSigned = False : 符号無しの場合
+'coXbisSigned = True  : 符号付きの場合
+    PincstrBINtoHEX = Empty
+  Dim myXlonDec As Long: myXlonDec = PinclonBINtoDEC(myXstrBin, coXbisSigned)
+    PincstrBINtoHEX = PfncstrDECtoHEX(myXlonDec, coXlonDigit, coXbisSigned)
+End Function
+
+ '定型Ｆ_アルファベットを10進数に変換
+Private Function PfnclonA2ZtoDEC(ByVal myXstrAtoZ As String) As Long
+  Const coXlonChrA As Long = 65     'Chr(65) : A
+  Const coXlonChrZ As Long = 90     'Chr(90) : Z
+    PfnclonA2ZtoDEC = Empty
+    If myXstrAtoZ = "" Then Exit Function
+  Dim myXlonAlphCnt As Long: myXlonAlphCnt = coXlonChrZ - coXlonChrA + 1
+  Dim myXlonDec As Long, myXlonSubDec As Long, myXstrAlph As String, myXstrChr As String
+  Dim i As Long, k As Long, n As Long: n = 0
+    For i = Len(myXstrAtoZ) To 1 Step -1
+        myXstrAlph = Mid(myXstrAtoZ, i, 1): myXstrAlph = UCase(myXstrAlph)
+        For k = 1 To myXlonAlphCnt
+            myXstrChr = Chr(coXlonChrA - 1 + k)
+            If myXstrAlph = myXstrChr Then
+                myXlonSubDec = k: Exit For
+            End If
+        Next k
+        n = n + 1
+        myXlonDec = myXlonDec + myXlonSubDec * (myXlonAlphCnt ^ (n - 1))
+    Next i
+    PfnclonA2ZtoDEC = myXlonDec
+End Function
+
+ '定型Ｆ_10進数をアルファベットに変換
+Private Function PfncstrDECtoA2Z2(ByVal myXlonDec As Long) As String
+  Const coXlonChrA As Long = 65     'Chr(65) : A
+  Const coXlonChrZ As Long = 90     'Chr(90) : Z
+    PfncstrDECtoA2Z2 = Empty
+    If myXlonDec <= 0 Then Exit Function
+  Dim myXlonAlphCnt As Long: myXlonAlphCnt = coXlonChrZ - coXlonChrA + 1
+  Dim myXlonQuot As Long, myXlonRemain As Long
+  Dim myXstrAlph As String, myXstrSubAlph As String, myXstrChr As String
+  Dim k As Long, myXbisExitLpFlag As Boolean: myXbisExitLpFlag = False
+  Dim myXlonTmpDec As Long: myXlonTmpDec = myXlonDec
+    Do While myXbisExitLpFlag = False
+        myXlonQuot = Int((myXlonTmpDec - 0.5) / myXlonAlphCnt)
+        myXlonRemain = myXlonTmpDec - myXlonQuot * myXlonAlphCnt
+        For k = 1 To myXlonAlphCnt
+            myXstrChr = Chr(coXlonChrA - 1 + k)
+            If myXlonRemain = k Then
+                myXstrSubAlph = myXstrChr: Exit For
+            End If
+        Next k
+        myXstrAlph = myXstrSubAlph & myXstrAlph
+        If myXlonQuot <= 0 Then
+            myXbisExitLpFlag = True
+        Else
+            myXlonTmpDec = myXlonQuot
+        End If
+    Loop
+    PfncstrDECtoA2Z2 = myXstrAlph
+End Function
+
+      <br></pre>
+    </body>
+  </html>
