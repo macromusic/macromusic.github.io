@@ -1,1 +1,760 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes CSlctFilePath
+'Includes CRdTxtNoOpn
+'Includes CRdTxtNoOpnUTF8
+'Includes CRdTxtOpn
+'Includes CVrblToSht
+'Includes PfncstrGetTextFileCharset
+'Includes PfixChangeModuleConstValue
+'Includes x
 
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_テキストファイルを選択して開閉してデータ処理して貼り付ける
+'Rev.002
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "xRefSlctTxtRdToSht"
+  Private Const meMlonExeNum As Long = 0
+  
+'//モジュール内定数
+  Private Const coXstrANSI As Variant = "Shift_JIS (ANSI)"
+  Private Const coXstrUTF8 As Variant = "UTF-8"
+  
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//出力データ
+  
+'//入力制御信号
+  
+'//入力データ
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonFDType As Long
+    'myXlonFDType = msoFileDialogFilePicker : ファイルを選択
+    'myXlonFDType = msoFileDialogOpen       : ファイルを開く
+    'myXlonFDType = msoFileDialogSaveAs     : ファイルを保存
+  Private myXstrDfltFldrPath As String
+    'myXstrDfltFldrPath = ""  : デフォルトパス指定無し
+    'myXstrDfltFldrPath = "C" : Cドライブをデフォルトパスに指定
+    'myXstrDfltFldrPath = "1" : このブックの親フォルダをデフォルトパスに指定
+    'myXstrDfltFldrPath = "2" : アクティブブックの親フォルダをデフォルトパスに指定
+    'myXstrDfltFldrPath = "*" : デフォルトパスを指定
+  Private myXstrDfltFilePath As String
+    'myXstrDfltFilePath = ""  : デフォルトパス指定無し
+    'myXstrDfltFilePath = "1" : このブックをデフォルトパスに指定
+    'myXstrDfltFilePath = "2" : アクティブブックをデフォルトパスに指定
+    'myXstrDfltFilePath = "*" : デフォルトパスを指定
+  Private myXstrFltrExtsn As String
+  Private myZstrAddFltr() As String
+    'myZstrAddFltr(i, 1) : ファイルの候補を指定する文字列(ファイル)
+    'myZstrAddFltr(i, 2) : ファイルの候補を指定する文字列(フィルタ文字列)
+  Private myXbisFltrClr As Boolean
+    'myXbisFltrClr = False : ファイルフィルタを初期化せずに追加する
+    'myXbisFltrClr = True  : ファイルフィルタを初期化する
+  Private myXlonFltrIndx As Long
+    'myXlonFltrIndx = 1～ : ファイルフィルタの初期選択
+  Private myXlonIniView As Long
+    'myXlonIniView = msoFileDialogViewDetails    : ファイルを詳細情報と共に一覧表示
+    'myXlonIniView = msoFileDialogViewLargeIcons : ファイルを大きいアイコンで表示
+    'myXlonIniView = msoFileDialogViewList       : ファイルを詳細情報なしで一覧表示
+    'myXlonIniView = msoFileDialogViewPreview    : ファイルの一覧を表示し、選択したファイルをプレビュー ウィンドウ枠に表示
+    'myXlonIniView = msoFileDialogViewProperties : ファイルの一覧を表示し、選択したファイルのプロパティをウィンドウ枠に表示
+    'myXlonIniView = msoFileDialogViewSmallIcons : ファイルを小さいアイコンで表示
+    'myXlonIniView = msoFileDialogViewThumbnail  : ファイルを縮小表示
+    'myXlonIniView = msoFileDialogViewTiles      : ファイルをアイコンで並べて表示
+    'myXlonIniView = msoFileDialogViewWebView    : ファイルを Web 表示
+  Private myXbisMultSlct As Boolean
+    'myXbisMultSlct = False : 複数のファイルを選択不可能
+    'myXbisMultSlct = True  : 複数のファイルを選択可能
+  Private myXlonFileCnt As Long, myZstrFilePath() As String
+    'myZstrFilePath(i) : ファイルパス
+
+  Private myXstrOrgFilePath As String
+  Private myXlonBgn As Long, myXlonEnd As Long, _
+            myXbisSpltOptn As Boolean, myXstrInSpltChr As String
+    'myXbisSpltOptn = True  : 文字列を分割処理する
+    'myXbisSpltOptn = False : 文字列を分割処理しない
+  Private myXstrFileCharset As String
+    'myXstrFileCharset = Shift_JIS (ANSI)
+    'myXstrFileCharset = UTF-8
+    'myXstrFileCharset = UTF-8 BOM
+    'myXstrFileCharset = UTF-16 LE BOM
+    'myXstrFileCharset = UTF-16 BE BOM
+    'myXstrFileCharset = EUC-JP
+  Private myXstrDirPath As String, myXstrFileName As String, _
+            myXstrBaseName As String, myXstrExtsn As String
+  Private myXlonTxtRowCnt As Long, myXlonTxtColCnt As Long, myZstrTxtData() As String
+    'myZstrTxtData(i, j) : テキストファイル内容
+
+  Private myXbisInptBxOFF As Boolean
+    'myXbisInptBxOFF = False : 指定位置が無い場合にInputBoxで範囲指定する
+    'myXbisInptBxOFF = True  : 指定位置が無い場合にInputBoxで範囲指定しない
+  Private myXbisEachWrtON As Boolean
+    'myXbisEachWrtON = False : 配列変数内データを一度に書き出しする
+    'myXbisEachWrtON = True  : 配列変数内データを1データづつ書き出しする
+  Private myZvarPstVrbl As Variant, myXobjPstFrstCell As Object
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonFDType = Empty: myXstrDfltFldrPath = Empty: myXstrDfltFilePath = Empty
+    myXstrFltrExtsn = Empty
+    Erase myZstrAddFltr: myXbisFltrClr = False: myXlonFltrIndx = Empty
+    myXlonIniView = Empty: myXbisMultSlct = False
+    myXlonFileCnt = Empty: Erase myZstrFilePath
+    myXstrOrgFilePath = Empty
+    myXlonBgn = Empty: myXlonEnd = Empty
+    myXbisSpltOptn = False: myXstrInSpltChr = Empty
+    myXstrFileCharset = Empty
+    myXstrDirPath = Empty: myXstrFileName = Empty
+    myXstrBaseName = Empty: myXstrExtsn = Empty
+    myXlonTxtRowCnt = Empty: myXlonTxtColCnt = Empty: Erase myZstrTxtData
+    myXbisInptBxOFF = False: myXbisEachWrtON = False
+    myZvarPstVrbl = Empty: Set myXobjPstFrstCell = Nothing
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_モジュールメモリのリセット
+Public Sub resetConstant()
+  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
+  Dim myZvarM(1, 2) As Variant
+    myZvarM(1, 1) = "meMlonExeNum": myZvarM(1, 2) = 0
+    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+End Sub
+
+'PublicP_
+Public Sub exeProc()
+    
+'//処理実行
+    Call callxRefSlctTxtRdToSht
+    
+'//処理結果表示
+    Select Case myXbisCmpltFlag
+        Case True: MsgBox "実行完了"
+        Case Else: MsgBox "異常あり", vbExclamation
+    End Select
+    
+End Sub
+
+'PublicP_
+Public Sub callProc(myXbisCmpltFlagOUT As Boolean)
+    
+'//出力変数を初期化
+    myXbisCmpltFlagOUT = False
+    
+'//処理実行
+    Call ctrProc
+    If myXbisCmpltFlag = False Then Exit Sub
+    
+'//出力変数に格納
+    myXbisCmpltFlagOUT = myXbisCmpltFlag
+
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call remProc: If myXbisExitFlag = True Then GoTo ExitPath
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables1
+    Call setControlVariables2
+    Call setControlVariables3
+    
+'//S:ファイルを選択してそのパスを取得
+    Call snsProc1
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//S:テキストファイルの内容を取得
+    Call snsProc2
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+'//P:データを取得
+    Call prsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+    
+'//Run:変数情報をエクセルシートに書き出す
+    Call runProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "6"     'PassFlag
+    
+    Call checkOutputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+    myXbisCmpltFlag = True
+ExitPath:
+    If coXbisTestMode = False Then Call recProc
+    Call initializeModuleVariables
+End Sub
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+End Sub
+
+'RemP_モジュールメモリに保存した変数を取り出す
+Private Sub remProc()
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables1()
+    
+    myXlonFDType = msoFileDialogFilePicker
+    'myXlonFDType = msoFileDialogFilePicker : ファイルを選択
+    'myXlonFDType = msoFileDialogOpen       : ファイルを開く
+    'myXlonFDType = msoFileDialogSaveAs     : ファイルを保存
+    
+    myXstrDfltFldrPath = "1"
+    'myXstrDfltFldrPath = ""  : デフォルトパス指定無し
+    'myXstrDfltFldrPath = "C" : Cドライブをデフォルトパスに指定
+    'myXstrDfltFldrPath = "1" : このブックの親フォルダをデフォルトパスに指定
+    'myXstrDfltFldrPath = "2" : アクティブブックの親フォルダをデフォルトパスに指定
+    'myXstrDfltFldrPath = "*" : デフォルトパスを指定
+    
+    myXstrDfltFilePath = "1"
+    'myXstrDfltFilePath = ""  : デフォルトパス指定無し
+    'myXstrDfltFilePath = "1" : このブックをデフォルトパスに指定
+    'myXstrDfltFilePath = "2" : アクティブブックをデフォルトパスに指定
+    'myXstrDfltFilePath = "*" : デフォルトパスを指定
+    
+'    myXstrFltrExtsn = "xl"
+'
+'    ReDim myZstrAddFltr(1, 2) As String
+'    myZstrAddFltr(1, 1) = "PDFファイル"
+'    myZstrAddFltr(1, 2) = "*.pdf"
+    'myZstrAddFltr(i, 1) : ファイルの候補を指定する文字列(ファイル)
+    'myZstrAddFltr(i, 2) : ファイルの候補を指定する文字列(フィルタ文字列)
+    
+    myXbisFltrClr = False
+    'myXbisFltrClr = False : ファイルフィルタを初期化せずに追加する
+    'myXbisFltrClr = True  : ファイルフィルタを初期化する
+    
+    myXlonFltrIndx = 1
+    'myXlonFltrIndx = 1～ : ファイルフィルタの初期選択
+    
+    myXlonIniView = msoFileDialogViewList
+    'myXlonIniView = msoFileDialogViewDetails    : ファイルを詳細情報と共に一覧表示
+    'myXlonIniView = msoFileDialogViewLargeIcons : ファイルを大きいアイコンで表示
+    'myXlonIniView = msoFileDialogViewList       : ファイルを詳細情報なしで一覧表示
+    'myXlonIniView = msoFileDialogViewPreview    : ファイルの一覧を表示し、選択したファイルをプレビュー ウィンドウ枠に表示
+    'myXlonIniView = msoFileDialogViewProperties : ファイルの一覧を表示し、選択したファイルのプロパティをウィンドウ枠に表示
+    'myXlonIniView = msoFileDialogViewSmallIcons : ファイルを小さいアイコンで表示
+    'myXlonIniView = msoFileDialogViewThumbnail  : ファイルを縮小表示
+    'myXlonIniView = msoFileDialogViewTiles      : ファイルをアイコンで並べて表示
+    'myXlonIniView = msoFileDialogViewWebView    : ファイルを Web 表示
+    
+    myXbisMultSlct = False
+    'myXbisMultSlct = False : 複数のファイルを選択不可能
+    'myXbisMultSlct = True  : 複数のファイルを選択可能
+    
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables2()
+    
+    myXlonBgn = 1
+    myXlonEnd = 0
+    
+    myXbisSpltOptn = True
+    myXstrInSpltChr = ""
+    'myXbisSpltOptn = True  : 文字列を分割処理する
+    'myXbisSpltOptn = False : 文字列を分割処理しない
+    
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables3()
+    
+    myXbisInptBxOFF = False
+    'myXbisInptBxOFF = False : 指定位置が無い場合にInputBoxで範囲指定する
+    'myXbisInptBxOFF = True  : 指定位置が無い場合にInputBoxで範囲指定しない
+    
+    myXbisEachWrtON = False
+    'myXbisEachWrtON = False : 配列変数内データを一度に書き出しする
+    'myXbisEachWrtON = True  : 配列変数内データを1データづつ書き出しする
+
+End Sub
+
+'SnsP_ファイルを選択してそのパスを取得
+Private Sub snsProc1()
+    myXbisExitFlag = False
+
+    Call instCSlctFilePath
+    If myXlonFileCnt <= 0 Then GoTo ExitPath
+    
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    myXstrOrgFilePath = myZstrFilePath(L)
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'SnsP_テキストファイルの内容を取得
+Private Sub snsProc2()
+    myXbisExitFlag = False
+    
+'//指定テキストファイルの文字コードを取得
+    myXstrFileCharset = PfncstrGetTextFileCharset(myXstrOrgFilePath)
+    If myXstrFileCharset = "" Then GoTo ExitPath
+    
+'//文字コードで処理を分岐
+    Select Case myXstrFileCharset
+        Case coXstrANSI
+        '//ファイルを開かずにテキストファイルの内容を取得
+            Call instCRdTxtNoOpn
+            
+        Case coXstrUTF8
+        '//ファイルを開かずにUTF8形式テキストファイルの内容を取得
+            Call instCRdTxtNoOpnUTF8
+            
+        Case Else
+        '//ファイルを開いてテキストファイルの内容を取得
+            Call instCRdTxtOpn
+            
+    End Select
+    If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_データを取得
+Private Sub prsProc()
+    myXbisExitFlag = False
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_変数情報をエクセルシートに書き出す
+Private Sub runProc()
+    myXbisExitFlag = False
+    
+    myZvarPstVrbl = myZstrTxtData
+    
+    Call instCVrblToSht
+    If myXbisExitFlag = True Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'checkP_出力変数内容を確認する
+Private Sub checkOutputVariables()
+    myXbisExitFlag = False
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RecP_使用した変数をモジュールメモリに保存する
+Private Sub recProc()
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    
+  Dim myZvarM(1, 2) As Variant
+    myZvarM(1, 1) = "meMlonExeNum"
+    myZvarM(1, 2) = meMlonExeNum + 1
+
+  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
+    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+    
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'◆ClassProc名_ファイルを選択してそのパスを取得する
+Private Sub instCSlctFilePath()
+  Dim Lc As Long
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim k As Long
+  Dim myXinsFilePath As CSlctFilePath: Set myXinsFilePath = New CSlctFilePath
+    With myXinsFilePath
+    '//クラス内変数への入力
+        .letFDType = myXlonFDType
+        .letDfltFldrPath = myXstrDfltFldrPath
+        .letDfltFilePath = myXstrDfltFilePath
+        .letExtsn = myXstrFltrExtsn
+        .letAddFltr = myZstrAddFltr
+        .letFltrClr = myXbisFltrClr
+        .letFltrIndx = myXlonFltrIndx
+        .letIniView = myXlonIniView
+        .letMultSlct = myXbisMultSlct
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXlonFileCnt = .getFileCnt
+        If myXlonFileCnt <= 0 Then Exit Sub
+        k = myXlonFileCnt + Lo - 1
+        ReDim myZstrFilePath(k) As String
+        Lc = .getOptnBase
+        For k = 1 To myXlonFileCnt
+            myZstrFilePath(k + Lo - 1) = .getFilePathAry(k + Lc - 1)
+        Next k
+    End With
+    Set myXinsFilePath = Nothing
+End Sub
+
+'◆ClassProc名_ファイルを開かずにテキストファイルの内容を取得する
+Private Sub instCRdTxtNoOpn()
+  Dim Lc As Long
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+  Dim myXinsRdTxtNoOpn As CRdTxtNoOpn: Set myXinsRdTxtNoOpn = New CRdTxtNoOpn
+    With myXinsRdTxtNoOpn
+    '//クラス内変数への入力
+        .letFilePath = myXstrOrgFilePath
+        .letRdBgnEnd(1) = myXlonBgn
+        .letRdBgnEnd(2) = myXlonEnd
+        .letSpltOptn = myXbisSpltOptn
+        .letSpltChr = myXstrInSpltChr
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXstrDirPath = .getDirPath
+        myXstrFileName = .getFileName
+        myXstrBaseName = .getBaseName
+        myXstrExtsn = .getExtsn
+        myXlonTxtRowCnt = .getTxtRowCnt
+        myXlonTxtColCnt = .getTxtColCnt
+        If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then GoTo JumpPath
+        i = myXlonTxtRowCnt + Lo - 1: j = myXlonTxtColCnt + Lo - 1
+        ReDim myZstrTxtData(i, j) As String
+        Lc = .getOptnBase
+        For i = 1 To myXlonTxtRowCnt
+            For j = 1 To myXlonTxtColCnt
+                myZstrTxtData(i + Lo - 1, j + Lo - 1) = .getTxtDataAry(i + Lc - 1, j + Lc - 1)
+            Next j
+        Next i
+    End With
+JumpPath:
+    Set myXinsRdTxtNoOpn = Nothing
+End Sub
+
+'◆ClassProc名_ファイルを開かずにUTF8形式テキストファイルの内容を取得する
+Private Sub instCRdTxtNoOpnUTF8()
+  Dim Lc As Long
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+  Dim myXinsRdTxtNoOpn As CRdTxtNoOpnUTF8: Set myXinsRdTxtNoOpn = New CRdTxtNoOpnUTF8
+    With myXinsRdTxtNoOpn
+    '//クラス内変数への入力
+        .letFilePath = myXstrOrgFilePath
+        .letRdBgnEnd(1) = myXlonBgn
+        .letRdBgnEnd(2) = myXlonEnd
+        .letSpltOptn = myXbisSpltOptn
+        .letSpltChr = myXstrInSpltChr
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXstrDirPath = .getDirPath
+        myXstrFileName = .getFileName
+        myXstrBaseName = .getBaseName
+        myXstrExtsn = .getExtsn
+        myXlonTxtRowCnt = .getTxtRowCnt
+        myXlonTxtColCnt = .getTxtColCnt
+        If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then GoTo JumpPath
+        i = myXlonTxtRowCnt + Lo - 1: j = myXlonTxtColCnt + Lo - 1
+        ReDim myZstrTxtData(i, j) As String
+        Lc = .getOptnBase
+        For i = 1 To myXlonTxtRowCnt
+            For j = 1 To myXlonTxtColCnt
+                myZstrTxtData(i + Lo - 1, j + Lo - 1) = .getTxtDataAry(i + Lc - 1, j + Lc - 1)
+            Next j
+        Next i
+    End With
+JumpPath:
+    Set myXinsRdTxtNoOpn = Nothing
+End Sub
+
+'◆ClassProc名_ファイルを開いてテキストファイルの内容を取得する
+Private Sub instCRdTxtOpn()
+  Dim Lc As Long
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+  Dim myXinsRdTxtOpn As CRdTxtOpn: Set myXinsRdTxtOpn = New CRdTxtOpn
+    With myXinsRdTxtOpn
+    '//クラス内変数への入力
+    '//テキストファイルパスを指定
+        .letFilePath = myXstrOrgFilePath
+        .letRdBgnEnd(1) = myXlonBgn
+        .letRdBgnEnd(2) = myXlonEnd
+        .letSpltOptn = myXbisSpltOptn
+        .letSpltChr = myXstrInSpltChr
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXstrDirPath = .getDirPath
+        myXstrFileName = .getFileName
+        myXstrBaseName = .getBaseName
+        myXstrExtsn = .getExtsn
+        myXlonTxtRowCnt = .getTxtRowCnt
+        myXlonTxtColCnt = .getTxtColCnt
+        If myXlonTxtRowCnt <= 0 Or myXlonTxtColCnt <= 0 Then GoTo JumpPath
+        i = myXlonTxtRowCnt + Lo - 1: j = myXlonTxtColCnt + Lo - 1
+        ReDim myZstrTxtData(i, j) As String
+        Lc = .getOptnBase
+        For i = 1 To myXlonTxtRowCnt
+            For j = 1 To myXlonTxtColCnt
+                myZstrTxtData(i + Lo - 1, j + Lo - 1) = .getTxtDataAry(i + Lc - 1, j + Lc - 1)
+            Next j
+        Next i
+    End With
+JumpPath:
+    Set myXinsRdTxtOpn = Nothing
+End Sub
+
+'◆ClassProc名_変数情報をエクセルシートに書き出す
+Private Sub instCVrblToSht()
+  Dim myXinsVrblToSht As CVrblToSht: Set myXinsVrblToSht = New CVrblToSht
+    With myXinsVrblToSht
+    '//クラス内変数への入力
+        .letVrbl = myZvarPstVrbl
+        Set .setPstFrstCell = myXobjPstFrstCell
+        .letInptBxOFF = myXbisInptBxOFF
+        .letEachWrtON = myXbisEachWrtON
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXbisExitFlag = Not .getCmpltFlag
+    End With
+    Set myXinsVrblToSht = Nothing
+End Sub
+
+'===============================================================================================
+ 
+ '定型Ｆ_指定テキストファイルの文字コードを取得する
+Private Function PfncstrGetTextFileCharset(ByVal myXstrFilePath As String) As String
+'myXstrCharset = Shift_JIS (ANSI)
+'myXstrCharset = UTF-8
+'myXstrCharset = UTF-8 BOM
+'myXstrCharset = UTF-16 LE BOM
+'myXstrCharset = UTF-16 BE BOM
+'myXstrCharset = EUC-JP
+    PfncstrGetTextFileCharset = Empty
+  Dim myXstrCharset As String, i As Long
+  Dim myXlonHdlFile As Long, myXlonFileLen As Long
+  Dim myZbytFile() As Byte, b1 As Byte, b2 As Byte, b3 As Byte, b4 As Byte
+  Dim myXlonSJIS As Long, myXlonUTF8 As Long, myXlonEUC As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+'//ファイル読み込み
+    On Error Resume Next
+    myXlonFileLen = FileLen(myXstrFilePath)
+    ReDim myZbytFile(myXlonFileLen)
+    If Err.Number <> 0 Then Exit Function
+    myXlonHdlFile = FreeFile()
+    Open myXstrFilePath For Binary As #myXlonHdlFile
+    Get #myXlonHdlFile, , myZbytFile
+    Close #myXlonHdlFile
+    If Err.Number <> 0 Then Exit Function
+    On Error GoTo 0
+'//BOMによる判断
+    If (myZbytFile(L) = &HEF And myZbytFile(L + 1) = &HBB And myZbytFile(L + 2) = &HBF) Then
+        myXstrCharset = "UTF-8 BOM"
+        GoTo SetPath
+    ElseIf (myZbytFile(L) = &HFF And myZbytFile(L + 1) = &HFE) Then
+        myXstrCharset = "UTF-16 LE BOM"
+        GoTo SetPath
+    ElseIf (myZbytFile(L) = &HFE And myZbytFile(L + 1) = &HFF) Then
+        myXstrCharset = "UTF-16 BE BOM"
+        GoTo SetPath
+    End If
+'//BINARY
+    For i = L To myXlonFileLen + L - 1
+        b1 = myZbytFile(i)
+        If (b1 >= &H0 And b1 <= &H8) Or _
+                (b1 >= &HA And b1 <= &H9) Or _
+                (b1 >= &HB And b1 <= &HC) Or _
+                (b1 >= &HE And b1 <= &H19) Or _
+                (b1 >= &H1C And b1 <= &H1F) Or _
+                (b1 = &H7F) Then
+            myXstrCharset = "BINARY"
+            GoTo SetPath
+        End If
+    Next i
+'//Shift_JIS
+    For i = L To myXlonFileLen + L - 1
+        b1 = myZbytFile(i)
+        If b1 = &H9 Or b1 = &HA Or b1 = &HD Or _
+                (b1 >= &H20 And b1 <= &H7E) Or _
+                (b1 >= &HB0 And b1 <= &HDF) Then
+            myXlonSJIS = myXlonSJIS + 1
+        Else
+            If (i < myXlonFileLen - 2) Then
+                b2 = myZbytFile(i + 1)
+                If ((b1 >= &H81 And b1 <= &H9F) Or (b1 >= &HE0 And b1 <= &HFC)) And _
+                        ((b2 >= &H40 And b2 <= &H7E) Or (b2 >= &H80 And b2 <= &HFC)) Then
+                   myXlonSJIS = myXlonSJIS + 2
+                   i = i + 1
+                End If
+            End If
+        End If
+    Next i
+'//UTF-8
+    For i = L To myXlonFileLen + L - 1
+        b1 = myZbytFile(i)
+        If b1 = &H9 Or b1 = &HA Or b1 = &HD Or (b1 >= &H20 And b1 <= &H7E) Then
+            myXlonUTF8 = myXlonUTF8 + 1
+        Else
+            If (i < myXlonFileLen - 2) Then
+                b2 = myZbytFile(i + 1)
+                If (b1 >= &HC2 And b1 <= &HDF) And (b2 >= &H80 And b2 <= &HBF) Then
+                   myXlonUTF8 = myXlonUTF8 + 2
+                   i = i + 1
+                Else
+                    If (i < myXlonFileLen - 3) Then
+                        b3 = myZbytFile(i + 2)
+                        If (b1 >= &HE0 And b1 <= &HEF) And _
+                                (b2 >= &H80 And b2 <= &HBF) And _
+                                (b3 >= &H80 And b3 <= &HBF) Then
+                            myXlonUTF8 = myXlonUTF8 + 3
+                            i = i + 2
+                        Else
+                            If (i < myXlonFileLen - 4) Then
+                                b4 = myZbytFile(i + 3)
+                                If (b1 >= &HF0 And b1 <= &HF7) And _
+                                        (b2 >= &H80 And b2 <= &HBF) And _
+                                        (b3 >= &H80 And b3 <= &HBF) And _
+                                        (b4 >= &H80 And b4 <= &HBF) Then
+                                    myXlonUTF8 = myXlonUTF8 + 4
+                                    i = i + 3
+                                End If
+                            End If
+                        End If
+                    End If
+                End If
+            End If
+        End If
+    Next i
+'//EUC-JP
+    For i = L To myXlonFileLen + L - 1
+        b1 = myZbytFile(i)
+        If b1 = &H7 Or b1 = 10 Or b1 = 13 Or (b1 >= &H20 And b1 <= &H7E) Then
+            myXlonEUC = myXlonEUC + 1
+        Else
+            If (i < myXlonFileLen - 2) Then
+                b2 = myZbytFile(i + 1)
+                If ((b1 >= &HA1 And b1 <= &HFE) And (b2 >= &HA1 And b2 <= &HFE)) Or _
+                        (b1 = &H8E And (b2 >= &HA1 And b2 <= &HDF)) Then
+                   myXlonEUC = myXlonEUC + 2
+                   i = i + 1
+                End If
+            End If
+        End If
+    Next i
+'//文字コード出現順位による判断
+    If (myXlonSJIS <= myXlonUTF8) And (myXlonEUC <= myXlonUTF8) Then
+        myXstrCharset = "UTF-8"
+        GoTo SetPath
+    End If
+    If (myXlonUTF8 <= myXlonSJIS) And (myXlonEUC <= myXlonSJIS) Then
+        myXstrCharset = "Shift_JIS"
+        GoTo SetPath
+    End If
+    If (myXlonUTF8 <= myXlonEUC) And (myXlonSJIS <= myXlonEUC) Then
+        myXstrCharset = "EUC-JP"
+        GoTo SetPath
+    End If
+    Exit Function
+SetPath:
+    PfncstrGetTextFileCharset = myXstrCharset
+End Function
+
+ '定型Ｐ_モジュール内定数の値を変更する
+Private Sub PfixChangeModuleConstValue(myXbisExitFlag As Boolean, _
+            ByVal myXstrMdlName As String, ByRef myZvarM() As Variant)
+    myXbisExitFlag = False
+    If myXstrMdlName = "" Then GoTo ExitPath
+  Dim L As Long, myXvarTmp As Variant
+    On Error GoTo ExitPath
+    L = LBound(myZvarM, 1): myXvarTmp = myZvarM(L, L)
+    On Error GoTo 0
+  Dim myXlonDclrLines As Long, myXobjCdMdl As Object
+    Set myXobjCdMdl = ThisWorkbook.VBProject.VBComponents(myXstrMdlName).CodeModule
+    myXlonDclrLines = myXobjCdMdl.CountOfDeclarationLines
+    If myXlonDclrLines <= 0 Then GoTo ExitPath
+  Dim i As Long, n As Long
+  Dim myXstrTmp As String, myXstrSrch As String, myXstrOrg As String, myXstrRplc As String
+Application.DisplayAlerts = False
+    For i = 1 To myXlonDclrLines
+        myXstrTmp = myXobjCdMdl.Lines(i, 1)
+        For n = LBound(myZvarM, 1) To UBound(myZvarM, 1)
+            myXstrSrch = "Const" & Space(1) & myZvarM(n, L) & Space(1) & "As" & Space(1)
+            If InStr(myXstrTmp, myXstrSrch) > 0 Then
+                myXstrOrg = Left(myXstrTmp, InStr(myXstrTmp, "=" & Space(1)) + 1)
+                myXstrRplc = myXstrOrg & myZvarM(n, L + 1)
+                Call myXobjCdMdl.ReplaceLine(i, myXstrRplc)
+            End If
+        Next n
+    Next i
+Application.DisplayAlerts = True
+    Set myXobjCdMdl = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+'===============================================================================================
+'◆ModuleProc名_テキストファイルを選択して開閉してデータ処理して貼り付ける
+Private Sub callxRefSlctTxtRdToSht()
+'  Dim myXbisCmpltFlag As Boolean
+    Call xRefSlctTxtRdToSht.callProc(myXbisCmpltFlag)
+End Sub
+'
+'  Public Const coXbisTestMode As Boolean = True
+'  Public Const coXbisTestMode As Boolean = False
+'
+Private Sub resetConstantInxRefSlctTxtRdToSht()
+'//xRefSlctTxtRdToShtモジュールのモジュールメモリのリセット処理
+    Call xRefSlctTxtRdToSht.resetConstant
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
