@@ -1,1 +1,656 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfixEnlargeSelection
+'Includes PfncstrDefaultAddressInputBox
+'Includes PfncobjInputBoxRange
+'Includes PfncbisCheckSeriesRangeByInputBox
+'Includes PfixGetRangeBookSheetInformation
+'Includes PfixGetRangeInformation
+'Includes PfixGetSheetRangeData
+'Includes PfixGetSheetRangeDataVariantArray
+'Includes PfixGetSheetRangeCommentText
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_シート上の連続範囲を指定してその範囲のデータと情報を取得する
+'Rev.002
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CSlctShtSrsData"
+  
+'//PropertyGet_出力データ
+  Private Lc As Long
+  Private myXlonDataRowCnt As Long, myXlonDataColCnt As Long, _
+            myZstrShtData() As String, myZvarShtData() As Variant, _
+            myZstrCmntData() As String
+  Private myXobjBook As Object, myXstrShtName As String, myXlonShtNo As Long
+  Private myXlonBgnRow As Long, myXlonEndRow As Long, _
+            myXlonBgnCol As Long, myXlonEndCol As Long, _
+            myXlonRows As Long, myXlonCols As Long
+  
+'//PropertySetLet_入力制御信号
+  Private myXlonRngOptn As Long
+  Private myXbisByVrnt As Boolean, myXbisGetCmnt As Boolean
+  
+'//PropertySetLet_入力データ
+  Private myXstrInptBxPrmpt As String, myXstrInptBxTtl As String
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXobjDataRng As Object
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+
+    Set myXobjDataRng = Nothing
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getOptnBase() As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    getOptnBase = L
+End Property
+
+Public Property Get getDataRowCnt() As Long
+    getDataRowCnt = myXlonDataRowCnt
+End Property
+
+Public Property Get getDataColCnt() As Long
+    getDataColCnt = myXlonDataColCnt
+End Property
+
+Public Property Get getStrShtDataAry(ByVal i As Long, ByVal j As Long) As String
+    getStrShtDataAry = myZstrShtData(i, j)
+'myZstrShtData(i, j) : 取得文字列
+End Property
+
+Public Property Get getVarShtDataAry(ByVal i As Long, ByVal j As Long) As Variant
+    getVarShtDataAry = myZvarShtData(i, j)
+'myZvarShtData(i, j) : 取得文字列
+End Property
+
+Public Property Get getCmntDataAry(ByVal i As Long, ByVal j As Long) As String
+    getCmntDataAry = myZstrCmntData(i, j)
+'myZstrCmntData(i, j) : 取得コメント
+End Property
+
+Public Property Get getBook() As Object
+    Set getBook = myXobjBook
+End Property
+
+Public Property Get getShtName() As String
+    getShtName = myXstrShtName
+End Property
+
+Public Property Get getShtNo() As Long
+    getShtNo = myXlonShtNo
+End Property
+
+Public Property Get getBgnEndRowCol(ByVal i As Long, ByVal j As Long) As Long
+    Select Case i & j
+        Case "11": getBgnEndRowCol = myXlonBgnRow
+        Case "21": getBgnEndRowCol = myXlonEndRow
+        Case "12": getBgnEndRowCol = myXlonBgnCol
+        Case "22": getBgnEndRowCol = myXlonEndCol
+        Case "10": getBgnEndRowCol = myXlonRows
+        Case "01": getBgnEndRowCol = myXlonCols
+        Case Else
+    End Select
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXlonDataRowCnt = Empty: myXlonDataColCnt = Empty
+    Erase myZstrShtData: Erase myZvarShtData: Erase myZstrCmntData
+    Set myXobjBook = Nothing: myXstrShtName = Empty: myXlonShtNo = Empty
+    myXlonBgnRow = Empty: myXlonEndRow = Empty
+    myXlonBgnCol = Empty: myXlonEndCol = Empty
+    myXlonRows = Empty: myXlonCols = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letRngOptn(ByVal RHS As Long)
+    myXlonRngOptn = RHS
+'myXlonRngOptn = 0  : 選択範囲
+'myXlonRngOptn = 1  : 選択位置から最終行までの範囲
+'myXlonRngOptn = 2  : 選択位置から最終列までの範囲
+'myXlonRngOptn = 3  : 全データ範囲
+End Property
+
+Public Property Let letByVrnt(ByVal RHS As Boolean)
+    myXbisByVrnt = RHS
+'myXbisByVrnt = False : シートデータをStringで取得する
+'myXbisByVrnt = True  : シートデータをVariantで取得する
+End Property
+
+Public Property Let letGetCmnt(ByVal RHS As Boolean)
+    myXbisGetCmnt = RHS
+'myXbisGetCmnt = False : コメントを取得しない
+'myXbisGetCmnt = True  : コメントを取得する
+End Property
+
+Public Property Let letInptBoxPrmptTtl(ByVal k As Long, ByVal RHS As String)
+    Select Case k
+        Case 1: myXstrInptBxPrmpt = RHS
+        Case 2: myXstrInptBxTtl = RHS
+        Case Else
+    End Select
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXlonRngOptn < 0 Or myXlonRngOptn > 3 Then myXlonRngOptn = 0
+    
+    If myXstrInptBxPrmpt = "" Then _
+        myXstrInptBxPrmpt = " " & vbCrLf & _
+            "処理を実行したい範囲を連続する範囲で指定して下さい。" & vbCrLf & " "
+        
+    If myXstrInptBxTtl = "" Then _
+        myXstrInptBxTtl = "範囲の入力"
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    Call ctrProc
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//S:データ取得範囲を設定
+    Call snsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//P:指定範囲からブック＆シート＆範囲の情報を取得
+    Call prsProcGetInformation
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+'//P:指定範囲のデータとコメントを取得
+    Call prsProcGetData
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+    
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'SnsP_データ取得範囲を設定
+Private Sub snsProc()
+    myXbisExitFlag = False
+    
+'//セル選択範囲を全データ範囲まで拡大
+  Dim myXobjSlctRng As Object
+  Dim myXobjDfltRng As Object, myXobjFrstCell As Object, myXobjLastCell As Object
+    Call PfixEnlargeSelection( _
+            myXobjDfltRng, myXobjFrstCell, myXobjLastCell, _
+            myXobjSlctRng, myXlonRngOptn)
+    
+'//InputBox用のデフォルト範囲を設定
+  Dim myXstrDefault As String
+    myXstrDefault = PfncstrDefaultAddressInputBox(myXobjDfltRng)
+    
+'//データ取得範囲を指定
+  Dim myXbisExitLpFlag As Boolean: myXbisExitLpFlag = False
+    Do While myXbisExitLpFlag = False
+    
+    '//InputBoxメソッドでセル範囲の入力
+        Set myXobjDataRng = PfncobjInputBoxRange(myXstrInptBxPrmpt, myXstrInptBxTtl, myXstrDefault)
+        If myXobjDataRng Is Nothing Then GoTo ExitPath
+        
+    '//指定セル範囲が連続か不連続かを確認
+        myXbisExitLpFlag = PfncbisCheckSeriesRangeByInputBox(myXobjDataRng)
+        
+        If myXbisExitLpFlag = False Then _
+            MsgBox "処理範囲は複数個所に分散させずに、連続範囲で指定して下さい。"
+        
+    Loop
+    If myXobjDataRng Is Nothing Then GoTo ExitPath
+    
+    Set myXobjSlctRng = Nothing
+    Set myXobjDfltRng = Nothing: Set myXobjFrstCell = Nothing: Set myXobjLastCell = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_指定範囲からブック＆シート＆範囲の情報を取得
+Private Sub prsProcGetInformation()
+    myXbisExitFlag = False
+    
+'//指定セル範囲オブジェクトからブックとシートの情報を取得
+    Call PfixGetRangeBookSheetInformation(myXobjBook, myXstrShtName, myXlonShtNo, myXobjDataRng)
+    
+'//指定セル範囲オブジェクトから範囲情報を取得
+    Call PfixGetRangeInformation( _
+            myXlonBgnRow, myXlonEndRow, myXlonBgnCol, myXlonEndCol, myXlonRows, myXlonCols, _
+            myXobjDataRng)
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_指定範囲のデータとコメントを取得
+Private Sub prsProcGetData()
+    myXbisExitFlag = False
+    
+  Dim myXobjSheet As Object, myXobjFrstCell As Object, myXobjLastCell As Object
+    Set myXobjSheet = myXobjBook.Worksheets(myXstrShtName)
+    Set myXobjFrstCell = myXobjSheet.Cells(myXlonBgnRow, myXlonBgnCol)
+    Set myXobjLastCell = myXobjSheet.Cells(myXlonEndRow, myXlonEndCol)
+
+    If myXbisByVrnt = False Then
+    '//シート上の指定範囲またはデータ全範囲のデータを配列に取込む
+        Call PfixGetSheetRangeData( _
+                myXlonDataRowCnt, myXlonDataColCnt, myZstrShtData, _
+                myXobjSheet, myXobjFrstCell, myXobjLastCell)
+        
+    Else
+    '//シート上の指定範囲またはデータ全範囲のデータをVariant配列に取込む
+        Call PfixGetSheetRangeDataVariantArray( _
+                myXlonDataRowCnt, myXlonDataColCnt, myZvarShtData, _
+                myXobjSheet, myXobjFrstCell, myXobjLastCell)
+        
+    End If
+    If myXlonDataRowCnt <= 0 Or myXlonDataRowCnt <= 0 Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4-1"   'PassFlag
+
+    If myXbisGetCmnt = True Then
+    '//シート上の指定範囲またはデータ全範囲のコメントを配列に取込む
+        Call PfixGetSheetRangeCommentText( _
+                myXlonDataRowCnt, myXlonDataColCnt, myZstrCmntData, _
+                myXobjSheet, myXobjFrstCell, myXobjLastCell)
+    End If
+    If myXlonDataRowCnt <= 0 Or myXlonDataRowCnt <= 0 Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4-2"   'PassFlag
+
+    Set myXobjSheet = Nothing: Set myXobjFrstCell = Nothing: Set myXobjLastCell = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_セル選択範囲を全データ範囲まで拡大する
+Private Sub PfixEnlargeSelection( _
+            myXobjExtndRng As Object, _
+            myXobjFrstCell As Object, myXobjLastCell As Object, _
+            ByVal myXobjSlctRng As Object, _
+            Optional ByVal coXlonRngOptn As Long = 0)
+'coXlonRngOptn = 0  : 選択範囲
+'coXlonRngOptn = 1  : 選択位置から最終行までの範囲
+'coXlonRngOptn = 2  : 選択位置から最終列までの範囲
+'coXlonRngOptn = 3  : 全データ範囲
+    Set myXobjExtndRng = Nothing
+    Set myXobjFrstCell = Nothing: Set myXobjLastCell = Nothing
+    On Error GoTo ExitPath
+    If myXobjSlctRng Is Nothing Then Set myXobjSlctRng = Selection
+    On Error GoTo 0
+  Dim myXlonRow1 As Long, myXlonRow2 As Long, myXlonCol1 As Long, myXlonCol2 As Long
+    myXlonRow1 = myXobjSlctRng.Row
+    myXlonRow2 = myXlonRow1 + myXobjSlctRng.Rows.Count - 1
+    myXlonCol1 = myXobjSlctRng.Column
+    myXlonCol2 = myXlonCol1 + myXobjSlctRng.Columns.Count - 1
+  Dim myXlonEndRow As Long, myXlonEndCol As Long, myXlonTmp As Long
+  Dim i As Long, j As Long
+    With myXobjSlctRng
+        If coXlonRngOptn = 1 Then
+            With .Worksheet
+                For j = myXlonCol1 To myXlonCol2
+                    myXlonTmp = .Cells(.Rows.Count, j).End(xlUp).Row
+                    If myXlonEndRow < myXlonRow1 Then myXlonEndRow = myXlonRow2
+                    If myXlonEndRow < myXlonTmp Then myXlonEndRow = myXlonTmp
+                Next j
+                Set myXobjFrstCell = .Cells(myXlonRow1, myXlonCol1)
+                Set myXobjLastCell = .Cells(myXlonEndRow, myXlonCol2)
+            End With
+       ElseIf coXlonRngOptn = 2 Then
+            With .Worksheet
+                For i = myXlonRow1 To myXlonRow2
+                    myXlonTmp = .Cells(i, .Columns.Count).End(xlToLeft).Column
+                    If myXlonEndCol < myXlonTmp Then myXlonEndCol = myXlonTmp
+                    If myXlonEndCol < myXlonCol1 Then myXlonEndCol = myXlonCol2
+                Next i
+                Set myXobjFrstCell = .Cells(myXlonRow1, myXlonCol1)
+                Set myXobjLastCell = .Cells(myXlonRow2, myXlonEndCol)
+            End With
+        ElseIf coXlonRngOptn = 3 Then
+            Set myXobjFrstCell = .Worksheet.Cells(1, 1)
+            Set myXobjLastCell = .Worksheet.Cells.SpecialCells(xlCellTypeLastCell)
+        Else
+            Set myXobjFrstCell = .Worksheet.Cells(myXlonRow1, myXlonCol1)
+            Set myXobjLastCell = .Worksheet.Cells(myXlonRow2, myXlonCol2)
+        End If
+    Set myXobjExtndRng = .Worksheet.Range(myXobjFrstCell, myXobjLastCell)
+    End With
+ExitPath:
+End Sub
+
+ '定型Ｆ_InputBox用のデフォルト範囲を設定する
+Private Function PfncstrDefaultAddressInputBox(ByVal myXobjDfltRng As Object) As String
+    PfncstrDefaultAddressInputBox = Empty
+  Dim myXstrDfltAdrs As String
+    On Error GoTo ExitPath
+    If myXobjDfltRng Is Nothing Then Set myXobjDfltRng = Selection
+    myXstrDfltAdrs = myXobjDfltRng.Address(ReferenceStyle:=Application.ReferenceStyle, _
+                        RowAbsolute:=True, ColumnAbsolute:=True, external:=False)
+    On Error GoTo 0
+    PfncstrDefaultAddressInputBox = myXstrDfltAdrs
+ExitPath:
+End Function
+
+ '定型Ｆ_InputBoxメソッドでセル範囲の入力を促す
+Private Function PfncobjInputBoxRange( _
+                    ByVal myXstrPrompt As String, ByVal myXstrTitle As String, _
+                    ByVal myXstrDefault As String) As Object
+    Set PfncobjInputBoxRange = Nothing
+    If myXstrTitle = "" Then myXstrTitle = "セル範囲の選択"
+    If myXstrPrompt = "" Then myXstrPrompt = myXstrTitle
+    On Error Resume Next
+    Set PfncobjInputBoxRange = Application.InputBox( _
+                                prompt:=myXstrPrompt, Title:=myXstrTitle, _
+                                Default:=myXstrDefault, Type:=8)
+    On Error GoTo 0
+'    Debug.Print "入力値: " & PfncobjInputBoxRange.Address(ReferenceStyle:=Application.ReferenceStyle, _
+'                                RowAbsolute:=True, ColumnAbsolute:=True, external:=True)    'Debug.Print
+End Function
+
+ '定型Ｆ_指定セル範囲が連続か不連続かを確認する
+Private Function PfncbisCheckSeriesRangeByInputBox( _
+            ByVal myXobjOrgRng As Object) As Boolean
+'PfncbisCheckSeriesRangeByInputBox = False : 不連続範囲
+'PfncbisCheckSeriesRangeByInputBox = True  : 連続範囲
+    PfncbisCheckSeriesRangeByInputBox = False
+    If myXobjOrgRng Is Nothing Then Exit Function
+  Dim myXbisSeries As Boolean: myXbisSeries = False
+    If InStr(myXobjOrgRng.Address, ",") <= 0 Then myXbisSeries = True
+    PfncbisCheckSeriesRangeByInputBox = myXbisSeries
+End Function
+
+ '定型Ｐ_指定セル範囲オブジェクトからブックとシートの情報を取得する
+Private Sub PfixGetRangeBookSheetInformation( _
+            myXobjBook As Object, myXstrShtName As String, myXlonShtNo As Long, _
+            ByVal myXobjOrgRng As Object)
+    Set myXobjBook = Nothing: myXstrShtName = Empty: myXlonShtNo = Empty
+    If myXobjOrgRng Is Nothing Then Exit Sub
+    Set myXobjBook = myXobjOrgRng.Parent.Parent
+    myXstrShtName = myXobjOrgRng.Parent.Name
+  Dim i As Long
+    For i = 1 To myXobjOrgRng.Parent.Parent.Worksheets.Count
+        If myXobjOrgRng.Parent.Parent.Worksheets(i).Name = myXstrShtName Then
+            myXlonShtNo = i: Exit For
+        End If
+    Next i
+End Sub
+
+ '定型Ｐ_指定セル範囲オブジェクトから範囲情報を取得する
+Private Sub PfixGetRangeInformation( _
+            myXlonBgnRow As Long, myXlonEndRow As Long, _
+            myXlonBgnCol As Long, myXlonEndCol As Long, _
+            myXlonRowCnt As Long, myXlonColCnt As Long, _
+            ByVal myXobjOrgRng As Object)
+    myXlonBgnRow = Empty: myXlonEndRow = Empty
+    myXlonBgnCol = Empty: myXlonEndCol = Empty
+    myXlonRowCnt = Empty: myXlonColCnt = Empty
+    If myXobjOrgRng Is Nothing Then Exit Sub
+    With myXobjOrgRng
+        myXlonBgnRow = .Row
+        myXlonRowCnt = .Rows.Count
+        myXlonEndRow = .Row + myXlonRowCnt - 1
+        myXlonBgnCol = .Column
+        myXlonColCnt = .Columns.Count
+        myXlonEndCol = .Column + myXlonColCnt - 1
+    End With
+End Sub
+ 
+ '定型Ｐ_シート上の指定範囲またはデータ全範囲のデータを配列に取込む
+Private Sub PfixGetSheetRangeData( _
+            myXlonRowCnt As Long, myXlonColCnt As Long, myZstrShtData() As String, _
+            ByVal myXobjSheet As Object, _
+            ByVal myXobjFrstCell As Object, ByVal myXobjLastCell As Object)
+'myZstrShtData(i, j) : データ
+    myXlonRowCnt = Empty: myXlonColCnt = Empty: Erase myZstrShtData
+    If myXobjSheet Is Nothing Then Exit Sub
+'//シート上の指定範囲をオブジェクト配列に取込む
+  Dim myXobjShtRng As Object
+    If myXobjFrstCell Is Nothing Then Set myXobjFrstCell = myXobjSheet.Cells(1, 1)
+    If myXobjLastCell Is Nothing Then _
+        Set myXobjLastCell = myXobjSheet.Cells.SpecialCells(xlCellTypeLastCell)
+    Set myXobjShtRng = myXobjSheet.Range(myXobjFrstCell, myXobjLastCell)
+    myXlonRowCnt = myXobjShtRng.Rows.Count
+    myXlonColCnt = myXobjShtRng.Columns.Count
+    If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then Exit Sub
+'//オブジェクト配列からデータを取得
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZvarRngData As Variant, i As Long, j As Long
+    i = myXlonRowCnt + L - 1: j = myXlonColCnt + L - 1
+    ReDim myZstrShtData(i, j) As String
+    myZvarRngData = myXobjShtRng.Value
+    On Error Resume Next
+    If myXlonRowCnt * myXlonColCnt = 1 Then
+        myZstrShtData(L, L) = myZvarRngData
+    Else
+        For j = LBound(myZvarRngData, 2) To UBound(myZvarRngData, 2)
+            For i = LBound(myZvarRngData, 1) To UBound(myZvarRngData, 1)
+                myZstrShtData(i, j) = myZvarRngData(i, j)
+            Next i
+        Next j
+    End If
+    On Error GoTo 0
+    Set myXobjShtRng = Nothing: myZvarRngData = Empty
+End Sub
+
+ '定型Ｐ_シート上の指定範囲またはデータ全範囲のデータをVariant配列に取込む
+Private Sub PfixGetSheetRangeDataVariantArray( _
+            myXlonRowCnt As Long, myXlonColCnt As Long, myZvarShtData() As Variant, _
+            ByVal myXobjSheet As Object, _
+            ByVal myXobjFrstCell As Object, ByVal myXobjLastCell As Object)
+'myZvarShtData(i, j) : データ
+    myXlonRowCnt = Empty: myXlonColCnt = Empty: Erase myZvarShtData
+    If myXobjSheet Is Nothing Then Exit Sub
+'//シート上の指定範囲をオブジェクト配列に取込む
+  Dim myXobjShtRng As Object
+    If myXobjFrstCell Is Nothing Then Set myXobjFrstCell = myXobjSheet.Cells(1, 1)
+    If myXobjLastCell Is Nothing Then _
+        Set myXobjLastCell = myXobjSheet.Cells.SpecialCells(xlCellTypeLastCell)
+    Set myXobjShtRng = myXobjSheet.Range(myXobjFrstCell, myXobjLastCell)
+    myXlonRowCnt = myXobjShtRng.Rows.Count
+    myXlonColCnt = myXobjShtRng.Columns.Count
+    If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then Exit Sub
+'//オブジェクト配列からデータを取得
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZvarRngData As Variant, i As Long, j As Long
+    i = myXlonRowCnt + L - 1: j = myXlonColCnt + L - 1
+    ReDim myZvarShtData(i, j) As Variant
+    myZvarRngData = myXobjShtRng.Value
+    On Error Resume Next
+    If myXlonRowCnt * myXlonColCnt = 1 Then
+        myZvarShtData(L, L) = myZvarRngData
+    Else
+        For j = LBound(myZvarRngData, 2) To UBound(myZvarRngData, 2)
+            For i = LBound(myZvarRngData, 1) To UBound(myZvarRngData, 1)
+                myZvarShtData(i, j) = myZvarRngData(i, j)
+            Next i
+        Next j
+    End If
+    On Error GoTo 0
+    Set myXobjShtRng = Nothing: myZvarRngData = Empty
+End Sub
+
+ '定型Ｐ_シート上の指定範囲またはデータ全範囲のコメントを配列に取込む
+Private Sub PfixGetSheetRangeCommentText( _
+            myXlonRowCnt As Long, myXlonColCnt As Long, myZstrCmntData() As String, _
+            ByVal myXobjSheet As Object, _
+            ByVal myXobjFrstCell As Object, ByVal myXobjLastCell As Object)
+'myZstrCmntData(i, j) : コメントデータ
+    myXlonRowCnt = Empty: myXlonColCnt = Empty: Erase myZstrCmntData
+    If myXobjSheet Is Nothing Then Exit Sub
+'//シート上の指定範囲をオブジェクト配列に取込む
+  Dim myXobjShtRng As Object
+    If myXobjFrstCell Is Nothing Then Set myXobjFrstCell = myXobjSheet.Cells(1, 1)
+    If myXobjLastCell Is Nothing Then _
+        Set myXobjLastCell = myXobjSheet.Cells.SpecialCells(xlCellTypeLastCell)
+    Set myXobjShtRng = myXobjSheet.Range(myXobjFrstCell, myXobjLastCell)
+    myXlonRowCnt = myXobjShtRng.Rows.Count
+    myXlonColCnt = myXobjShtRng.Columns.Count
+    If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then Exit Sub
+'//オブジェクト配列からデータを取得
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myXobjTmpCell As Object, myXstrTmpCmnt As String, i As Long, j As Long
+    i = myXlonRowCnt + L - 1: j = myXlonColCnt + L - 1
+    ReDim myZstrCmntData(i, j) As String
+    On Error Resume Next
+    For j = 1 To myXlonColCnt
+        For i = 1 To myXlonRowCnt
+            Set myXobjTmpCell = myXobjShtRng.Cells(i, j)
+            If TypeName(myXobjTmpCell.Comment) = "Comment" Then
+                myXstrTmpCmnt = myXobjTmpCell.Comment.Text
+            Else
+                myXstrTmpCmnt = ""
+            End If
+            myZstrCmntData(i + L - 1, j + L - 1) = myXstrTmpCmnt
+        Next i
+    Next j
+    On Error GoTo 0
+    Set myXobjShtRng = Nothing: Set myXobjTmpCell = Nothing
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+''◆ClassProc名_シート上の連続範囲を指定してその範囲のデータと情報を取得する
+'Private Sub instCSlctShtSrsData()
+'  Dim Lc As Long
+'  Dim myXlonDataRowCnt As Long, myXlonDataColCnt As Long, _
+'        myZstrShtData() As String, myZvarShtData() As Variant, _
+'        myZstrCmntData() As String
+'    'myZstrShtData(i, j) : 取得文字列
+'    'myZvarShtData(i, j) : 取得文字列
+'    'myZstrCmntData(i, j) : 取得コメント
+'  Dim myXobjBook As Object, myXstrShtName As String, myXlonShtNo As Long
+'  Dim myXlonBgnRow As Long, myXlonEndRow As Long, _
+'        myXlonBgnCol As Long, myXlonEndCol As Long, _
+'        myXlonRows As Long, myXlonCols As Long
+''//クラス内変数への入力
+'  Dim myXlonRngOptn As Long: myXlonRngOptn = 0
+'    'myXlonRngOptn = 0  : 選択範囲
+'    'myXlonRngOptn = 1  : 選択位置から最終行までの範囲
+'    'myXlonRngOptn = 2  : 選択位置から最終列までの範囲
+'    'myXlonRngOptn = 3  : 全データ範囲
+'  Dim myXbisByVrnt As Boolean: myXbisByVrnt = False
+'    'myXbisByVrnt = False : シートデータをStringで取得する
+'    'myXbisByVrnt = True  : シートデータをVariantで取得する
+'  Dim myXbisGetCmnt As Boolean: myXbisGetCmnt = True
+'    'myXbisGetCmnt = False : コメントを取得しない
+'    'myXbisGetCmnt = True  : コメントを取得する
+'  Dim myXstrInptBxPrmpt As String: myXstrInptBxPrmpt = ""
+'  Dim myXstrInptBxTtl As String: myXstrInptBxTtl = ""
+''//CSlctShtSrsDataクラスモジュールのインスタンス生成
+'  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+'  Dim i As Long, j As Long
+'  Dim myXinsSlctShtSrsData As CSlctShtSrsData: Set myXinsSlctShtSrsData = New CSlctShtSrsData
+'    With myXinsSlctShtSrsData
+'    '//クラス内変数への入力
+'        .letRngOptn = myXlonRngOptn
+'        .letByVrnt = myXbisByVrnt
+'        .letGetCmnt = myXbisGetCmnt
+'        .letInptBoxPrmptTtl(1) = myXstrInptBxPrmpt
+'        .letInptBoxPrmptTtl(2) = myXstrInptBxTtl
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        .exeProc
+'        myXlonDataRowCnt = .getDataRowCnt
+'        myXlonDataColCnt = .getDataColCnt
+'        If myXlonDataRowCnt <= 0 Or myXlonDataColCnt <= 0 Then GoTo JumpPath
+'        i = myXlonDataRowCnt + Lo - 1: j = myXlonDataColCnt + Lo - 1
+'        ReDim myZstrShtData(i, j) As String
+'        ReDim myZvarShtData(i, j) As Variant
+'        ReDim myZstrCmntData(i, j) As String
+'        Lc = .getOptnBase
+'        If myXbisByVrnt = False Then
+'            For j = 1 To myXlonDataColCnt
+'                For i = 1 To myXlonDataRowCnt
+'                    myZstrShtData(i + Lo - 1, j + Lo - 1) _
+'                        = .getStrShtDataAry(i + Lc - 1, j + Lc - 1)
+'                Next i
+'            Next j
+'        Else
+'            For j = 1 To myXlonDataColCnt
+'                For i = 1 To myXlonDataRowCnt
+'                    myZvarShtData(i + Lo - 1, j + Lo - 1) _
+'                        = .getVarShtDataAry(i + Lc - 1, j + Lc - 1)
+'                Next i
+'            Next j
+'        End If
+'        If myXbisGetCmnt = True Then
+'            For j = 1 To myXlonDataColCnt
+'                For i = 1 To myXlonDataRowCnt
+'                    myZstrCmntData(i + Lo - 1, j + Lo - 1) _
+'                        = .getCmntDataAry(i + Lc - 1, j + Lc - 1)
+'                Next i
+'            Next j
+'        End If
+'        Set myXobjBook = .getBook
+'        myXstrShtName = .getShtName
+'        myXlonShtNo = .getShtNo
+'        myXlonBgnRow = .getBgnEndRowCol(1, 1)
+'        myXlonEndRow = .getBgnEndRowCol(2, 1)
+'        myXlonBgnCol = .getBgnEndRowCol(1, 2)
+'        myXlonEndCol = .getBgnEndRowCol(2, 2)
+'        myXlonRows = .getBgnEndRowCol(1, 0)
+'        myXlonCols = .getBgnEndRowCol(0, 1)
+'    End With
+'JumpPath:
+'    Set myXinsSlctShtSrsData = Nothing
+'    Call variablesOfCSlctShtSrsData(myXlonDataRowCnt, myXlonDataColCnt, myZstrShtData)  'Debug.Print
+''    Call variablesOfCSlctShtSrsData(myXlonDataRowCnt, myXlonDataColCnt, myZvarShtData)  'Debug.Print
+'    Call variablesOfCSlctShtSrsData(myXlonDataRowCnt, myXlonDataColCnt, myZstrCmntData) 'Debug.Print
+'End Sub
+'Private Sub variablesOfCSlctShtSrsData( _
+'            ByVal myXlonRowCnt As Long, ByVal myXlonColCnt As Long, _
+'            ByRef myZvarDataAry As Variant)
+''//CSlctShtSrsDataクラス内から出力した変数の内容確認
+'    Debug.Print "データ行数: " & myXlonRowCnt
+'    Debug.Print "データ列数: " & myXlonColCnt
+'    If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then Exit Sub
+'  Dim i As Long, j As Long
+'    For i = LBound(myZvarDataAry, 1) To UBound(myZvarDataAry, 1)
+'        For j = LBound(myZvarDataAry, 2) To UBound(myZvarDataAry, 2)
+'            Debug.Print "データ" & i & "," & j & ": " & myZvarDataAry(i, j)
+'        Next j
+'    Next i
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
