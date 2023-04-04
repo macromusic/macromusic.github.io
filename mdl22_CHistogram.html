@@ -1,1 +1,411 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PincMakeHistogramArray
+'Includes PfixQuickSortOfNumeric1DArray
+'Includes PfncbisCheckArrayDimension
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_分布データ一覧から度数分布表データを生成する
+'Rev.002
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CHistogram"
+  
+'//モジュール内定数
+  Private Const coXlonXSigma As Long = 6
+  Private Const coXlonSpltVal As Long = 40
+  Private Const coXbisBgnEqlEnd As Boolean = True
+  
+'//PropertyGet_出力データ
+  Private Lc As Long
+  Private myXlonHstCnt As Long, myZdouHstData() As Double
+  
+'//PropertySetLet_入力データ
+  Private myXlonOrgDataCnt As Long, myZdouOrgData() As Double, _
+            myXdouHstBgnVal As Double, myXdouHstEndVal As Double, _
+            myXdouHstStpVal As Double
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getOptnBase() As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    getOptnBase = L
+End Property
+
+Public Property Get getHstCnt() As Long
+    getHstCnt = myXlonHstCnt
+End Property
+
+Public Property Get getHstDataAry(ByVal i As Long, ByVal j As Long) As Double
+    getHstDataAry = myZdouHstData(i, j)
+'myZdouHstData(i, 1) : 取得したヒストグラムデータのパラメータ
+'myZdouHstData(i, 2) : 取得したヒストグラムデータの度数
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXlonHstCnt = Empty: Erase myZdouHstData
+End Sub
+
+'checkP_出力変数内容を確認する
+Private Sub checkOutputVariables()
+    myXbisExitFlag = False
+    
+    If myXlonHstCnt <= 0 Then GoTo ExitPath
+    If PfncbisCheckArrayDimension(myZdouHstData, 2) = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letOrgDataAry(ByRef RHS() As Double)
+'myZdouOrgData(i) : 元データ配列
+    myZdouOrgData() = RHS()
+End Property
+
+Public Property Let letHstBgnVal(ByVal RHS As Double)
+    myXdouHstBgnVal = RHS
+'myXdouHstBgnVal : 度数分布表のデータ範囲の最初の値
+End Property
+
+Public Property Let letHstEndVal(ByVal RHS As Double)
+    myXdouHstEndVal = RHS
+'myXdouHstEndVal : 度数分布表のデータ範囲の最後の値
+End Property
+
+Public Property Let letHstStpVal(ByVal RHS As Double)
+    myXdouHstStpVal = RHS
+'myXdouHstStpVal : 度数分布表のデータ分割値
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If PfncbisCheckArrayDimension(myZdouOrgData, 1) = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    Call ctrProc
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//分布データから度数分布表のデータ範囲とステップ値を設定
+    If myXdouHstBgnVal = 0 And myXdouHstEndVal = 0 And myXdouHstStpVal = 0 Then
+        Call PincSetHistogramRangeStep( _
+                myXdouHstBgnVal, myXdouHstEndVal, myXdouHstStpVal, _
+                myZdouOrgData, coXlonXSigma, coXlonSpltVal, coXbisBgnEqlEnd)
+    End If
+    
+'//分布データ一覧から度数分布表データを生成
+    Call PincMakeHistogramArray( _
+            myXlonHstCnt, myZdouHstData, _
+            myZdouOrgData, myXdouHstBgnVal, myXdouHstEndVal, myXdouHstStpVal)
+    
+    Call checkOutputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_分布データから度数分布表のデータ範囲とステップ値を設定する
+Private Sub PincSetHistogramRangeStep( _
+            myXdouHstBgnVal As Double, myXdouHstEndVal As Double, _
+            myXdouHstStpVal As Double, _
+            ByRef myZdouOrgData() As Double, _
+            Optional ByVal coXlonXSigma As Long = 6, _
+            Optional ByVal coXlonSpltVal As Long = 40, _
+            Optional ByVal coXbisBgnEqlEnd As Boolean = True)
+'Includes PfnclonGetMaximumDecimalDigit
+'myXdouHstBgnVal : 度数分布表のデータ範囲の最初の値
+'myXdouHstEndVal : 度数分布表のデータ範囲の最後の値
+'myXdouHstStpVal : 度数分布表のデータ分割値
+'myZdouOrgData(i) : 元の分布データ
+    myXdouHstBgnVal = Empty: myXdouHstEndVal = Empty: myXdouHstStpVal = Empty
+    On Error GoTo ExitPath
+  Dim L As Long, myXvarTmp As Variant
+    L = LBound(myZdouOrgData): myXvarTmp = myZdouOrgData(L)
+    On Error GoTo 0
+    If coXlonXSigma <= 0 Or coXlonSpltVal <= 0 Then Exit Sub
+'//分布データの平均値と標準偏差を取得
+  Dim myXdouAvrg As Double, myXdouStDev As Double
+    With Application.WorksheetFunction
+        myXdouAvrg = .Average(myZdouOrgData)
+        myXdouStDev = .StDev_S(myZdouOrgData)
+    End With
+'//度数分布表のデータ範囲を設定
+    myXdouHstBgnVal = myXdouAvrg - myXdouStDev * coXlonXSigma
+    myXdouHstEndVal = myXdouAvrg + myXdouStDev * coXlonXSigma
+  Dim myXlonDigit As Long
+    myXlonDigit = PfnclonGetMaximumDecimalDigit(myXdouHstEndVal)
+    myXdouHstBgnVal = Round(myXdouHstBgnVal, myXlonDigit)
+    myXdouHstEndVal = Round(myXdouHstEndVal, myXlonDigit)
+    If coXbisBgnEqlEnd = False Then GoTo JumpPath
+    If Abs(myXdouHstEndVal) >= Abs(myXdouHstBgnVal) Then
+        myXdouHstBgnVal = (-1) * myXdouHstEndVal
+        myXdouHstEndVal = myXdouHstEndVal
+    Else
+        myXdouHstBgnVal = myXdouHstBgnVal
+        myXdouHstEndVal = (-1) * myXdouHstBgnVal
+    End If
+JumpPath:
+'//度数分布表のステップ値を設定
+    myXdouHstStpVal = (myXdouHstEndVal - myXdouHstBgnVal) / coXlonSpltVal
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_数値の小数値の最大桁数を取得する
+Private Function PfnclonGetMaximumDecimalDigit(ByVal myXdouNumVal As Double) As Long
+    PfnclonGetMaximumDecimalDigit = Empty
+  Dim myXlonMaxDcmlDgt As Long
+    If Abs(myXdouNumVal) >= 1 Then
+        myXlonMaxDcmlDgt = 0
+        GoTo JumpPath
+    End If
+  Dim myXlonPnt As Long, myXstrTmp As String, myXdouTmp As Double
+  Dim myXstrDcmlPrt As String, myXlonDcmlDgt As Long
+'//数値の小数点位置を取得
+    myXstrTmp = CStr(myXdouNumVal)
+    myXlonPnt = InStr(myXstrTmp, ".")
+'//数値の小数部を取得
+    myXstrTmp = CStr(myXdouNumVal)
+    myXstrTmp = Mid(myXstrTmp, myXlonPnt)
+    myXstrDcmlPrt = "0" & myXstrTmp
+'//数値の小数部の桁数を取得
+    myXlonDcmlDgt = Len(myXstrDcmlPrt) - 2
+'//数値の小数値の最大桁数を取得
+    myXdouTmp = CDbl(myXstrDcmlPrt)
+    myXdouTmp = Abs(myXdouTmp) * (10 ^ myXlonDcmlDgt)
+    myXdouTmp = Int(myXdouTmp)
+    myXstrTmp = CStr(myXdouTmp)
+    myXlonMaxDcmlDgt = myXlonDcmlDgt - Len(myXstrTmp) + 1
+JumpPath:
+    PfnclonGetMaximumDecimalDigit = myXlonMaxDcmlDgt
+End Function
+
+ '定型Ｐ_分布データ一覧から度数分布表データを生成する
+Private Sub PincMakeHistogramArray( _
+            myXlonHstCnt As Long, myZdouHstData() As Double, _
+            ByRef myZdouOrgData() As Double, _
+            ByVal myXdouHstBgnVal As Double, ByVal myXdouHstEndVal As Double, _
+            ByVal myXdouHstStpVal As Double)
+'Includes PfixQuickSortOfNumeric1DArray
+'myZdouHstData(i, j) : 度数分布データ配列
+'myZdouOrgData(i) : 分布データ配列
+    myXlonHstCnt = Empty: Erase myZdouHstData
+  Dim myXdouTmp As Double, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZdouOrgData): myXdouTmp = myZdouOrgData(L)
+    On Error GoTo 0
+    If myXdouHstEndVal < myXdouHstBgnVal Then Exit Sub
+    If (myXdouHstEndVal - myXdouHstBgnVal) < myXdouHstStpVal Then Exit Sub
+'//分布データ配列のクイックソート
+  Dim myXlonLbnd As Long, myXlonUbnd As Long
+    myXlonLbnd = LBound(myZdouOrgData): myXlonUbnd = UBound(myZdouOrgData)
+    Call PfixQuickSortOfNumeric1DArray(myZdouOrgData, myXlonLbnd, myXlonUbnd, 1)
+'//度数分布データ配列の設定
+    myXlonHstCnt = Round((myXdouHstEndVal - myXdouHstBgnVal) / myXdouHstStpVal, 0)
+  Dim k As Long
+    k = myXlonHstCnt + L - 1
+    ReDim myZdouHstData(k, L + 1) As Double
+'//分布データ範囲を指定
+  Dim i As Long, myXlonStrt As Double, myXlonLast As Double
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        If myZdouOrgData(i) >= myXdouHstBgnVal Then
+            myXlonStrt = i: Exit For
+        End If
+    Next i
+    For i = UBound(myZdouOrgData) To LBound(myZdouOrgData) Step -1
+        If myZdouOrgData(i) <= myXdouHstEndVal Then
+            myXlonLast = i: Exit For
+        End If
+    Next i
+'//度数を配列に格納
+  Dim myXdouCntr As Double, myXdouThrsh As Double, m As Long, n As Long
+    m = myXlonStrt
+    For k = 1 To myXlonHstCnt
+        n = 0
+        myXdouCntr = myXdouHstBgnVal + myXdouHstStpVal * (k - 1 / 2)
+        myXdouThrsh = myXdouCntr + myXdouHstStpVal / 2
+        If m = myXlonLast + 1 Then GoTo NextPath
+        For i = m To myXlonLast
+            If myZdouOrgData(i) > myXdouThrsh Then
+                n = (i - 1) - m + 1
+                m = i
+                Exit For
+            End If
+            If i = myXlonLast Then
+                n = myXlonLast - m + 1
+                m = myXlonLast + 1
+            End If
+        Next i
+NextPath:
+        myZdouHstData(k, L + 0) = myXdouCntr
+        myZdouHstData(k, L + 1) = n
+    Next k
+ExitPath:
+End Sub
+
+ '定型Ｐ_1次元の数値配列のクイックソート
+Private Sub PfixQuickSortOfNumeric1DArray( _
+            myZdouSrtData() As Double, _
+            ByVal myXlonLbnd As Long, ByVal myXlonUbnd As Long, _
+            Optional ByVal coXlonOrder As Long = 1)
+'myZdouSrtData(i) : 数値情報
+'coXlonOrder = 1    : 昇順 (Ascending Order)
+'coXlonOrder = -1   : 降順 (Descending Order)
+'→SetProc:定型プロシージャ使用前のコード部分に記述
+'    myXlonLbnd = LBound(myZdouSrtData)
+'    myXlonUbnd = UBound(myZdouSrtData)
+'    If myXlonUbnd <= myXlonLbnd Then Exit Sub
+'←EndProc
+  Dim myXlonMed As Long, myXdouMed As Double
+    myXlonMed = Int((myXlonLbnd + myXlonUbnd) / 2)
+    myXdouMed = myZdouSrtData(myXlonMed)
+  Dim i As Long, j As Long
+    i = myXlonLbnd: j = myXlonUbnd
+  Dim myXdouBufi As Double, myXdouBufj As Double, myXdouTmp As Double
+    Do
+        myXdouBufi = myZdouSrtData(i)
+        Do While coXlonOrder * (myXdouBufi - myXdouMed) < 0
+            i = i + 1: myXdouBufi = myZdouSrtData(i)
+        Loop
+        myXdouBufj = myZdouSrtData(j)
+        Do While coXlonOrder * (myXdouBufj - myXdouMed) > 0
+            j = j - 1: myXdouBufj = myZdouSrtData(j)
+        Loop
+        If i >= j Then Exit Do
+        myXdouTmp = myZdouSrtData(i)
+        myZdouSrtData(i) = myZdouSrtData(j)
+        myZdouSrtData(j) = myXdouTmp
+        i = i + 1: j = j - 1
+    Loop
+    If myXlonLbnd < i - 1 Then _
+        Call PfixQuickSortOfNumeric1DArray(myZdouSrtData, myXlonLbnd, i - 1, coXlonOrder)
+    If myXlonUbnd > j + 1 Then _
+        Call PfixQuickSortOfNumeric1DArray(myZdouSrtData, j + 1, myXlonUbnd, coXlonOrder)
+End Sub
+
+ '定型Ｆ_配列変数の次元数が指定次元と一致するかをチェックする
+Private Function PfncbisCheckArrayDimension( _
+            ByRef myZvarDataAry As Variant, ByVal myXlonDmnsn As Long) As Boolean
+    PfncbisCheckArrayDimension = False
+    If IsArray(myZvarDataAry) = False Then Exit Function
+    If myXlonDmnsn <= 0 Then Exit Function
+  Dim myXlonTmp As Long, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXlonTmp = UBound(myZvarDataAry, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    If k - 1 <> myXlonDmnsn Then Exit Function
+    PfncbisCheckArrayDimension = True
+End Function
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_分布データ一覧から度数分布表データを生成する
+'Private Sub PforNewInstanceOfCHistogram()
+'  Dim Lc As Long
+'  Dim myXlonHstCnt As Long, myZdouHstData() As Double
+'    'myZdouHstData(i, 1) : 取得したヒストグラムデータのパラメータ
+'    'myZdouHstData(i, 2) : 取得したヒストグラムデータの度数
+''//クラス内変数への入力
+'  Dim myXlonOrgDataCnt As Long, myZdouOrgData() As Double
+'    'myZdouOrgData(i) : 元データ配列
+'    myXlonOrgDataCnt = 2
+'    ReDim myZdouOrgData(myXlonOrgDataCnt) As Double
+'    myZdouOrgData(1) = 1
+'    myZdouOrgData(2) = 0.5
+'  Dim myXdouHstBgnVal As Double, myXdouHstEndVal As Double, myXdouHstStpVal As Double
+'    'myXdouHstBgnVal : 度数分布表のデータ範囲の最初の値
+'    'myXdouHstEndVal : 度数分布表のデータ範囲の最後の値
+'    'myXdouHstStpVal : 度数分布表のデータ分割値
+'    myXdouHstBgnVal = 0
+'    myXdouHstEndVal = 2
+'    myXdouHstStpVal = (myXdouHstEndVal - myXdouHstBgnVal) / 10
+''//CHistogramクラスモジュールのインスタンス生成
+'  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+'  Dim i As Long, j As Long
+'  Dim myXinsHistogram As CHistogram: Set myXinsHistogram = New CHistogram
+'    With myXinsHistogram
+'    '//クラス内変数への入力
+'        If myXlonOrgDataCnt <= 0 Then GoTo ExitPath
+'        .letOrgDataAry = myZdouOrgData
+'        .letHstBgnVal = myXdouHstBgnVal
+'        .letHstEndVal = myXdouHstEndVal
+'        .letHstStpVal = myXdouHstStpVal
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        .exeProc
+'        myXlonHstCnt = .getHstCnt
+'        If myXlonHstCnt <= 0 Then GoTo ExitPath
+'        i = myXlonHstCnt + Lo - 1: j = Lo + 1
+'        ReDim myZdouHstData(i, j) As Double
+'        Lc = .getOptnBase
+'        For i = 1 To myXlonHstCnt
+'            myZdouHstData(i + Lo - 1, Lo + 0) = .getHstDataAry(i + Lc - 1, Lc + 0)
+'            myZdouHstData(i + Lo - 1, Lo + 1) = .getHstDataAry(i + Lc - 1, Lc + 1)
+'        Next i
+'    End With
+'    Set myXinsHistogram = Nothing
+'    Call PforDisplayVariablesOfCHistogram(myXlonHstCnt, myZdouHstData)  'Debug.Print
+'ExitPath:
+'End Sub
+'Private Sub PforDisplayVariablesOfCHistogram( _
+'            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+''//CHistogramクラス内から出力した変数の内容確認
+'    Debug.Print "データ数: " & myXlonDataCnt
+'    If myXlonDataCnt <= 0 Then Exit Sub
+'  Dim i As Long, j As Long
+'    For i = LBound(myZvarField, 1) To UBound(myZvarField, 1)
+'        For j = LBound(myZvarField, 2) To UBound(myZvarField, 2)
+'            Debug.Print "データ" & i & "," & j & ": " & myZvarField(i, j)
+'        Next j
+'    Next i
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
