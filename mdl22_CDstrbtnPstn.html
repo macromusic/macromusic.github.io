@@ -1,1 +1,374 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes incPfncdouDistributionAtRandomVariable
+'Includes incPfncdouRandomVariableAtDistribution
+'Includes PfixQuickSortOfNumeric1DArray
+'Includes PfncbisCheckArrayDimension
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_分布特性データの累積確率と特性(確率変数)位置を取得する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CDstrbtnPstn"
+  
+'//PropertyGet_入出力データ
+  Private myXdouDist As Double, myXdouRndVrbl As Double
+  
+'//PropertySetLet_入力制御信号
+  Private myXlonCalOption As Long
+  Private myXlonSrtOrdr As Long
+  
+'//PropertySetLet_入力データ
+  Private myZdouDstrbtDataIN() As Double
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonDstrbtDataCnt As Long, myZdouDstrbtData() As Double
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonDstrbtDataCnt = Empty: Erase myZdouDstrbtData
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getDist() As Double
+    getDist = myXdouDist
+'myXdouDist : 累積確率[%]
+End Property
+
+Public Property Get getRndVrbl() As Double
+    getRndVrbl = myXdouRndVrbl
+'myXdouRndVrbl : 特性(確率変数)
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    Select Case myXlonCalOption
+        Case 1: myXdouDist = Empty
+        Case 2: myXdouRndVrbl = Empty
+    End Select
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letCalOption(ByVal RHS As Long)
+    myXlonCalOption = RHS
+'myXlonCalOption = 1 : 分布特性データの指定特性(確率変数)位置での累積確率を取得
+'myXlonCalOption = 2 : 分布特性データの指定累積確率となる特性(確率変数)位置を取得
+End Property
+
+Public Property Let letSrtOrdr(ByVal RHS As Long)
+    myXlonSrtOrdr = RHS
+'myXlonSrtOrdr = 1  : 昇順 (Ascending Order)
+'myXlonSrtOrdr = -1 : 降順 (Descending Order)
+End Property
+
+Public Property Let letDstrbtDataAry(ByRef RHS() As Double)
+'myZdouDstrbtDataIN(i) : 元分布特性データ配列
+    myZdouDstrbtDataIN = RHS
+End Property
+
+Public Property Let letRndVrbl(ByVal RHS As Double)
+    myXdouRndVrbl = RHS
+'myXdouRndVrbl : 検索する特性(確率変数)
+End Property
+
+Public Property Let letDist(ByVal RHS As Double)
+    myXdouDist = RHS
+'myXdouDist : 検索する累積確率[%]
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXlonCalOption < 1 Or myXlonCalOption > 2 Then GoTo ExitPath
+    If myXlonSrtOrdr <> 1 And myXlonSrtOrdr <> -1 Then GoTo ExitPath
+    
+    If PfncbisCheckArrayDimension(myZdouDstrbtDataIN, 1) = False Then GoTo ExitPath
+    
+  Dim L As Long, i As Long
+    L = LBound(myZdouDstrbtDataIN)
+    myXlonDstrbtDataCnt = UBound(myZdouDstrbtDataIN, 1) - L + 1
+    ReDim myZdouDstrbtData(myXlonDstrbtDataCnt) As Double
+    For i = LBound(myZdouDstrbtDataIN) To UBound(myZdouDstrbtDataIN)
+        myZdouDstrbtData(i + (1 - L)) = myZdouDstrbtDataIN(i)
+    Next i
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicF_分布特性データの指定特性(確率変数)位置での累積確率を取得する
+Public Function fncdouDist() As Double
+    fncdouDist = Empty
+    Call ctrProc
+    fncdouDist = myXdouDist
+End Function
+
+'PublicF_分布特性データの指定累積確率となる特性(確率変数)位置を取得する
+Public Function fncdouRndVrbl() As Double
+    fncdouRndVrbl = Empty
+    Call ctrProc
+    fncdouRndVrbl = myXdouRndVrbl
+End Function
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//C:分岐
+    If myXlonCalOption = 1 Then
+    '//分布特性データの指定特性(確率変数)位置での累積確率を取得
+        myXdouDist = incPfncdouDistributionAtRandomVariable( _
+                        myZdouDstrbtData, myXdouRndVrbl, myXlonSrtOrdr)
+        
+    ElseIf myXlonCalOption = 2 Then
+    '//分布特性データの指定累積確率となる特性(確率変数)位置を取得
+        myXdouRndVrbl = incPfncdouRandomVariableAtDistribution( _
+                            myZdouDstrbtData, myXdouDist, myXlonSrtOrdr)
+        
+    Else
+        GoTo ExitPath
+    End If
+    
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+End Sub
+
+ '定型Ｆ_分布特性データの指定特性(確率変数)位置での累積確率を取得する
+Private Function incPfncdouDistributionAtRandomVariable( _
+            ByRef myZdouDstrbtData() As Double, _
+            ByVal myXdouRndVrbl As Double, _
+            Optional ByVal coXlonOrder As Long = 1) As Double
+'Includes PfixQuickSortOfNumeric1DArray
+'incPfncdouDistributionAtRandomVariable : 累積確率[%]
+'myXdouRndVrbl : 検索する特性(確率変数)
+'myZdouDstrbtData(i) : 元分布特性データ配列
+'coXlonOrder = 1  : 昇順 (Ascending Order)
+'coXlonOrder = -1 : 降順 (Descending Order)
+    incPfncdouDistributionAtRandomVariable = Empty
+    If Abs(coXlonOrder) <> 1 Then Exit Function
+  Dim myXdouTmp As Double, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZdouDstrbtData): myXdouTmp = myZdouDstrbtData(L)
+    On Error GoTo 0
+'//データ配列のクイックソート
+  Dim myXlonLbnd As Long, myXlonUbnd As Long
+    myXlonLbnd = LBound(myZdouDstrbtData)
+    myXlonUbnd = UBound(myZdouDstrbtData)
+    Call PfixQuickSortOfNumeric1DArray( _
+            myZdouDstrbtData, myXlonLbnd, myXlonUbnd, coXlonOrder)
+'//指定特性(確率変数)位置での累積確率を取得
+  Dim myXlonDstrbtCnt As Long
+    myXlonDstrbtCnt = UBound(myZdouDstrbtData) - LBound(myZdouDstrbtData) + 1
+  Dim myXdouDist As Double, i As Long, n As Long: n = 0
+    If coXlonOrder = 1 Then
+        For i = LBound(myZdouDstrbtData) To UBound(myZdouDstrbtData)
+            myXdouTmp = myZdouDstrbtData(i)
+            If myXdouTmp > myXdouRndVrbl Then
+                n = i - L
+                myXdouDist = n / myXlonDstrbtCnt * 100
+                Exit For
+            End If
+        Next i
+    Else
+        For i = LBound(myZdouDstrbtData) To UBound(myZdouDstrbtData)
+            myXdouTmp = myZdouDstrbtData(i)
+            If myXdouTmp < myXdouRndVrbl Then
+                n = i - L
+                myXdouDist = (1 - n / myXlonDstrbtCnt) * 100
+                Exit For
+            End If
+        Next i
+    End If
+    incPfncdouDistributionAtRandomVariable = myXdouDist
+ExitPath:
+End Function
+
+ '定型Ｆ_分布特性データの指定累積確率となる特性(確率変数)位置を取得する
+Private Function incPfncdouRandomVariableAtDistribution( _
+            ByRef myZdouDstrbtData() As Double, _
+            ByVal myXdouDist As Double, _
+            Optional ByVal coXlonOrder As Long = 1) As Double
+'Includes PfixQuickSortOfNumeric1DArray
+'incPfncdouRandomVariableAtDistribution : 特性(確率変数)
+'myXdouDist : 検索する累積確率[%]
+'myZdouDstrbtData(i) : 元分布特性データ配列
+'coXlonOrder = 1  : 昇順 (Ascending Order)
+'coXlonOrder = -1 : 降順 (Descending Order)
+    incPfncdouRandomVariableAtDistribution = Empty
+    If Abs(coXlonOrder) <> 1 Then Exit Function
+  Dim myXdouTmp As Double, L As Long
+    On Error GoTo ExitPath
+    L = LBound(myZdouDstrbtData): myXdouTmp = myZdouDstrbtData(L)
+    On Error GoTo 0
+'//データ配列のクイックソート
+  Dim myXlonLbnd As Long, myXlonUbnd As Long
+    myXlonLbnd = LBound(myZdouDstrbtData)
+    myXlonUbnd = UBound(myZdouDstrbtData)
+    Call PfixQuickSortOfNumeric1DArray( _
+            myZdouDstrbtData, myXlonLbnd, myXlonUbnd, coXlonOrder)
+'//指定特性(確率変数)位置での累積確率を取得
+  Dim myXlonDstrbtCnt As Long
+    myXlonDstrbtCnt = UBound(myZdouDstrbtData) - LBound(myZdouDstrbtData) + 1
+  Dim myXdouRndVrbl As Double, i As Long, n As Long: n = 0
+    If coXlonOrder = 1 Then
+        For i = LBound(myZdouDstrbtData) To UBound(myZdouDstrbtData)
+            n = i + (1 - L)
+            myXdouTmp = n / myXlonDstrbtCnt * 100
+            If myXdouTmp > myXdouDist Then
+                If i = LBound(myZdouDstrbtData) Then Exit Function
+                myXdouRndVrbl = myZdouDstrbtData(i - 1)
+                Exit For
+            End If
+        Next i
+    Else
+        For i = LBound(myZdouDstrbtData) To UBound(myZdouDstrbtData)
+            n = i + (1 - L)
+            myXdouTmp = (1 - n / myXlonDstrbtCnt) * 100
+            If myXdouTmp < myXdouDist Then
+                If i = LBound(myZdouDstrbtData) Then Exit Function
+                myXdouRndVrbl = myZdouDstrbtData(i - 1)
+                Exit For
+            End If
+        Next i
+    End If
+    incPfncdouRandomVariableAtDistribution = myXdouRndVrbl
+ExitPath:
+End Function
+
+ '定型Ｐ_1次元の数値配列のクイックソート
+Private Sub PfixQuickSortOfNumeric1DArray( _
+            myZdouSrtData() As Double, _
+            ByVal myXlonLbnd As Long, ByVal myXlonUbnd As Long, _
+            Optional ByVal coXlonOrder As Long = 1)
+'myZdouSrtData(i) : 数値情報
+'coXlonOrder = 1    : 昇順 (Ascending Order)
+'coXlonOrder = -1   : 降順 (Descending Order)
+    If myXlonUbnd <= myXlonLbnd Then Exit Sub
+  Dim i As Long, j As Long
+  Dim myXdouMed As Double, myXdouTmp As Double
+    myXdouMed = myZdouSrtData(Int((myXlonLbnd + myXlonUbnd) / 2))
+    i = myXlonLbnd: j = myXlonUbnd
+    Do
+        Do While coXlonOrder * (myZdouSrtData(i) - myXdouMed) < 0
+            i = i + 1
+        Loop
+        Do While coXlonOrder * (myZdouSrtData(j) - myXdouMed) > 0
+            j = j - 1
+        Loop
+        If i >= j Then Exit Do
+        myXdouTmp = myZdouSrtData(i)
+        myZdouSrtData(i) = myZdouSrtData(j)
+        myZdouSrtData(j) = myXdouTmp
+        i = i + 1: j = j - 1
+    Loop
+    If myXlonLbnd < i - 1 Then _
+        Call PfixQuickSortOfNumeric1DArray(myZdouSrtData, myXlonLbnd, i - 1, coXlonOrder)
+    If myXlonUbnd > j + 1 Then _
+        Call PfixQuickSortOfNumeric1DArray(myZdouSrtData, j + 1, myXlonUbnd, coXlonOrder)
+End Sub
+
+ '定型Ｆ_配列変数の次元数が指定次元と一致するかをチェックする
+Private Function PfncbisCheckArrayDimension( _
+            ByRef myZvarDataAry As Variant, ByVal myXlonDmnsn As Long) As Boolean
+    PfncbisCheckArrayDimension = False
+    If IsArray(myZvarDataAry) = False Then Exit Function
+    If myXlonDmnsn <= 0 Then Exit Function
+  Dim myXlonTmp As Long, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXlonTmp = UBound(myZvarDataAry, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    If k - 1 <> myXlonDmnsn Then Exit Function
+    PfncbisCheckArrayDimension = True
+End Function
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_分布特性データの累積確率と特性(確率変数)位置を取得する
+'Private Sub instCDstrbtnPstn()
+'  Dim myXdouDist As Double
+'    'myXdouDist : 累積確率[%]
+'  Dim myXdouRndVrbl As Double
+'    'myXdouRndVrbl : 特性(確率変数)
+''//クラス内変数への入力
+'  Dim myXlonCalOption As Long, myXlonSrtOrdr As Long
+'    myXlonCalOption = 2
+'    myXlonSrtOrdr = 1
+'  Dim myXlonDstrbtDataCnt As Long, myZdouDstrbtData() As Double
+'    myXlonDstrbtDataCnt = 2
+'    ReDim myZdouDstrbtData(myXlonDstrbtDataCnt) As Double
+'    myZdouDstrbtData(1) = 0.5
+'    myZdouDstrbtData(2) = 1
+'    myXdouRndVrbl = 1
+'    myXdouDist = 1
+''//CDstrbtnPstnクラスモジュールのインスタンス生成
+'    On Error GoTo ExitPath
+'  Dim L As Long, myXvarTmp As Variant
+'    L = LBound(myZdouDstrbtData): myXvarTmp = myZdouDstrbtData(L)
+'    On Error GoTo 0
+'  Dim i As Long
+'  Dim myXinsDstrbtnPstn As CDstrbtnPstn: Set myXinsDstrbtnPstn = New CDstrbtnPstn
+'    With myXinsDstrbtnPstn
+'    '//クラス内変数への入力
+'        .letCalOption = myXlonCalOption
+'        .letSrtOrdr = myXlonSrtOrdr
+'        .letDstrbtDataAry = myZdouDstrbtData
+'        Select Case myXlonCalOption
+'            Case 1: .letRndVrbl = myXdouRndVrbl
+'            Case 2: .letDist = myXdouDist
+'            Case Else
+'        End Select
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        Select Case myXlonCalOption
+'            Case 1: myXdouDist = .fncdouDist
+'            Case 2: myXdouRndVrbl = .fncdouRndVrbl
+'            Case Else
+'        End Select
+'    End With
+'    Set myXinsDstrbtnPstn = Nothing
+''    Select Case myXlonCalOption
+''        Case 1: Debug.Print "データ: " & myXdouDist
+''        Case 2: Debug.Print "データ: " & myXdouRndVrbl
+''        Case Else
+''    End Select
+'ExitPath:
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
