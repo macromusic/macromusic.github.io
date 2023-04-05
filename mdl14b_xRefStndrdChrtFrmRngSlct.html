@@ -1,1 +1,628 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfixChangeModuleConstValue
+'Includes CAddChart
+'Includes CSetSrsClctnFrml
+'Includes CStndrdChrt
+'Includes CRngSlctChrtPlaceSizeChrtObj
+'Includes CChrtPlaceSizePltArea
+'Includes CRngSlctChrtTtl
+'Includes CRngSlctChrtAxsTtl
 
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_グラフを作成して標準グラフに設定する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "xRefStndrdChrtFrmRngSlct"
+  Private Const meMlonExeNum As Long = 0
+  
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//出力データ
+  Private myXobjChrtObjct As Object
+  
+'//入力データ
+'  Private myXobjSheet As Object
+'  Private myXlonChrtType As Long, myXstrChrtObjNameIN As String
+'
+'  Private myXbisAddNewSrs As Boolean, myXlonSCNo As Long
+'  Private myXlonNameBgnRow As Long, myXlonNameBgnCol As Long
+'  Private myXlonXvalBgnRow As Long, myXlonXvalBgnCol As Long, _
+'            myXlonXvalEndRow As Long, myXlonXvalEndCol As Long
+'  Private myXlonYvalBgnRow As Long, myXlonYvalBgnCol As Long, _
+'            myXlonYvalEndRow As Long, myXlonYvalEndCol As Long
+'
+'  Private myXbisMsgBoxON As Boolean
+'  Private myXbisXMnrGrdLnsShw As Boolean, myXbisYMnrGrdLnsShw As Boolean
+'  Private myXbisTtlPltAreaCntr As Boolean, myXbisAxsTtlPltAreaCntr As Boolean
+'
+'  Private myXbisSetByShtRng As Boolean
+'  Private myXlonTopRow As Long, myXlonBttmRow As Long, _
+'            myXlonLftCol As Long, myXlonRghtCol As Long
+'
+'  Private myXbisChrtTtlSet As Boolean, myXbisChrtTtlVsbl As Boolean, _
+'            myXstrChrtTtl As String
+'
+'  Private myXbisAxsTtlX1Set As Boolean, myXbisAxsTtlX1Vsbl As Boolean, _
+'            myXstrAxsTtlX1 As String
+'  Private myXbisAxsTtlY1Set As Boolean, myXbisAxsTtlY1Vsbl As Boolean, _
+'            myXstrAxsTtlY1 As String
+'  Private myXbisAxsTtlY2Set As Boolean, myXbisAxsTtlY2Vsbl As Boolean, _
+'            myXstrAxsTtlY2 As String
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXobjSheet As Object
+  Private myXlonChrtType As Long, myXstrChrtObjNameIN As String
+
+  Private myXbisAddNewSrs As Boolean, myXlonSCNo As Long
+  Private myXlonNameBgnRow As Long, myXlonNameBgnCol As Long
+  Private myXlonXvalBgnRow As Long, myXlonXvalBgnCol As Long, _
+            myXlonXvalEndRow As Long, myXlonXvalEndCol As Long
+  Private myXlonYvalBgnRow As Long, myXlonYvalBgnCol As Long, _
+            myXlonYvalEndRow As Long, myXlonYvalEndCol As Long
+
+  Private myXbisMsgBoxON As Boolean
+  Private myXbisXMnrGrdLnsShw As Boolean, myXbisYMnrGrdLnsShw As Boolean
+  Private myXbisTtlPltAreaCntr As Boolean, myXbisAxsTtlPltAreaCntr As Boolean
+
+  Private myXbisSetByShtRng As Boolean
+  Private myXlonTopRow As Long, myXlonBttmRow As Long, _
+            myXlonLftCol As Long, myXlonRghtCol As Long
+
+  Private myXbisChrtTtlSet As Boolean, myXbisChrtTtlVsbl As Boolean, _
+            myXstrChrtTtl As String
+
+  Private myXbisAxsTtlX1Set As Boolean, myXbisAxsTtlX1Vsbl As Boolean, _
+            myXstrAxsTtlX1 As String
+  Private myXbisAxsTtlY1Set As Boolean, myXbisAxsTtlY1Vsbl As Boolean, _
+            myXstrAxsTtlY1 As String
+  Private myXbisAxsTtlY2Set As Boolean, myXbisAxsTtlY2Vsbl As Boolean, _
+            myXstrAxsTtlY2 As String
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    Set myXobjSheet = Nothing
+    myXlonChrtType = Empty
+    myXstrChrtObjNameIN = Empty
+
+    myXbisMsgBoxON = False
+    myXbisXMnrGrdLnsShw = False: myXbisYMnrGrdLnsShw = False
+    myXbisTtlPltAreaCntr = False: myXbisAxsTtlPltAreaCntr = False
+
+    myXbisSetByShtRng = False
+    myXlonTopRow = Empty: myXlonBttmRow = Empty
+    myXlonLftCol = Empty: myXlonRghtCol = Empty
+
+    myXbisChrtTtlSet = False: myXbisChrtTtlVsbl = False: myXstrChrtTtl = Empty
+    myXbisAxsTtlX1Set = False: myXbisAxsTtlX1Vsbl = False: myXstrAxsTtlX1 = Empty
+    myXbisAxsTtlY1Set = False: myXbisAxsTtlY1Vsbl = False: myXstrAxsTtlY1 = Empty
+    myXbisAxsTtlY2Set = False: myXbisAxsTtlY2Vsbl = False: myXstrAxsTtlY2 = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_モジュールメモリのリセット
+Public Sub resetConstant()
+  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
+  Dim myZvarM(1, 2) As Variant
+    myZvarM(1, 1) = "meMlonExeNum": myZvarM(1, 2) = 0
+    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+End Sub
+
+'PublicP_
+Public Sub exeProc()
+    
+'//処理実行
+    Call ctrProc
+    
+    Select Case myXbisCmpltFlag
+        Case True: MsgBox "実行完了"
+        Case Else: MsgBox "異常あり", vbExclamation
+    End Select
+    
+End Sub
+
+'PublicF_
+Public Function fncobjChrtObjct( _
+            ByVal myXobjSheetIN As Object, _
+            ByVal myXlonChrtTypeIN As Long, ByVal myXstrChrtObjNameIN As String, _
+            ByVal myXbisAddNewSrsIN As Boolean, myXlonSCNoIN As Long, _
+            ByVal myXlonNameBgnRowIN As Long, ByVal myXlonNameBgnColIN As Long, _
+            ByVal myXlonXvalBgnRowIN As Long, ByVal myXlonXvalBgnColIN As Long, _
+            ByVal myXlonXvalEndRowIN As Long, ByVal myXlonXvalEndColIN As Long, _
+            ByVal myXlonYvalBgnRowIN As Long, ByVal myXlonYvalBgnColIN As Long, _
+            ByVal myXlonYvalEndRowIN As Long, ByVal myXlonYvalEndColIN As Long, _
+            ByVal myXbisMsgBoxONIN As Boolean, _
+            ByVal myXbisXMnrGrdLnsShwIN As Boolean, ByVal myXbisYMnrGrdLnsShwIN As Boolean, _
+            ByVal myXbisTtlPltAreaCntrIN As Boolean, ByVal myXbisAxsTtlPltAreaCntrIN As Boolean, _
+            ByVal myXbisSetByShtRngIN As Boolean, _
+            ByVal myXlonTopRowIN As Long, ByVal myXlonBttmRowIN As Long, _
+            ByVal myXlonLftColIN As Long, ByVal myXlonRghtColIN As Long, _
+            ByVal myXbisChrtTtlSetIN As Boolean, ByVal myXbisChrtTtlVsblIN As Boolean, _
+            ByVal myXstrChrtTtlIN As String, _
+            ByVal myXbisAxsTtlX1SetIN As Boolean, ByVal myXbisAxsTtlX1VsblIN As Boolean, _
+            ByVal myXstrAxsTtlX1IN As String, _
+            ByVal myXbisAxsTtlY1SetIN As Boolean, ByVal myXbisAxsTtlY1VsblIN As Boolean, _
+            ByVal myXstrAxsTtlY1IN As String, _
+            ByVal myXbisAxsTtlY2SetIN As Boolean, ByVal myXbisAxsTtlY2VsblIN As Boolean, _
+            ByVal myXstrAxsTtlY2IN As String) As Boolean
+    Set fncobjChrtObjct = False
+    
+'//入力変数を初期化
+    Set myXobjSheet = Nothing
+    myXlonChrtType = Empty
+    myXstrChrtObjNameIN = Empty
+    myXbisMsgBoxON = False
+    myXbisXMnrGrdLnsShw = False: myXbisYMnrGrdLnsShw = False
+    myXbisTtlPltAreaCntr = False: myXbisAxsTtlPltAreaCntr = False
+    myXbisSetByShtRng = False
+    myXlonTopRow = Empty: myXlonBttmRow = Empty
+    myXlonLftCol = Empty: myXlonRghtCol = Empty
+    myXbisChrtTtlSet = False: myXbisChrtTtlVsbl = False: myXstrChrtTtl = Empty
+    myXbisAxsTtlX1Set = False: myXbisAxsTtlX1Vsbl = False: myXstrAxsTtlX1 = Empty
+    myXbisAxsTtlY1Set = False: myXbisAxsTtlY1Vsbl = False: myXstrAxsTtlY1 = Empty
+    myXbisAxsTtlY2Set = False: myXbisAxsTtlY2Vsbl = False: myXstrAxsTtlY2 = Empty
+
+'//入力変数を取り込み
+    Set myXobjSheet = myXobjSheetIN
+    myXlonChrtType = myXlonChrtType
+    myXstrChrtObjNameIN = myXstrChrtObjNameIN
+    myXbisMsgBoxON = myXbisMsgBoxONIN
+    myXbisXMnrGrdLnsShw = myXbisXMnrGrdLnsShwIN
+    myXbisYMnrGrdLnsShw = myXbisYMnrGrdLnsShwIN
+    myXbisTtlPltAreaCntr = myXbisTtlPltAreaCntrIN
+    myXbisAxsTtlPltAreaCntr = myXbisAxsTtlPltAreaCntrIN
+    myXbisSetByShtRng = myXbisSetByShtRngIN
+    myXlonTopRow = myXlonTopRowIN
+    myXlonBttmRow = myXlonBttmRowIN
+    myXlonLftCol = myXlonLftColIN
+    myXlonRghtCol = myXlonRghtColIN
+    myXbisChrtTtlSet = myXbisChrtTtlSetIN
+    myXbisChrtTtlVsbl = myXbisChrtTtlVsblIN
+    myXstrChrtTtl = myXstrChrtTtlIN
+    myXbisAxsTtlX1Set = myXbisAxsTtlX1SetIN
+    myXbisAxsTtlX1Vsbl = myXbisAxsTtlX1VsblIN
+    myXstrAxsTtlX1 = myXstrAxsTtlX1IN
+    myXbisAxsTtlY1Set = myXbisAxsTtlY1SetIN
+    myXbisAxsTtlY1Vsbl = myXbisAxsTtlY1VsblIN
+    myXstrAxsTtlY1 = myXstrAxsTtlY1IN
+    myXbisAxsTtlY2Set = myXbisAxsTtlY2SetIN
+    myXbisAxsTtlY2Vsbl = myXbisAxsTtlY2VsblIN
+    myXstrAxsTtlY2 = myXstrAxsTtlY2IN
+    
+'//処理実行
+    Call ctrProc
+    If myXbisCmpltFlag = False Then Exit Function
+    
+    Set fncobjChrtObjct = myXobjChrtObjct
+    
+End Function
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call remProc: If myXbisExitFlag = True Then GoTo ExitPath
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables
+
+'//グラフを新規作成
+    Call PforNewInstanceOfCAddChart
+    If myXbisExitFlag = True Then GoTo ExitPath
+
+'//グラフの指定データ系列のデータ範囲を指定して設定
+    Call PforNewInstanceOfCSetSrsClctnFrml
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+
+'//グラフを標準グラフに設定
+    Call PforNewInstanceOfCStndrdChrt
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+
+'//グラフオブジェクトの外形サイズを範囲指定
+    Call PforNewInstanceOfCRngSlctChrtPlaceSizeChrtObj
+    If myXbisExitFlag = True Then GoTo ExitPath
+
+'//グラフのプロットエリアの外形サイズを設定
+    Call PforNewInstanceOfCChrtPlaceSizePltArea
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+
+'//グラフのタイトルに表示させる参照範囲を指定
+    Call PforNewInstanceOfCRngSlctChrtTtl
+    If myXbisExitFlag = True Then GoTo ExitPath
+
+'//グラフのX/Y軸のタイトルに表示させる参照範囲を指定
+    Call PforNewInstanceOfCRngSlctChrtAxsTtl
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "5"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    If coXbisTestMode = False Then Call recProc
+    Call initializeModuleVariables
+End Sub
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+    Set myXobjChrtObjct = Nothing
+End Sub
+
+'RemP_モジュールメモリに保存した変数を取り出す
+Private Sub remProc()
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXobjSheet Is Nothing Then Set myXobjSheet = ActiveSheet
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+
+'//CAddChartクラスへの入力
+    Set myXobjSheet = ActiveSheet
+    myXlonChrtType = xlXYScatterLines   '= 75 : 折れ線付き散布図(データ マーカーなし)
+    myXstrChrtObjNameIN = ""
+
+'//CSetSrsClctnFrmlクラスへの入力
+    myXbisAddNewSrs = True
+    
+'    myXbisAddNewSrs = False
+'    myXlonSCNo = 1
+    
+    myXlonNameBgnRow = 3
+    myXlonNameBgnCol = 3
+    
+    myXlonXvalBgnRow = 4
+    myXlonXvalBgnCol = 2
+    myXlonXvalEndRow = 10
+    myXlonXvalEndCol = 2
+    
+    myXlonYvalBgnRow = 4
+    myXlonYvalBgnCol = 3
+    myXlonYvalEndRow = 10
+    myXlonYvalEndCol = 3
+
+'//CStndrdChrtクラスへの入力
+    'myXbisMsgBxON = False : 標準設定実行有無のMsgBoxを表示しない
+    'myXbisMsgBxON = True  : 標準設定実行有無のMsgBoxを表示しする
+    myXbisMsgBoxON = False
+    
+    'myXbisMnrGrdLnsShw = True  : 補助目盛線を表示する
+    'myXbisMnrGrdLnsShw = False : 補助目盛線を表示しない
+    myXbisXMnrGrdLnsShw = False
+    myXbisYMnrGrdLnsShw = False
+    
+    'myXbisTtlPltAreaCntr = True  : チャートエリア中心
+    'myXbisTtlPltAreaCntr = False : プロットエリア中心
+    myXbisTtlPltAreaCntr = False
+    myXbisAxsTtlPltAreaCntr = False
+
+'//CChrtPlaceSizeChrtObjクラスへの入力
+    myXbisSetByShtRng = True
+    myXlonTopRow = 2
+    myXlonBttmRow = 20
+    myXlonLftCol = 2
+    myXlonRghtCol = 5
+
+'//CChrtTtlクラスへの入力
+    'myXbisTtlSet = False : 設定処理しない
+    'myXbisTtlVsbl = True  : タイトル表示
+    'myXbisTtlVsbl = False : タイトル非表示
+    'myXstrTtl = "X" : 文字列を設定
+    myXbisChrtTtlSet = True
+    myXbisChrtTtlVsbl = True
+    myXstrChrtTtl = "=Sheet1!R2C2"
+
+'//CChrtAxsTtlクラスへの入力
+    'myXbisTtlSet = False : 設定処理しない
+    'myXbisTtlVsbl = True  : タイトル表示
+    'myXbisTtlVsbl = False : タイトル非表示
+    'myXstrTtl = "X" : 文字列を設定
+    myXbisAxsTtlX1Set = True
+    myXbisAxsTtlX1Vsbl = True
+    myXstrAxsTtlX1 = "=Sheet1!R2C2"
+    
+    myXbisAxsTtlY1Set = True
+    myXbisAxsTtlY1Vsbl = True
+    myXstrAxsTtlY1 = "=Sheet1!R2C2"
+    
+'    myXbisAxsTtlY2Set = True
+'    myXbisAxsTtlY2Vsbl = True
+'    myXstrAxsTtlY2 = "=Sheet1!R2C2"
+
+End Sub
+
+'◆ClassProc名_グラフを新規作成する
+Private Sub PforNewInstanceOfCAddChart()
+    myXbisExitFlag = False
+  Dim myXinsAddChart As CAddChart: Set myXinsAddChart = New CAddChart
+    With myXinsAddChart
+    '//クラス内変数への入力
+        Set .setSheet = myXobjSheet
+        .letChrtType = myXlonChrtType
+        .letChrtObjNameIN = myXstrChrtObjNameIN
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        Set myXobjChrtObjct = .getChrtObjct
+    End With
+    Set myXinsAddChart = Nothing
+    If myXobjChrtObjct Is Nothing Then myXbisExitFlag = True
+End Sub
+
+'◆ClassProc名_グラフの指定データ系列のデータ範囲を指定して設定する
+Private Sub PforNewInstanceOfCSetSrsClctnFrml()
+    myXbisExitFlag = False
+  Dim myXinsSetSrsClctnFrml As CSetSrsClctnFrml
+    Set myXinsSetSrsClctnFrml = New CSetSrsClctnFrml
+    With myXinsSetSrsClctnFrml
+    '//クラス内変数への入力
+        .letAddNewSrs = myXbisAddNewSrs
+        Set .setChrtObjct = myXobjChrtObjct
+        .letSCNo = myXlonSCNo
+        .letNameShtRng(1) = myXlonNameBgnRow
+        .letNameShtRng(2) = myXlonNameBgnCol
+        .letXvalShtRng(1) = myXlonXvalBgnRow
+        .letXvalShtRng(2) = myXlonXvalBgnCol
+        .letXvalShtRng(3) = myXlonXvalEndRow
+        .letXvalShtRng(4) = myXlonXvalEndCol
+        .letYvalShtRng(1) = myXlonYvalBgnRow
+        .letYvalShtRng(2) = myXlonYvalBgnCol
+        .letYvalShtRng(3) = myXlonYvalEndRow
+        .letYvalShtRng(4) = myXlonYvalEndCol
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        myXbisExitFlag = Not .fncbisCmpltFlag
+    End With
+    Set myXinsSetSrsClctnFrml = Nothing
+End Sub
+
+'◆ClassProc名_グラフを標準グラフに設定する
+Private Sub PforNewInstanceOfCStndrdChrt()
+    myXbisExitFlag = False
+  Dim myXinsStndrdChrt As CStndrdChrt: Set myXinsStndrdChrt = New CStndrdChrt
+    With myXinsStndrdChrt
+    '//クラス内変数への入力
+        .letMsgBoxON = myXbisMsgBoxON
+        .letMnrGrdLnsShw(1) = myXbisXMnrGrdLnsShw
+        .letMnrGrdLnsShw(2) = myXbisYMnrGrdLnsShw
+        .letPltAreaCntr(1) = myXbisTtlPltAreaCntr
+        .letPltAreaCntr(2) = myXbisAxsTtlPltAreaCntr
+        Set .setChrt = myXobjChrtObjct.Chart
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        myXbisExitFlag = Not .fncbisCmpltFlag
+    End With
+    Set myXinsStndrdChrt = Nothing
+ExitPath:
+End Sub
+
+'◆ClassProc名_グラフオブジェクトの外形サイズを範囲指定する
+Private Sub PforNewInstanceOfCRngSlctChrtPlaceSizeChrtObj()
+  Dim myXbisCmpltFlag As Boolean
+'//クラス内変数への入力
+  Dim myXobjSheet As Object, myXobjChrtObjct As Object
+    Set myXobjSheet = ActiveSheet
+    Set myXobjChrtObjct = myXobjSheet.ChartObjects(1)
+'//CRngSlctChrtPlaceSizeChrtObjクラスモジュールのインスタンス生成
+  Dim myXinsRngSlctChrtPlaceSizeChrtObj As CRngSlctChrtPlaceSizeChrtObj
+    Set myXinsRngSlctChrtPlaceSizeChrtObj = New CRngSlctChrtPlaceSizeChrtObj
+    With myXinsRngSlctChrtPlaceSizeChrtObj
+    '//クラス内変数への入力
+        Set .setSheet = myXobjSheet
+        Set .setChrtObjct = myXobjChrtObjct
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        myXbisCmpltFlag = .fncbisCmpltFlag
+    End With
+    Set myXinsRngSlctChrtPlaceSizeChrtObj = Nothing
+ExitPath:
+End Sub
+
+'◆ClassProc名_グラフのプロットエリアの外形サイズを設定する
+Private Sub PforNewInstanceOfCChrtPlaceSizePltArea()
+    myXbisExitFlag = False
+  Dim myXinsChrtPlaceSizePltArea As CChrtPlaceSizePltArea
+    Set myXinsChrtPlaceSizePltArea = New CChrtPlaceSizePltArea
+    With myXinsChrtPlaceSizePltArea
+    '//クラス内変数への入力
+        Set .setChrtObjct = myXobjChrtObjct
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        myXbisExitFlag = Not .fncbisCmpltFlag
+    End With
+    Set myXinsChrtPlaceSizePltArea = Nothing
+ExitPath:
+End Sub
+
+'◆ClassProc名_グラフのタイトルに表示させる参照範囲を指定する
+Private Sub PforNewInstanceOfCRngSlctChrtTtl()
+  Dim myXbisCmpltFlag As Boolean
+'//クラス内変数への入力
+  Dim myXobjChrt As Object
+    Set myXobjChrt = ActiveSheet.ChartObjects(1).Chart
+'//CRngSlctChrtTtlクラスモジュールのインスタンス生成
+  Dim myXinsRngSlctChrtTtl As CRngSlctChrtTtl
+    Set myXinsRngSlctChrtTtl = New CRngSlctChrtTtl
+    With myXinsRngSlctChrtTtl
+    '//クラス内変数への入力
+        Set .setChrt = myXobjChrt
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        myXbisCmpltFlag = .fncbisCmpltFlag
+    End With
+    Set myXinsRngSlctChrtTtl = Nothing
+ExitPath:
+End Sub
+
+'◆ClassProc名_グラフのX/Y軸のタイトルに表示させる参照範囲を指定する
+Private Sub PforNewInstanceOfCRngSlctChrtAxsTtl()
+  Dim myXbisCmpltFlag As Boolean
+'//クラス内変数への入力
+  Dim myXobjChrt As Object
+  Dim myXstrTrgtChrtAxs As String
+    'myXstrTrgtChrtAxs = "X1" : X軸主軸のタイトルを設定
+    'myXstrTrgtChrtAxs = "Y1" : Y軸主軸のタイトルを設定
+    'myXstrTrgtChrtAxs = "Y2" : Y軸第2軸のタイトルを設定
+    Set myXobjChrt = ActiveSheet.ChartObjects(1).Chart
+    myXstrTrgtChrtAxs = "Y2"
+'//CRngSlctChrtAxsTtlクラスモジュールのインスタンス生成
+  Dim myXinsRngSlctChrtAxsTtl As CRngSlctChrtAxsTtl
+    Set myXinsRngSlctChrtAxsTtl = New CRngSlctChrtAxsTtl
+    With myXinsRngSlctChrtAxsTtl
+    '//クラス内変数への入力
+        Set .setChrt = myXobjChrt
+        .letTrgtChrtAxs = myXstrTrgtChrtAxs
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        myXbisCmpltFlag = .fncbisCmpltFlag
+    End With
+    Set myXinsRngSlctChrtAxsTtl = Nothing
+ExitPath:
+End Sub
+
+'RecP_使用した変数をモジュールメモリに保存する
+Private Sub recProc()
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    
+  Dim myZvarM(1, 2) As Variant
+    myZvarM(1, 1) = "meMlonExeNum"
+    myZvarM(1, 2) = meMlonExeNum + 1
+
+  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
+    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+    
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_モジュール内定数の値を変更する
+Private Sub PfixChangeModuleConstValue(myXbisExitFlag As Boolean, _
+            ByVal myXstrMdlName As String, ByRef myZvarM() As Variant)
+    myXbisExitFlag = False
+    If myXstrMdlName = "" Then GoTo ExitPath
+  Dim L As Long, myXvarTmp As Variant
+    On Error GoTo ExitPath
+    If IsArray(myZvarM) = False Then GoTo ExitPath
+    L = LBound(myZvarM, 1): myXvarTmp = myZvarM(L, L)
+    On Error GoTo 0
+  Dim myXlonDclrLines As Long
+    With ThisWorkbook.VBProject.VBComponents(myXstrMdlName).CodeModule
+    myXlonDclrLines = .CountOfDeclarationLines
+    If myXlonDclrLines < 1 Then GoTo ExitPath
+  Dim i As Long, n As Long
+  Dim myXstrTmp As String, myXstrRplcCode As String
+    For i = 1 To myXlonDclrLines
+        myXstrTmp = .Lines(i, 1)
+        For n = LBound(myZvarM, 1) To UBound(myZvarM, 1)
+          Dim myXstrSrch As String
+            myXstrSrch = "Const" & Space(1) & myZvarM(n, L) & Space(1) & "As" & Space(1)
+            If InStr(myXstrTmp, myXstrSrch) = 0 Then GoTo NextPath
+          Dim myXstrOrg As String
+            myXstrOrg = Left(myXstrTmp, InStr(myXstrTmp, "=" & Space(1)) + 1)
+            myXstrRplcCode = myXstrOrg & myZvarM(n, L + 1)
+            Application.DisplayAlerts = False
+            Call .ReplaceLine(i, myXstrRplcCode)
+            Application.DisplayAlerts = True
+NextPath:
+        Next n
+    Next i
+    End With
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'◆ModuleProc名_グラフを作成して標準グラフに設定する
+Private Sub PforCallOfxRefStndrdChrtFrmRngSlct()
+  Dim myXobjChrtObjct As Object
+'//モジュール内変数への入力
+  Dim myXobjSheet As Object, myXlonChrtType As Long, myXstrChrtObjNameIN As String
+  Dim myXbisAddNewSrs As Boolean, myXlonSCNo As Long, _
+        myXlonNameBgnRow As Long, myXlonNameBgnCol As Long, _
+        myXlonXvalBgnRow As Long, myXlonXvalBgnCol As Long, _
+        myXlonXvalEndRow As Long, myXlonXvalEndCol As Long, _
+        myXlonYvalBgnRow As Long, myXlonYvalBgnCol As Long, _
+        myXlonYvalEndRow As Long, myXlonYvalEndCol As Long
+  Dim myXbisMsgBoxON As Boolean, _
+        myXbisXMnrGrdLnsShw As Boolean, myXbisYMnrGrdLnsShw As Boolean, _
+        myXbisTtlPltAreaCntr As Boolean, myXbisAxsTtlPltAreaCntr As Boolean
+  Dim myXbisSetByShtRng As Boolean, _
+        myXlonTopRow As Long, myXlonBttmRow As Long, _
+        myXlonLftCol As Long, myXlonRghtCol As Long
+  Dim myXbisChrtTtlSet As Boolean, myXbisChrtTtlVsbl As Boolean, _
+        myXstrChrtTtl As String
+  Dim myXbisAxsTtlX1Set As Boolean, myXbisAxsTtlX1Vsbl As Boolean, _
+        myXstrAxsTtlX1 As String
+  Dim myXbisAxsTtlY1Set As Boolean, myXbisAxsTtlY1Vsbl As Boolean, _
+        myXstrAxsTtlY1 As String
+  Dim myXbisAxsTtlY2Set As Boolean, myXbisAxsTtlY2Vsbl As Boolean, _
+        myXstrAxsTtlY2 As String
+'//モジュール内プロシージャの実行とモジュール内変数からの出力
+    Set myXobjChrtObjct = xRefStndrdChrtFrmRngSlct.fncobjChrtObjct( _
+            myXobjSheet, myXlonChrtType, myXstrChrtObjNameIN, _
+            myXbisAddNewSrs, myXlonSCNo, _
+            myXlonNameBgnRow, myXlonNameBgnCol, _
+            myXlonXvalBgnRow, myXlonXvalBgnCol, _
+            myXlonXvalEndRow, myXlonXvalEndCol, _
+            myXlonYvalBgnRow, myXlonYvalBgnCol, _
+            myXlonYvalEndRow, myXlonYvalEndCol, _
+            myXbisMsgBoxON, _
+            myXbisXMnrGrdLnsShw, myXbisYMnrGrdLnsShw, _
+            myXbisTtlPltAreaCntr, myXbisAxsTtlPltAreaCntr, _
+            myXbisSetByShtRng, _
+            myXlonTopRow, myXlonBttmRow, _
+            myXlonLftCol, myXlonRghtCol, _
+            myXbisChrtTtlSet, myXbisChrtTtlVsbl, myXstrChrtTtl, _
+            myXbisAxsTtlX1Set, myXbisAxsTtlX1Vsbl, myXstrAxsTtlX1, _
+            myXbisAxsTtlY1Set, myXbisAxsTtlY1Vsbl, myXstrAxsTtlY1, _
+            myXbisAxsTtlY2Set, myXbisAxsTtlY2Vsbl, myXstrAxsTtlY2)
+End Sub
+'
+'  Public Const coXbisTestMode As Boolean = True
+'  Public Const coXbisTestMode As Boolean = False
+'
+Private Sub PforResetConstantInxRefStndrdChrtFrmRngSlct()
+'//xRefStndrdChrtFrmRngSlctモジュールのモジュールメモリのリセット処理
+    Call xRefStndrdChrtFrmRngSlct.resetConstant
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
