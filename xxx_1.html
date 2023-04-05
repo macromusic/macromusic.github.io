@@ -1,1 +1,221 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes x
 
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "xRefMdl"
+  
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonCalDataRngOptn As Long
+  Private myXlonXCalCol As Long, myXlonYCalCol As Long
+  Private myXlonCalStep As Long
+  Private myXlonBgnRow As Long, myXlonEndRow As Long
+  Private myXdouSlp As Double, myXdouIntrcpt As Double
+
+  Private myXlonStrtRow As Long, myXlonLastRow As Long
+  Private myXlonCalRowCnt As Long, myXlonCalColCnt As Long, myZdouCalData() As Double
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonCalDataRngOptn = Empty
+    myXlonXCalCol = Empty: myXlonYCalCol = Empty
+    myXlonCalStep = Empty
+    myXlonBgnRow = Empty: myXlonEndRow = Empty
+    myXdouSlp = Empty: myXdouIntrcpt = Empty
+
+    myXlonStrtRow = Empty: myXlonLastRow = Empty
+    myXlonCalRowCnt = Empty: myXlonCalColCnt = Empty: Erase myZdouCalData
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub callProc(myXbisCmpltFlagOUT As Boolean)
+    
+'//出力変数を初期化
+    myXbisCmpltFlagOUT = False
+    
+'//処理実行
+    Call ctrProc
+    If myXbisCmpltFlag = False Then Exit Sub
+    
+'//出力変数に格納
+    myXbisCmpltFlagOUT = myXbisCmpltFlag
+
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables
+    
+'//S:
+    Call snsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//P:
+    Call prsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+'//Run:
+    Call runProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+    
+    myXlonCalDataRngOptn = 2
+    'myXlonCalDataRngOptn = 1 : 全データ範囲で取得
+    'myXlonCalDataRngOptn = 2 : 指定データ範囲で取得
+    
+    myXlonXCalCol = 1
+    myXlonYCalCol = 2
+    myXlonCalStep = 1
+    
+End Sub
+
+'SnsP_
+Private Sub snsProc()
+    myXbisExitFlag = False
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_
+Private Sub prsProc()
+    myXbisExitFlag = False
+    
+    myXlonBgnRow = 1
+    myXlonEndRow = 0
+    myXdouSlp = 0
+    myXdouIntrcpt = 1
+    Call instCStrghtLn
+    If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+    
+    myXlonBgnRow = 1
+    myXlonEndRow = 0
+    myXdouSlp = 0
+    myXdouIntrcpt = 1
+    Call instCStrghtLn
+    If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+    
+    myXlonBgnRow = 1
+    myXlonEndRow = 0
+    myXdouSlp = 0
+    myXdouIntrcpt = 1
+    Call instCStrghtLn
+    If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_
+Private Sub runProc()
+    myXbisExitFlag = False
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'◆ClassProc名_データ配列の全区間の直線データを取得する
+Private Sub instCStrghtLn()
+  Dim myXinsStrghtLn As CStrghtLn: Set myXinsStrghtLn = New CStrghtLn
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    With myXinsStrghtLn
+    '//クラス内変数への入力
+        .letCalDataRngOptn = myXlonCalDataRngOptn
+        .letOrgData = myZdouOrgData
+        .letXCalCol = myXlonXCalCol
+        .letYCalCol = myXlonYCalCol
+        .letCalStep = myXlonCalStep
+        .letBgnRow = myXlonBgnRow
+        .letEndRow = myXlonEndRow
+        .letSlp = myXdouSlp
+        .letIntrcpt = myXdouIntrcpt
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProcCalDeviationYArrayFromStraightLine  'Y軸データと直線との差分データ取得
+        myXlonStrtRow = .getStrtRow
+        myXlonLastRow = .getLastRow
+        myXlonCalRowCnt = .getCalRowCnt
+        myXlonCalColCnt = .getCalColCnt
+        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo JumpPath
+        i = myXlonCalRowCnt + Lo - 1: j = myXlonCalColCnt + Lo - 1
+        ReDim myZdouCalData(i, j) As Double
+        For i = 1 To myXlonCalRowCnt
+            myZdouCalData(i + Lo - 1, Lo) = .getCalData(i, 1)
+        Next i
+    End With
+JumpPath:
+    Set myXinsStrghtLn = Nothing
+    Call variablesOfCStrghtLn(myXlonCalRowCnt, myZdouCalData)    'Debug.Print
+End Sub
+Private Sub variablesOfCStrghtLn( _
+            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+'//CStrghtLnクラス内から出力した変数の内容確認
+    Debug.Print "データ数: " & myXlonDataCnt
+    If myXlonDataCnt <= 0 Then Exit Sub
+  Dim i As Long, j As Long
+    For i = LBound(myZvarField, 1) To UBound(myZvarField, 1)
+        For j = LBound(myZvarField, 2) To UBound(myZvarField, 2)
+            Debug.Print "データ" & i & "," & j & ": " & myZvarField(i, j)
+        Next j
+    Next i
+End Sub
+
+'===============================================================================================
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
