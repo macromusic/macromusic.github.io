@@ -1,1 +1,366 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PincSetChartPrimaryCategoryAxisTitle
+'Includes PincSetChartPrimaryValueAxisTitle
+'Includes PincSetChartSecondaryValueAxisTitle
+'Includes PfixSetChartAxisTitleVisibleText
+'Includes PfixSetChartAxisTitleVisibleFormula
+'Includes PfnclonCountSeriesCollectionSetAxisGroup
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_グラフのX/Y軸のタイトルを設定する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CChrtAxsTtl"
+  
+'//PropertyGet_出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//PropertySetLet_入力データ
+  Private myXobjChrt As Object
+  
+  Private myXbisAxsTtlX1Set As Boolean, myXbisAxsTtlX1Vsbl As Boolean, _
+            myXstrAxsTtlX1 As String
+  Private myXbisAxsTtlY1Set As Boolean, myXbisAxsTtlY1Vsbl As Boolean, _
+            myXstrAxsTtlY1 As String
+  Private myXbisAxsTtlY2Set As Boolean, myXbisAxsTtlY2Vsbl As Boolean, _
+            myXstrAxsTtlY2 As String
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getCmpltFlag() As Boolean
+    getCmpltFlag = myXbisCmpltFlag
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Set setChrt(ByVal RHS As Object)
+    Set myXobjChrt = RHS
+End Property
+
+Public Property Let letAxsTtlX1(ByVal k As Long, ByVal RHS As Variant)
+    Select Case k
+        Case 1: myXbisAxsTtlX1Set = CBool(RHS)
+        Case 2: myXbisAxsTtlX1Vsbl = CBool(RHS)
+        Case 3: myXstrAxsTtlX1 = CStr(RHS)
+    End Select
+'myXbisTtlSet = False : 設定処理しない
+'myXbisTtlVsbl = True  : タイトル表示
+'myXbisTtlVsbl = False : タイトル非表示
+'myXstrTtl = "X" : 文字列を設定
+End Property
+
+Public Property Let letAxsTtlY1(ByVal k As Long, ByVal RHS As Variant)
+    Select Case k
+        Case 1: myXbisAxsTtlY1Set = CBool(RHS)
+        Case 2: myXbisAxsTtlY1Vsbl = CBool(RHS)
+        Case 3: myXstrAxsTtlY1 = CStr(RHS)
+    End Select
+'myXbisTtlSet = False : 設定処理しない
+'myXbisTtlVsbl = True  : タイトル表示
+'myXbisTtlVsbl = False : タイトル非表示
+'myXstrTtl = "X" : 文字列を設定
+End Property
+
+Public Property Let letAxsTtlY2(ByVal k As Long, ByVal RHS As Variant)
+    Select Case k
+        Case 1: myXbisAxsTtlY2Set = CBool(RHS)
+        Case 2: myXbisAxsTtlY2Vsbl = CBool(RHS)
+        Case 3: myXstrAxsTtlY2 = CStr(RHS)
+    End Select
+'myXbisTtlSet = False : 設定処理しない
+'myXbisTtlVsbl = True  : タイトル表示
+'myXbisTtlVsbl = False : タイトル非表示
+'myXstrTtl = "X" : 文字列を設定
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXobjChrt Is Nothing Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicF_
+Public Function fncbisCmpltFlag() As Boolean
+    fncbisCmpltFlag = Empty
+    Call ctrProc
+    fncbisCmpltFlag = myXbisCmpltFlag
+End Function
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//X軸主軸のタイトルを設定
+    Call incPfixSetChartPrimaryCategoryAxisTitle(myXbisExitFlag, _
+            myXobjChrt, myXstrAxsTtlX1, myXbisAxsTtlX1Set, myXbisAxsTtlX1Vsbl)
+    
+'//Y軸主軸のタイトルを設定
+    Call incPfixSetChartPrimaryValueAxisTitle(myXbisExitFlag, _
+            myXobjChrt, myXstrAxsTtlY1, myXbisAxsTtlY1Set, myXbisAxsTtlY1Vsbl)
+    
+'//Y軸第2軸のタイトルを設定
+    Call incPfixSetChartSecondaryValueAxisTitle(myXbisExitFlag, _
+            myXobjChrt, myXstrAxsTtlY2, myXbisAxsTtlY2Set, myXbisAxsTtlY2Vsbl)
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_グラフのX軸主軸のタイトルを設定する
+Private Sub PincSetChartPrimaryCategoryAxisTitle( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrAxsTtlX1 As String, _
+            Optional ByVal coXbisTtlSetX1 As Boolean = True, _
+            Optional ByVal coXbisTtlVsblX1 As Boolean = True)
+'Includes PfixSetChartAxisTitleVisibleFormula
+'Includes PfixSetChartAxisTitleVisibleText
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrAxsTtl = "X" : 文字列を設定
+    myXbisExitFlag = False
+  Dim myXobjChrtAxsX1 As Object
+    On Error GoTo ExitPath
+    Set myXobjChrtAxsX1 = myXobjChrt.Axes(xlCategory, xlPrimary)
+    On Error GoTo 0
+    If Left(myXstrAxsTtlX1, 1) = "=" Then
+        Call PfixSetChartAxisTitleVisibleFormula(myXbisExitFlag, _
+                myXobjChrtAxsX1, myXstrAxsTtlX1, coXbisTtlSetX1, coXbisTtlVsblX1)
+    Else
+        Call PfixSetChartAxisTitleVisibleText(myXbisExitFlag, _
+                myXobjChrtAxsX1, myXstrAxsTtlX1, coXbisTtlSetX1, coXbisTtlVsblX1)
+    End If
+    Set myXobjChrtAxsX1 = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのY軸主軸のタイトルを設定する
+Private Sub PincSetChartPrimaryValueAxisTitle( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrAxsTtlY1 As String, _
+            Optional ByVal coXbisTtlSetY1 As Boolean = True, _
+            Optional ByVal coXbisTtlVsblY1 As Boolean = True)
+'Includes PfixSetChartAxisTitleVisibleFormula
+'Includes PfixSetChartAxisTitleVisibleText
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrAxsTtl = "X" : 文字列を設定
+    myXbisExitFlag = False
+  Dim myXobjChrtAxsY1 As Object
+    On Error GoTo ExitPath
+    Set myXobjChrtAxsY1 = myXobjChrt.Axes(xlValue, xlPrimary)
+    On Error GoTo 0
+    If Left(myXstrAxsTtlY1, 1) = "=" Then
+        Call PfixSetChartAxisTitleVisibleFormula(myXbisExitFlag, _
+                myXobjChrtAxsY1, myXstrAxsTtlY1, coXbisTtlSetY1, coXbisTtlVsblY1)
+    Else
+        Call PfixSetChartAxisTitleVisibleText(myXbisExitFlag, _
+                myXobjChrtAxsY1, myXstrAxsTtlY1, coXbisTtlSetY1, coXbisTtlVsblY1)
+    End If
+    Set myXobjChrtAxsY1 = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのY軸第2軸のタイトルを設定する
+Private Sub PincSetChartSecondaryValueAxisTitle( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object, ByVal myXstrAxsTtlY2 As String, _
+            Optional ByVal coXbisTtlSetY2 As Boolean = True, _
+            Optional ByVal coXbisTtlVsblY2 As Boolean = True)
+'Includes PfnclonCountSeriesCollectionSetAxisGroup
+'Includes PfixSetChartAxisTitleVisibleFormula
+'Includes PfixSetChartAxisTitleVisibleText
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrAxsTtl = "X" : 文字列を設定
+    myXbisExitFlag = False
+  Dim myXlonAxsGrp1Cnt As Long, myXlonAxsGrp2Cnt As Long
+    Call PfnclonCountSeriesCollectionSetAxisGroup(myXlonAxsGrp1Cnt, myXlonAxsGrp2Cnt, myXobjChrt)
+    If myXlonAxsGrp2Cnt <= 0 Then Exit Sub
+  Dim myXobjChrtAxsY2 As Object
+    On Error GoTo ExitPath
+    Set myXobjChrtAxsY2 = myXobjChrt.Axes(xlValue, xlSecondary)
+    On Error GoTo 0
+    If Left(myXstrAxsTtlY2, 1) = "=" Then
+        Call PfixSetChartAxisTitleVisibleFormula(myXbisExitFlag, _
+                myXobjChrtAxsY2, myXstrAxsTtlY2, coXbisTtlSetY2, coXbisTtlVsblY2)
+    Else
+        Call PfixSetChartAxisTitleVisibleText(myXbisExitFlag, _
+                myXobjChrtAxsY2, myXstrAxsTtlY2, coXbisTtlSetY2, coXbisTtlVsblY2)
+    End If
+    Set myXobjChrtAxsY2 = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのX/Y軸のタイトルの文字列を設定する
+Private Sub PfixSetChartAxisTitleVisibleText( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtAxs As Object, ByVal myXstrAxsTtl As String, _
+            Optional ByVal coXbisTtlSet As Boolean = True, _
+            Optional ByVal coXbisTtlVsbl As Boolean = True)
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrAxsTtl = "X" : 文字列を設定
+    myXbisExitFlag = False
+    If coXbisTtlSet = False Then Exit Sub
+    On Error GoTo ExitPath
+    myXobjChrtAxs.HasTitle = coXbisTtlVsbl
+    On Error GoTo 0
+    If coXbisTtlVsbl = False Then Exit Sub
+    myXobjChrtAxs.AxisTitle.Text = myXstrAxsTtl
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフのX/Y軸のタイトルの参照式を設定する
+Private Sub PfixSetChartAxisTitleVisibleFormula( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjChrtAxs As Object, ByVal myXstrAxsTtl As String, _
+            Optional ByVal coXbisTtlSet As Boolean = True, _
+            Optional ByVal coXbisTtlVsbl As Boolean = True)
+'coXbisTtlSet = False : 設定処理しない
+'coXbisTtlVsbl = True  : タイトル表示
+'coXbisTtlVsbl = False : タイトル非表示
+'myXstrAxsTtl = "X" : 参照式を設定
+    myXbisExitFlag = False
+    If coXbisTtlSet = False Then Exit Sub
+    On Error GoTo ExitPath
+    myXobjChrtAxs.HasTitle = coXbisTtlVsbl
+    On Error GoTo 0
+    If coXbisTtlVsbl = False Then Exit Sub
+    If Application.ReferenceStyle = xlA1 Then
+        myXobjChrtAxs.AxisTitle.Formula = myXstrAxsTtl
+    Else
+        myXobjChrtAxs.AxisTitle.FormulaR1C1 = myXstrAxsTtl
+    End If
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｐ_グラフ内で第1軸と第2軸に設定されている系列数を確認する
+Private Sub PfnclonCountSeriesCollectionSetAxisGroup( _
+            myXlonAxsGrp1Cnt As Long, myXlonAxsGrp2Cnt As Long, _
+            ByVal myXobjChrt As Object)
+    myXlonAxsGrp1Cnt = Empty: myXlonAxsGrp2Cnt = Empty
+    On Error GoTo ExitPath
+  Dim myXlonSCCnt As Long: myXlonSCCnt = myXobjChrt.SeriesCollection.Count
+    On Error GoTo 0
+    If myXlonSCCnt <= 0 Then GoTo ExitPath
+  Dim myXobjSrsClctn As Object
+    For Each myXobjSrsClctn In myXobjChrt.SeriesCollection
+        Select Case myXobjSrsClctn.AxisGroup
+            Case xlPrimary: myXlonAxsGrp1Cnt = myXlonAxsGrp1Cnt + 1
+            Case xlSecondary: myXlonAxsGrp2Cnt = myXlonAxsGrp2Cnt + 1
+        End Select
+    Next myXobjSrsClctn
+    Set myXobjSrsClctn = Nothing
+ExitPath:
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_グラフのX/Y軸のタイトルを設定する
+'Private Sub instCChrtAxsTtl()
+'  Dim myXbisCmpltFlag As Boolean
+''//クラス内変数への入力
+'  Dim myXobjChrt As Object
+'  Dim myXbisAxsTtlX1Set As Boolean, myXbisAxsTtlX1Vsbl As Boolean, _
+'        myXstrAxsTtlX1 As String
+'  Dim myXbisAxsTtlY1Set As Boolean, myXbisAxsTtlY1Vsbl As Boolean, _
+'        myXstrAxsTtlY1 As String
+'  Dim myXbisAxsTtlY2Set As Boolean, myXbisAxsTtlY2Vsbl As Boolean, _
+'        myXstrAxsTtlY2 As String
+'    'myXbisTtlSet = False : 設定処理しない
+'    'myXbisTtlVsbl = True  : タイトル表示
+'    'myXbisTtlVsbl = False : タイトル非表示
+'    'myXstrTtl = "X" : 文字列を設定
+''//X軸主軸のタイトルを設定
+'    myXbisAxsTtlX1Set = True
+'    myXbisAxsTtlX1Vsbl = True
+'    myXstrAxsTtlX1 = "=Sheet1!R2C2"
+''//Y軸主軸のタイトルを設定
+'    myXbisAxsTtlY1Set = True
+'    myXbisAxsTtlY1Vsbl = True
+'    myXstrAxsTtlY1 = "=Sheet1!R2C2"
+''//Y軸第2軸のタイトルを設定
+'    myXbisAxsTtlY2Set = True
+'    myXbisAxsTtlY2Vsbl = True
+'    myXstrAxsTtlY2 = "=Sheet1!R2C2"
+''//CChrtAxsTtlクラスモジュールのインスタンス生成
+'  Dim myXinsChrtAxsTtl As CChrtAxsTtl: Set myXinsChrtAxsTtl = New CChrtAxsTtl
+'    With myXinsChrtAxsTtl
+'    '//クラス内変数への入力
+'        Set .setChrt = myXobjChrt
+'        .letAxsTtlX1(1) = myXbisAxsTtlX1Set
+'        .letAxsTtlX1(2) = myXbisAxsTtlX1Vsbl
+'        .letAxsTtlX1(3) = myXstrAxsTtlX1
+'        .letAxsTtlY1(1) = myXbisAxsTtlY1Set
+'        .letAxsTtlY1(2) = myXbisAxsTtlY1Vsbl
+'        .letAxsTtlY1(3) = myXstrAxsTtlY1
+'        .letAxsTtlY2(1) = myXbisAxsTtlY2Set
+'        .letAxsTtlY2(2) = myXbisAxsTtlY2Vsbl
+'        .letAxsTtlY2(3) = myXstrAxsTtlY2
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        myXbisCmpltFlag = .fncbisCmpltFlag
+'    End With
+'    Set myXinsChrtAxsTtl = Nothing
+'ExitPath:
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
