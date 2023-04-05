@@ -1,1 +1,389 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfixAddNewSeries
+'Includes PfncobjGetChartSeriesCollection
+'Includes PfncstrSetRangeAddressWithExternal
+'Includes PfncstrSetSeriesFormulaInXYScatter
+'Includes PfixSetSeriesCollectionFormulaInXYScatter
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_グラフの指定データ系列のデータ範囲を行列位置で指定して設定する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CSetSrsClctnFrmlByRC"
+  
+'//PropertyGet_出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//PropertySetLet_入力制御信号
+  Private myXbisAddNewSrs As Boolean
+  
+'//PropertySetLet_入力データ
+  Private myXobjChrt As Object, myXlonSrsClctnNo As Long
+  
+  Private myXlonNameBgnRow As Long, myXlonNameBgnCol As Long
+  Private myXlonXvalBgnRow As Long, myXlonXvalBgnCol As Long, _
+            myXlonXvalEndRow As Long, myXlonXvalEndCol As Long
+  Private myXlonYvalBgnRow As Long, myXlonYvalBgnCol As Long, _
+            myXlonYvalEndRow As Long, myXlonYvalEndCol As Long
+  Private myXstrShtName As String, myXstrBkName As String, myXstrDirPath As String
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXobjSrsClctn As Object
+  Private myXstrNameAdrs As String, myXstrXvalAdrs As String, myXstrYvalAdrs As String
+  Private myXstrSrsFrml As String
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    Set myXobjSrsClctn = Nothing
+    myXstrNameAdrs = Empty: myXstrXvalAdrs = Empty: myXstrYvalAdrs = Empty
+    myXstrSrsFrml = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getCmpltFlag() As Boolean
+    getCmpltFlag = myXbisCmpltFlag
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letAddNewSrs(ByVal RHS As Boolean)
+    myXbisAddNewSrs = RHS
+End Property
+
+Public Property Set setChrt(ByVal RHS As Object)
+    Set myXobjChrt = RHS
+End Property
+
+Public Property Let letSrsClctnNo(ByVal RHS As Long)
+    myXlonSrsClctnNo = RHS
+End Property
+
+Public Property Let letNameRowCol(ByVal k As Long, ByVal RHS As Long)
+    Select Case k
+        Case 1: myXlonNameBgnRow = RHS
+        Case 2: myXlonNameBgnCol = RHS
+    End Select
+End Property
+
+Public Property Let letXvalRowCol(ByVal k As Long, ByVal RHS As Long)
+    Select Case k
+        Case 1: myXlonXvalBgnRow = RHS
+        Case 2: myXlonXvalBgnCol = RHS
+        Case 3: myXlonXvalEndRow = RHS
+        Case 4: myXlonXvalEndCol = RHS
+    End Select
+End Property
+
+Public Property Let letYvalRowCol(ByVal k As Long, ByVal RHS As Long)
+    Select Case k
+        Case 1: myXlonYvalBgnRow = RHS
+        Case 2: myXlonYvalBgnCol = RHS
+        Case 3: myXlonYvalEndRow = RHS
+        Case 4: myXlonYvalEndCol = RHS
+    End Select
+End Property
+
+Public Property Let letShtName(ByVal RHS As String)
+    myXstrShtName = RHS
+End Property
+
+Public Property Let letBkName(ByVal RHS As String)
+    myXstrBkName = RHS
+End Property
+
+Public Property Let letDirPath(ByVal RHS As String)
+    myXstrDirPath = RHS
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXbisAddNewSrs = True Then Exit Sub
+    
+  Dim myXlonSCCnt As Long
+    On Error GoTo ExitPath
+    myXlonSCCnt = myXobjChrt.SeriesCollection.Count
+    On Error GoTo 0
+    If myXlonSrsClctnNo <= 0 Or myXlonSrsClctnNo > myXlonSCCnt Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicF_
+Public Function fncbisCmpltFlag() As Boolean
+    fncbisCmpltFlag = False
+    Call ctrProc
+    fncbisCmpltFlag = myXbisCmpltFlag
+End Function
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+
+'//グラフに新規データ系列を追加
+    If myXbisAddNewSrs = True Then
+        Call PfixAddNewSeries(myXbisExitFlag, myXobjChrt)
+        If myXbisExitFlag = True Then GoTo ExitPath
+        myXlonSrsClctnNo = myXobjChrt.SeriesCollection.Count
+    End If
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//指定グラフの系列番号を指定してデータ系列を取得
+    Set myXobjSrsClctn = PfncobjGetChartSeriesCollection(myXobjChrt, myXlonSrsClctnNo)
+    If myXobjSrsClctn Is Nothing Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+'//グラフ系列用の外部参照を含めたセル範囲アドレスを設定
+    myXstrNameAdrs = PfncstrSetRangeAddressWithExternal( _
+                        myXlonNameBgnRow, myXlonNameBgnCol, myXlonNameBgnRow, myXlonNameBgnCol, _
+                        myXstrShtName, myXstrBkName, myXstrDirPath)
+    myXstrXvalAdrs = PfncstrSetRangeAddressWithExternal( _
+                        myXlonXvalBgnRow, myXlonXvalBgnCol, myXlonXvalEndRow, myXlonXvalEndCol, _
+                        myXstrShtName, myXstrBkName, myXstrDirPath)
+    myXstrYvalAdrs = PfncstrSetRangeAddressWithExternal( _
+                        myXlonYvalBgnRow, myXlonYvalBgnCol, myXlonYvalEndRow, myXlonYvalEndCol, _
+                        myXstrShtName, myXstrBkName, myXstrDirPath)
+
+'//散布図グラフの指定データ系列設定用のSERIES関数式を設定
+    myXstrSrsFrml = PfncstrSetSeriesFormulaInXYScatter( _
+                    myXlonSrsClctnNo, myXstrNameAdrs, myXstrXvalAdrs, myXstrYvalAdrs)
+    If myXstrSrsFrml = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+
+'//散布図グラフの指定データ系列にSERIES関数でデータ参照範囲を設定
+    Call PfixSetSeriesCollectionFormulaInXYScatter(myXbisExitFlag, myXobjSrsClctn, myXstrSrsFrml)
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "5"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_グラフに新規データ系列を追加する
+Private Sub PfixAddNewSeries(myXbisExitFlag As Boolean, _
+            ByVal myXobjChrt As Object)
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    myXobjChrt.SeriesCollection.NewSeries
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+ '定型Ｆ_指定グラフの系列番号を指定してデータ系列を取得する
+Private Function PfncobjGetChartSeriesCollection( _
+            ByVal myXobjChrt As Object, ByVal myXlonSrsClctnNo As Long) As Object
+    Set PfncobjGetChartSeriesCollection = Nothing
+  Dim myXobjSrsClctn As Object
+    On Error GoTo ExitPath
+    Set myXobjSrsClctn = myXobjChrt.SeriesCollection(myXlonSrsClctnNo)
+    On Error GoTo 0
+    Set PfncobjGetChartSeriesCollection = myXobjSrsClctn
+    Set myXobjSrsClctn = Nothing
+ExitPath:
+End Function
+
+ '定型Ｆ_グラフ系列用の外部参照を含めたセル範囲アドレスを設定する
+Private Function PfncstrSetRangeAddressWithExternal( _
+            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
+            ByVal myXlonEndRow As Long, ByVal myXlonEndCol As Long, _
+            ByVal myXstrShtName As String, _
+            ByVal myXstrBkName As String, ByVal myXstrDirPath As String) As String
+'objRange.Address(external:=True) : 'パス\[ブック]シート'!セル範囲
+    PfncstrSetRangeAddressWithExternal = Empty
+'//セル範囲の表記→"R1C1"
+  Dim myXstrRng1 As String, myXstrRng2 As String, myXstrRngAdrs As String
+    If myXlonBgnRow >= 1 And myXlonBgnCol >= 1 Then
+        myXstrRng1 = "R" & myXlonBgnRow & "C" & myXlonBgnCol
+    Else
+        Exit Function
+    End If
+'//セル範囲の表記→"R2C2"
+    If myXlonEndRow >= 1 And myXlonEndCol >= 1 Then
+        myXstrRng2 = "R" & myXlonEndRow & "C" & myXlonEndCol
+    End If
+'//セル範囲の表記→"R1C1:R2C2"
+    myXstrRngAdrs = myXstrRng1 & ":" & myXstrRng2
+'//セル範囲をA1形式に変換
+    On Error Resume Next
+    If Application.ReferenceStyle = xlA1 Then _
+        myXstrRngAdrs = Application.ConvertFormula(Formula:=myXstrRngAdrs, _
+                        FromReferenceStyle:=xlR1C1, ToReferenceStyle:=xlA1, ToAbsolute:=True)
+    On Error GoTo 0
+'//セル範囲アドレスの表記
+  Dim myXstrPathBkSht As String
+    If myXstrDirPath = "" And myXstrBkName = "" And myXstrShtName = "" Then
+        myXstrPathBkSht = ""
+    ElseIf myXstrDirPath = "" And myXstrBkName = "" And myXstrShtName <> "" Then
+        myXstrPathBkSht = myXstrShtName & "!"
+    ElseIf myXstrDirPath = "" And myXstrBkName <> "" And myXstrShtName <> "" Then
+        myXstrPathBkSht = "[" & myXstrBkName & "]" & myXstrShtName & "!"
+    ElseIf myXstrDirPath <> "" And myXstrBkName <> "" And myXstrShtName <> "" Then
+        myXstrPathBkSht = "[" & myXstrBkName & "]" & myXstrShtName
+        myXstrPathBkSht = myXstrDirPath & "\" & myXstrPathBkSht
+        myXstrPathBkSht = "'" & myXstrPathBkSht & "'" & "!"
+    End If
+    myXstrRngAdrs = myXstrPathBkSht & myXstrRngAdrs
+    PfncstrSetRangeAddressWithExternal = myXstrRngAdrs
+End Function
+
+ '定型Ｆ_散布図グラフの指定データ系列設定用のSERIES関数式を設定する
+Private Function PfncstrSetSeriesFormulaInXYScatter( _
+            ByVal myXlonSrsClctnNo As Long, _
+            ByVal myXstrNameAdrs As String, _
+            ByVal myXstrXvalAdrs As String, ByVal myXstrYvalAdrs As String) As String
+'Formula =“=SERIES(項目名,項目軸ラベルのセル範囲,グラフデータのセル範囲,系列番号)”
+    PfncstrSetSeriesFormulaInXYScatter = Empty
+  Dim myXstrSrsFrml As String
+    myXstrSrsFrml = myXstrNameAdrs & "," & myXstrXvalAdrs & "," & _
+                    myXstrYvalAdrs & "," & myXlonSrsClctnNo
+    myXstrSrsFrml = "=SERIES(" & myXstrSrsFrml & ")"
+    PfncstrSetSeriesFormulaInXYScatter = myXstrSrsFrml
+ExitPath:
+End Function
+
+ '定型Ｐ_散布図グラフの指定データ系列にSERIES関数でデータ参照範囲を設定する
+Private Sub PfixSetSeriesCollectionFormulaInXYScatter( _
+            myXbisExitFlag As Boolean, _
+            ByVal myXobjSrsClctn As Object, ByVal myXstrSrsFrml As String)
+    myXbisExitFlag = False
+    If myXobjSrsClctn Is Nothing Then Exit Sub
+    If myXstrSrsFrml = "" Then Exit Sub
+    On Error GoTo ExitPath
+    If Application.ReferenceStyle = xlA1 Then
+        myXobjSrsClctn.Formula = myXstrSrsFrml
+    Else
+        myXobjSrsClctn.FormulaR1C1 = myXstrSrsFrml
+    End If
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_グラフの指定データ系列のデータ範囲を指定して設定する
+'Private Sub instCSetSrsClctnFrmlByRC()
+'  Dim myXbisCmpltFlag As Boolean
+''//クラス内変数への入力
+'  Dim myXbisAddNewSrs As Boolean
+'    myXbisAddNewSrs = True
+'  Dim myXobjChrtObjct As Object, myXlonSrsClctnNo As Long
+'    Set myXobjChrtObjct = ActiveSheet.ChartObjects(1)
+'    myXlonSrsClctnNo = 1
+'  Dim myXlonNameBgnRow As Long, myXlonNameBgnCol As Long
+'  Dim myXlonXvalBgnRow As Long, myXlonXvalBgnCol As Long, _
+'        myXlonXvalEndRow As Long, myXlonXvalEndCol As Long
+'  Dim myXlonYvalBgnRow As Long, myXlonYvalBgnCol As Long, _
+'        myXlonYvalEndRow As Long, myXlonYvalEndCol As Long
+'  Dim myXstrShtName As String, myXstrBkName As String, myXstrDirPath As String
+'    myXstrShtName = "Sheet1"
+'    myXstrBkName = ""
+'    myXstrDirPath = ""
+''//データ系列の方向を列方向に指定する場合
+'  Dim myXlonNameRow As Long, myXlonValBgnRow As Long, myXlonValEndRow As Long, _
+'        myXlonXvalCol As Long, myXlonYvalCol As Long
+'    myXlonNameRow = 3
+'    myXlonValBgnRow = 4
+'    myXlonValEndRow = 10
+'    myXlonXvalCol = 2
+'    myXlonYvalCol = 3
+'    myXlonNameBgnRow = myXlonNameRow
+'    myXlonNameBgnCol = myXlonYvalCol
+'    myXlonXvalBgnRow = myXlonValBgnRow
+'    myXlonXvalEndRow = myXlonValEndRow
+'    myXlonXvalBgnCol = myXlonXvalCol
+'    myXlonXvalEndCol = myXlonXvalCol
+'    myXlonYvalBgnRow = myXlonValBgnRow
+'    myXlonYvalEndRow = myXlonValEndRow
+'    myXlonYvalBgnCol = myXlonYvalCol
+'    myXlonYvalEndCol = myXlonYvalCol
+'''//データ系列の方向を行方向に指定する場合
+'  Dim myXlonNameCol As Long, myXlonValBgnCol As Long, myXlonValEndCol As Long, _
+'        myXlonXvalRow As Long, myXlonYvalRow As Long
+''    myXlonNameCol = 7
+''    myXlonValBgnCol = 8
+''    myXlonValEndCol = 16
+''    myXlonXvalRow = 3
+''    myXlonYvalRow = 4
+''    myXlonNameBgnRow = myXlonYvalRow
+''    myXlonNameBgnCol = myXlonNameCol
+''    myXlonXvalBgnRow = myXlonXvalRow
+''    myXlonXvalEndRow = myXlonXvalRow
+''    myXlonXvalBgnCol = myXlonValBgnCol
+''    myXlonXvalEndCol = myXlonValEndCol
+''    myXlonYvalBgnRow = myXlonYvalRow
+''    myXlonYvalEndRow = myXlonYvalRow
+''    myXlonYvalBgnCol = myXlonValBgnCol
+''    myXlonYvalEndCol = myXlonValEndCol
+''//CSetSrsClctnFrmlByRCクラスモジュールのインスタンス生成
+'  Dim myXinsSetSrsClctnFrmlByRC As CSetSrsClctnFrmlByRC
+'    Set myXinsSetSrsClctnFrmlByRC = New CSetSrsClctnFrmlByRC
+'    With myXinsSetSrsClctnFrmlByRC
+'    '//クラス内変数への入力
+'        .letAddNewSrs = myXbisAddNewSrs
+'        Set .setChrt = myXobjChrtObjct
+'        .letSrsClctnNo = myXlonSrsClctnNo
+'        .letNameRowCol(1) = myXlonNameBgnRow
+'        .letNameRowCol(2) = myXlonNameBgnCol
+'        .letXvalRowCol(1) = myXlonXvalBgnRow
+'        .letXvalRowCol(2) = myXlonXvalBgnCol
+'        .letXvalRowCol(3) = myXlonXvalEndRow
+'        .letXvalRowCol(4) = myXlonXvalEndCol
+'        .letYvalRowCol(1) = myXlonYvalBgnRow
+'        .letYvalRowCol(2) = myXlonYvalBgnCol
+'        .letYvalRowCol(3) = myXlonYvalEndRow
+'        .letYvalRowCol(4) = myXlonYvalEndCol
+'        .letShtName = myXstrShtName
+'        .letBkName = myXstrBkName
+'        .letDirPath = myXstrDirPath
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        myXbisCmpltFlag = .fncbisCmpltFlag
+'    End With
+'    Set myXinsSetSrsClctnFrmlByRC = Nothing
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
