@@ -1,1 +1,149 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes m1MexeFileLstup
+'Includes bMsub10InsrtPicsSlctPstn
 
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_複数ファイルをリストアップして連続処理を実施する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "bMexeInsrtPicLst"
+  
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonOrgFileCnt As Long, myZstrOrgFilePath() As String
+    'myZstrOrgFilePath(i) : 元ファイルパス
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonOrgFileCnt = Empty: Erase myZstrOrgFilePath
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+
+'//プログラム構成
+    '入力: -
+    '処理:  '◆ModuleProc名_処理ファイルをリストアップする
+            '◆ModuleProc名_シート上のデータから文字列を検索してデータと位置情報を取得する
+            '◆ModuleProc名_複数ファイルに対して連続処理を実施する
+    '出力: -
+    
+'//処理実行
+    Call ctrProc
+    
+'//処理結果表示
+    Select Case myXbisCmpltFlag
+        Case True: MsgBox "実行完了"
+        Case Else: MsgBox "異常あり", vbExclamation
+    End Select
+    
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables
+    
+'//S:処理ファイルをリストアップ
+    Call snsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//Run:複数の画像ファイルをサイズは原型のままで位置を指定して挿入
+    Call runProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+End Sub
+
+'SnsP_処理ファイルをリストアップする
+Private Sub snsProc()
+    myXbisExitFlag = False
+    
+  Dim myXbisCompFlag As Boolean
+  Dim myZobjFile() As Object, myZstrFileName() As String, _
+        myXobjFilePstdCell As Object, _
+        myXstrDirPath As String, myXobjDirPstdCell As Object, myXstrExtsn As String
+    
+    Call m1MexeFileLstup.callProc( _
+            myXbisCompFlag, _
+            myXlonOrgFileCnt, myZobjFile, myZstrFileName, myZstrOrgFilePath, _
+            myXobjFilePstdCell, _
+            myXstrDirPath, myXobjDirPstdCell, myXstrExtsn)
+    If myXlonOrgFileCnt <= 0 Then GoTo ExitPath
+    If myXbisCompFlag = False Then GoTo ExitPath
+    
+    Erase myZobjFile: Erase myZstrFileName
+    Set myXobjFilePstdCell = Nothing: Set myXobjDirPstdCell = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_複数の画像ファイルをサイズは原型のままで位置を指定して挿入
+Private Sub runProc()
+    myXbisExitFlag = False
+    
+  Dim myXbisCompFlag As Boolean
+  Dim myXlonExeFileCnt As Long, myZstrExeFileName() As String, myZstrExeFilePath() As String
+    'myZstrExeFileName(k) : 実行ファイル名
+    'myZstrExeFilePath(k) : 実行ファイルパス
+    Call bMsub10InsrtPicsSlctPstn.callProc( _
+            myXbisCmpltFlag, _
+            myXlonExeFileCnt, myZstrExeFileName, myZstrExeFilePath, _
+            myXlonOrgFileCnt, myZstrOrgFilePath)
+    If myXbisCompFlag = False Then GoTo ExitPath
+    
+    Erase myZstrExeFileName: Erase myZstrExeFilePath
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
