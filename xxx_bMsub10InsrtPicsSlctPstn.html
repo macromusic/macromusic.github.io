@@ -1,1 +1,189 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes CSrchSht
 
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_シート上のデータから文字列を検索してデータと位置情報を取得する
+'Rev.004
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "bMsub11SrchSht"
+  
+'//出力データ
+  Private myXlonTrgtValCnt As Long, myZstrTrgtVal() As String
+    'myZstrTrgtVal(i) : 取得文字列
+    
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonSrchShtNo As Long, myXobjSrchSheet As Object, _
+            myXlonShtSrchCnt As Long, myZvarSrchCndtn As Variant, _
+            myXbisInStrOptn As Boolean
+    'myZvarSrchCndtn(i, 1) : 検索文字列
+    'myZvarSrchCndtn(i, 2) : オフセット行数
+    'myZvarSrchCndtn(i, 3) : オフセット列数
+    'myXbisInStrOptn = False : 指定文字列と一致する条件で検索する
+    'myXbisInStrOptn = True  : 指定文字列を含む条件で検索する
+  
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonSrchShtNo = Empty: Set myXobjSrchSheet = Nothing
+    myXlonShtSrchCnt = Empty: myZvarSrchCndtn = Empty
+    myXbisInStrOptn = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub callProc(myXlonTrgtValCntOUT As Long, myZstrTrgtValOUT() As String)
+    
+'//出力変数を初期化
+    myXlonTrgtValCntOUT = Empty: Erase myZstrTrgtValOUT
+    
+'//処理実行
+    Call ctrProc
+    If myXlonTrgtValCnt <= 0 Then Exit Sub
+    
+'//出力変数に格納
+    myXlonTrgtValCntOUT = myXlonTrgtValCnt
+    myZstrTrgtValOUT() = myZstrTrgtVal()
+
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    
+'//C:制御用変数を設定
+    Call setControlVariables
+    
+'//シート上のデータから文字列を検索してデータと位置情報を取得
+    Call instCSrchSht
+    If myXlonTrgtValCnt <= 0 Then GoTo ExitPath
+    If myXlonTrgtValCnt <> myXlonShtSrchCnt Then GoTo ExitPath
+    
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXlonTrgtValCnt = Empty: Erase myZstrTrgtVal
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+    
+    Set myXobjSrchSheet = ActiveSheet
+    
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    myXlonShtSrchCnt = 11
+    ReDim myZvarSrchCndtn(myXlonShtSrchCnt + L - 1, L + 2) As Variant
+    'myZvarSrchCndtn(i, 1) : 検索文字列
+    'myZvarSrchCndtn(i, 2) : オフセット行数
+    'myZvarSrchCndtn(i, 3) : オフセット列数
+  Dim i As Long: i = L - 1
+    i = i + 1   'i = 1
+    myZvarSrchCndtn(i, L + 0) = "画像の貼り付け形式"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 2
+    myZvarSrchCndtn(i, L + 0) = "画像を貼り付ける並び順"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 3
+    myZvarSrchCndtn(i, L + 0) = "横(縦)方向に並べる画像数"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 4
+    myZvarSrchCndtn(i, L + 0) = "画像と画像の縦方向の間隔 [point]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 5
+    myZvarSrchCndtn(i, L + 0) = "画像と画像の横方向の間隔 [point]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 6
+    myZvarSrchCndtn(i, L + 0) = "高さの倍率 [%]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 7
+    myZvarSrchCndtn(i, L + 0) = "幅の倍率 [%]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 8
+    myZvarSrchCndtn(i, L + 0) = "上端 [cm]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 9
+    myZvarSrchCndtn(i, L + 0) = "左端 [cm]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 10
+    myZvarSrchCndtn(i, L + 0) = "下端 [cm]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 11
+    myZvarSrchCndtn(i, L + 0) = "右端 [cm]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    
+    myXbisInStrOptn = False
+    'myXbisInStrOptn = False : 指定文字列と一致する条件で検索する
+    'myXbisInStrOptn = True  : 指定文字列を含む条件で検索する
+
+End Sub
+
+'===============================================================================================
+
+'◆ClassProc名_シート上のデータから文字列を検索してデータと位置情報を取得する
+Private Sub instCSrchSht()
+  Dim Lc As Long
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+  Dim myXinsSrchSht As CSrchSht: Set myXinsSrchSht = New CSrchSht
+    With myXinsSrchSht
+    '//文字列検索シートと検索条件を設定
+        Set .setSrchSheet = myXobjSrchSheet
+        .letSrchCndtn = myZvarSrchCndtn
+        .letInStrOptn = myXbisInStrOptn
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXlonTrgtValCnt = .getValCnt
+        If myXlonTrgtValCnt <= 0 Then GoTo JumpPath
+        i = myXlonTrgtValCnt + Lo - 1: j = Lo + 1
+        ReDim myZstrTrgtVal(i) As String
+        ReDim myZobjTrgtRng(i) As Object
+        Lc = .getOptnBase
+        For i = 1 To myXlonTrgtValCnt
+            myZstrTrgtVal(i + Lo - 1) = .getValAry(i + Lc - 1)
+        Next i
+    End With
+JumpPath:
+    Set myXinsSrchSht = Nothing
+End Sub
+
+'===============================================================================================
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
