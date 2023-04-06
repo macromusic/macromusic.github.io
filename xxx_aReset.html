@@ -1,1 +1,30 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+Option Explicit
+Option Base 1
 
+  Public Const coXbisTestMode As Boolean = True
+'  Public Const coXbisTestMode As Boolean = False
+
+'//全モジュールのモジュールメモリのリセット処理
+Public Sub MainResetConstantInAllModule()
+    Call resetConstantInm1Msub2SlctFldrPathExtd
+End Sub
+'
+Private Sub resetConstantInm1Msub2SlctFldrPathExtd()
+'//m1Msub2SlctFldrPathExtdモジュールのモジュールメモリのリセット処理
+    Call m1Msub2SlctFldrPathExtd.resetConstant
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
