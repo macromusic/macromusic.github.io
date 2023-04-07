@@ -92,7 +92,7 @@ Private Sub setControlVariables()
     Set myXobjSrchSheet = ActiveSheet
     
   Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
-    myXlonShtSrchCnt = 11
+    myXlonShtSrchCnt = 17
     ReDim myZvarSrchCndtn(myXlonShtSrchCnt + L - 1, L + 2) As Variant
     'myZvarSrchCndtn(i, 1) : 検索文字列
     'myZvarSrchCndtn(i, 2) : オフセット行数
@@ -103,43 +103,67 @@ Private Sub setControlVariables()
     myZvarSrchCndtn(i, L + 1) = 0
     myZvarSrchCndtn(i, L + 2) = 1
     i = i + 1   'i = 2
-    myZvarSrchCndtn(i, L + 0) = "画像を貼り付ける並び順"
+    myZvarSrchCndtn(i, L + 0) = "画像を挿入するシート名"
     myZvarSrchCndtn(i, L + 1) = 0
     myZvarSrchCndtn(i, L + 2) = 1
     i = i + 1   'i = 3
-    myZvarSrchCndtn(i, L + 0) = "横(縦)方向に並べる画像数"
+    myZvarSrchCndtn(i, L + 0) = "画像名をセルに表示する？"
     myZvarSrchCndtn(i, L + 1) = 0
     myZvarSrchCndtn(i, L + 2) = 1
     i = i + 1   'i = 4
-    myZvarSrchCndtn(i, L + 0) = "画像と画像の縦方向の間隔 [point]"
+    myZvarSrchCndtn(i, L + 0) = "画像を貼り付ける並び順"
     myZvarSrchCndtn(i, L + 1) = 0
     myZvarSrchCndtn(i, L + 2) = 1
     i = i + 1   'i = 5
-    myZvarSrchCndtn(i, L + 0) = "画像と画像の横方向の間隔 [point]"
+    myZvarSrchCndtn(i, L + 0) = "横(縦)方向に並べる画像数"
     myZvarSrchCndtn(i, L + 1) = 0
     myZvarSrchCndtn(i, L + 2) = 1
     i = i + 1   'i = 6
-    myZvarSrchCndtn(i, L + 0) = "高さの倍率 [%]"
+    myZvarSrchCndtn(i, L + 0) = "画像と画像の行間隔"
     myZvarSrchCndtn(i, L + 1) = 0
     myZvarSrchCndtn(i, L + 2) = 1
     i = i + 1   'i = 7
-    myZvarSrchCndtn(i, L + 0) = "幅の倍率 [%]"
+    myZvarSrchCndtn(i, L + 0) = "画像と画像の列間隔"
     myZvarSrchCndtn(i, L + 1) = 0
     myZvarSrchCndtn(i, L + 2) = 1
     i = i + 1   'i = 8
-    myZvarSrchCndtn(i, L + 0) = "上端 [cm]"
+    myZvarSrchCndtn(i, L + 0) = "画像を並べる先頭行"
     myZvarSrchCndtn(i, L + 1) = 0
     myZvarSrchCndtn(i, L + 2) = 1
     i = i + 1   'i = 9
-    myZvarSrchCndtn(i, L + 0) = "左端 [cm]"
+    myZvarSrchCndtn(i, L + 0) = "画像を並べる先頭列"
     myZvarSrchCndtn(i, L + 1) = 0
     myZvarSrchCndtn(i, L + 2) = 1
     i = i + 1   'i = 10
-    myZvarSrchCndtn(i, L + 0) = "下端 [cm]"
+    myZvarSrchCndtn(i, L + 0) = "画像の高さの行数"
     myZvarSrchCndtn(i, L + 1) = 0
     myZvarSrchCndtn(i, L + 2) = 1
     i = i + 1   'i = 11
-    myZvarSrchCndtn(i, L + 0) = "右端 [cm]"
+    myZvarSrchCndtn(i, L + 0) = "画像の幅の列数"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 12
+    myZvarSrchCndtn(i, L + 0) = "画像挿入位置のオフセット 上側 [point]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 13
+    myZvarSrchCndtn(i, L + 0) = "画像挿入位置のオフセット 左側 [point]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 14
+    myZvarSrchCndtn(i, L + 0) = "画像サイズのオフセット 上端 [point]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 15
+    myZvarSrchCndtn(i, L + 0) = "画像サイズのオフセット 左端 [point]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 16
+    myZvarSrchCndtn(i, L + 0) = "画像サイズのオフセット 下端 [point]"
+    myZvarSrchCndtn(i, L + 1) = 0
+    myZvarSrchCndtn(i, L + 2) = 1
+    i = i + 1   'i = 17
+    myZvarSrchCndtn(i, L + 0) = "画像サイズのオフセット 下端 [point]"
     myZvarSrchCndtn(i, L + 1) = 0
     myZvarSrchCndtn(i, L + 2) = 1
     
