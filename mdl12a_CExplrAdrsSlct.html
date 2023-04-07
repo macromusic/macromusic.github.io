@@ -1,1 +1,376 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfixGetExplorerWindows
+'Includes PfnclonMsgBoxYesNo
+'Includes PincSetForegroundWindowWithIconicCheck2
+'Includes apiPfncbisIsIconic2
+'Includes apiPfixShowWindowAsync2
+'Includes apiPfixSetForegroundWindow2
+'Includes PfncstrGetExplorerWindowLocationURL
+'Includes PfncstrExplorerAddressBar
+'Includes PfixWait
+'Includes PfncbisCheckFolderExist
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_起動中のエクスプローラを選択してそのアドレスバーを取得する
+'Rev.003
+
+'API宣言_ウインドウがアイコン化されているか判別する
+  Private Declare PtrSafe Function IsIconic Lib "USER32" (ByVal hWnd As Long) As Long
+
+'API宣言_指定されたウインドウの表示状態を設定する
+  Private Declare PtrSafe Function ShowWindowAsync Lib "user32.dll" ( _
+        ByVal hWnd As Long, ByVal nCmdShow As Long) As Long
+
+'API宣言_指定したウィンドウを最前面に表示する
+  Private Declare PtrSafe Function SetForegroundWindow Lib "USER32" ( _
+        ByVal hWnd As Long) As Long
+
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CExplrAdrsSlct"
+
+'//PropertyGet_出力データ
+  Private myXstrExplrAdrs As String
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数
+  Private myXobjExplrWndw As Object, myXobjExcelWndw As Object
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    Set myXobjExplrWndw = Nothing: Set myXobjExcelWndw = Nothing
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getExplrAdrs() As String
+    getExplrAdrs = myXstrExplrAdrs
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXstrExplrAdrs = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicF_
+Public Function fncstrExplorerAddress() As String
+    fncstrExplorerAddress = Empty
+    Call ctrProc
+    fncstrExplorerAddress = myXstrExplrAdrs
+End Function
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+
+'//Excelのアクティブウィンドウを取得
+  Dim myXstrBookName As String
+    myXstrBookName = ActiveWorkbook.Name
+    Set myXobjExcelWndw = Windows(myXstrBookName)
+
+'//Excelのアクティブウィンドウを最小化
+    Call apiPfixShowWindowAsync2(myXbisExitFlag, myXobjExcelWndw, 2)
+    If myXbisExitFlag = True Then Exit Sub
+
+'//S:起動中の全エクスプローラからウィンドウを選択
+    Call snsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"  'PassFlag
+
+'//Excelウィンドウを最前面に表示2(最小化チェック含む)
+    Call PincSetForegroundWindowWithIconicCheck2(myXbisExitFlag, myXobjExcelWndw)
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"  'PassFlag
+    
+'//指定フォルダの存在を確認
+    If PfncbisCheckFolderExist(myXstrExplrAdrs) = False Then
+        myXstrExplrAdrs = ""
+        myXbisExitFlag = True
+        GoTo ExitPath
+    End If
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"  'PassFlag
+
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'SnsP_起動中の全エクスプローラからウィンドウを選択してアドレスバーを取得
+Private Sub snsProc()
+    myXbisExitFlag = False
+
+'//起動済みのエクスプローラウィンドウリストを取得
+  Dim myXlonExplrCnt As Long, myZobjExplr() As Object
+    Call PfixGetExplorerWindows(myXlonExplrCnt, myZobjExplr)
+    If myXlonExplrCnt <= 0 Then GoTo ExitPath
+
+'//エクスプローラウィンドウリストから選択
+  Dim myXobjTmpWndw As Variant, myXstrTmpTtl As String
+  Dim myXstrTitle As String, myXstrPrompt As String, myXlonMsgBox As Long
+    
+    myXstrTitle = "エクスプローラウィンドウの取得"
+    
+    For Each myXobjTmpWndw In myZobjExplr
+        
+        Call PincSetForegroundWindowWithIconicCheck2(myXbisExitFlag, myXobjTmpWndw)
+        Call PfixWait(0.1)
+        
+        Call apiPfixSetForegroundWindow2(myXbisExitFlag, myXobjExcelWndw)
+        Call PfixWait(0.1)
+        
+        myXstrTmpTtl = myXobjTmpWndw.locationname
+        myXstrPrompt = myXstrTmpTtl & vbCrLf & vbCrLf _
+                        & "上記エクスプローラウィンドウを取得しますか？"
+        myXstrTitle = "エクスプローラウィンドウの取得"
+        myXlonMsgBox = PfnclonMsgBoxYesNo(myXstrTitle, myXstrPrompt)
+        If myXlonMsgBox = vbNo Then GoTo NextPath
+        
+        Set myXobjExplrWndw = myXobjTmpWndw
+        Exit For
+NextPath:
+    Next myXobjTmpWndw
+    If myXobjExplrWndw Is Nothing Then GoTo ExitPath
+
+'//Excelウィンドウを最前面に表示2(最小化チェック含む)
+    Call PincSetForegroundWindowWithIconicCheck2(myXbisExitFlag, myXobjExplrWndw)
+    If myXbisExitFlag = True Then GoTo ExitPath
+    Call PfixWait(0.1)
+    
+'//エクスプローラウィンドウで表示しているフォルダパスを取得
+    myXstrExplrAdrs = PfncstrGetExplorerWindowLocationURL(myXobjExplrWndw)
+
+''//起動中でアクティブ状態のエクスプローラのアドレスを取得
+'    myXstrExplrAdrs = PfncstrExplorerAddressBar(0.1)
+    
+    Erase myZobjExplr: myXobjTmpWndw = Empty
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_起動済みのエクスプローラウィンドウリストを取得する
+Private Sub PfixGetExplorerWindows(myXlonExplrCnt As Long, myZobjExplr() As Object)
+    myXlonExplrCnt = Empty: Erase myZobjExplr
+  Const coXstrWndwName As String = "エクスプローラー"
+  Dim myXobjShell As Object: Set myXobjShell = CreateObject("Shell.Application")
+  Dim myXobjWndw As Object, n As Long: n = 0
+    For Each myXobjWndw In myXobjShell.Windows
+        If myXobjWndw.Name <> coXstrWndwName Then GoTo NextPath
+        n = n + 1: ReDim Preserve myZobjExplr(n) As Object
+        Set myZobjExplr(n) = myXobjWndw
+NextPath:
+    Next
+    myXlonExplrCnt = n
+    Set myXobjShell = Nothing: Set myXobjWndw = Nothing
+End Sub
+
+ '定型Ｆ_MsgBox関数ではい／いいえを確認する
+Private Function PfnclonMsgBoxYesNo( _
+            ByVal myXstrTitle As String, ByVal myXstrPrompt As String) As Long
+'vbYes=6 / vbNo=7
+    PfnclonMsgBoxYesNo = Empty
+    If myXstrTitle = "" Then myXstrTitle = "はい/いいえの選択"
+    If myXstrPrompt = "" Then myXstrPrompt = myXstrTitle
+    PfnclonMsgBoxYesNo = MsgBox(myXstrPrompt, vbYesNo, myXstrTitle)
+End Function
+
+ '定型Ｐ_指定ウィンドウを最前面に表示する2(最小化チェック含む)
+Private Sub PincSetForegroundWindowWithIconicCheck2(myXbisExitFlag As Boolean, _
+            ByVal myXobjWindow As Object)
+'Includes apiPfncbisIsIconic2
+'Includes apiPfixShowWindowAsync2
+'Includes apiPfixSetForegroundWindow2
+    myXbisExitFlag = False
+    If myXobjWindow Is Nothing Then GoTo ExitPath
+  Const coXlonCmdShow As Long = &H9
+'//ウインドウがアイコン化されているか判別
+    myXbisExitFlag = apiPfncbisIsIconic2(myXobjWindow)
+    If myXbisExitFlag = True Then _
+    '//ウインドウの最小化表示を元に戻す
+        Call apiPfixShowWindowAsync2(myXbisExitFlag, myXobjWindow, coXlonCmdShow)
+        If myXbisExitFlag = True Then GoTo ExitPath
+    End If
+'//指定したウィンドウを最前面に表示
+    Call apiPfixSetForegroundWindow2(myXbisExitFlag, myXobjWindow)
+    If myXbisExitFlag = True Then GoTo ExitPath
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+'    MsgBox "ウインドウの最前面化が失敗"     'Debug.Print
+End Sub
+
+ '定型Ｆ_[API]ウインドウがアイコン化されているか判別する2
+Private Function apiPfncbisIsIconic2(ByVal myXobjWindow As Object) As Boolean
+'→Declaration0:モジュールの宣言部分に記述
+''API宣言_ウインドウがアイコン化されているか判別する
+'  Private Declare PtrSafe Function IsIconic Lib "USER32" (ByVal hWnd As Long) As Long
+'←EndDeclaration
+'myXlonRet = IsIconic(ウィンドウのハンドル):最小化されている時1
+    apiPfncbisIsIconic2 = False
+    If myXobjWindow Is Nothing Then Exit Function
+  Dim myXlonRet As Long
+    myXlonRet = IsIconic(myXobjWindow.hWnd)
+    If myXlonRet <> 1 Then Exit Function
+    apiPfncbisIsIconic2 = True
+'    MsgBox "ウインドウは最小化状態"     'Debug.Print
+End Function
+
+ '定型Ｐ_[API]ウインドウの表示状態を設定する2
+Private Sub apiPfixShowWindowAsync2(myXbisExitFlag As Boolean, _
+            ByVal myXobjWindow As Object, _
+            Optional ByVal coXlonCmdShow As Long = 1)
+'→Declaration0:モジュールの宣言部分に記述
+''API宣言_指定されたウインドウの表示状態を設定する
+'  Private Declare PtrSafe Function ShowWindowAsync Lib "user32.dll" ( _
+'        ByVal hWnd As Long, ByVal nCmdShow As Long) As Long
+'←EndDeclaration
+'myXlonRet = ShowWindowAsync(ウインドウのハンドル,ウィンドウの表示方法):正常終了0以外
+'coXlonCmdShow = 0 =&H0 : SW_HIDE            :ウィンドウを非表示にして他のウィンドウをアクティブ
+'coXlonCmdShow = 1 =&H1 : SW_SHOWNORMAL      :ウインドウをアクティブにして元のサイズと位置で表示
+'coXlonCmdShow = 2 =&H2 : SW_SHOWMINIMIZED   :ウインドウをアクティブにして最小化
+'coXlonCmdShow = 3 =&H3 : SW_SHOWMAXIMIZED   :ウインドウをアクティブにして最大化
+'coXlonCmdShow = 4 =&H4 : SW_SHOWNOACTIVATE  :ウインドウをアクティブにせずに元のサイズと位置で表示
+'coXlonCmdShow = 5 =&H5 : SW_SHOW            :ウインドウをアクティブにして現在のサイズと位置で表示
+'coXlonCmdShow = 6 =&H6 : SW_MINIMIZE        :ウインドウを最小化しZオーダーが次のトップレベルウインドウをアクティブにする
+'coXlonCmdShow = 7 =&H7 : SW_SHOWMINNOACTIVE :ウインドウをアクティブにせずに最小化
+'coXlonCmdShow = 8 =&H8 : SW_SHOWNA          :ウインドウをアクティブにせずに現在のサイズと位置で表示
+'coXlonCmdShow = 9 =&H9 : SW_RESTORE         :ウインドウをアクティブにして表示し最小化または最大化の場合は位置とサイズを元に戻す
+    myXbisExitFlag = False
+    If myXobjWindow Is Nothing Then GoTo ExitPath
+  Dim myXlonRet As Long
+    myXlonRet = ShowWindowAsync(myXobjWindow.hWnd, coXlonCmdShow)
+    If myXlonRet = 0 Then GoTo ExitPath
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+'    MsgBox "ウインドウの表示設定に失敗"     'Debug.Print
+End Sub
+
+ '定型Ｐ_[API]ウィンドウを最前面に表示する2
+Private Sub apiPfixSetForegroundWindow2(myXbisExitFlag As Boolean, _
+            ByVal myXobjWindow As Object)
+'→Declaration0:モジュールの宣言部分に記述
+''API宣言_指定したウィンドウを最前面に表示する
+'  Private Declare PtrSafe Function SetForegroundWindow Lib "USER32" ( _
+'        ByVal hWnd As Long) As Long
+'←EndDeclaration
+'myXlonRet = SetForegroundWindow(ウインドウのハンドル):正常終了0以外
+    myXbisExitFlag = False
+    If myXobjWindow Is Nothing Then GoTo ExitPath
+  Const coXlonCmdShow As Long = &H9
+  Dim myXlonRet As Long
+    myXlonRet = SetForegroundWindow(myXobjWindow.hWnd)
+    If myXlonRet = 0 Then GoTo ExitPath
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+'    MsgBox "ウインドウの最前面化が失敗"     'Debug.Print
+End Sub
+
+ '定型Ｆ_エクスプローラウィンドウで表示しているフォルダパスを取得する
+Private Function PfncstrGetExplorerWindowLocationURL(ByVal myXobjExplrWndw As Object) As String
+  Const coXstrPrfx As String = "file:///"
+  Const coXstrSpc As String = "%20"
+    PfncstrGetExplorerWindowLocationURL = Empty
+  Dim myXstrLctnUrl As String, myXstrDirPath As String
+    myXstrLctnUrl = myXobjExplrWndw.LocationURL
+    myXstrDirPath = Mid(myXstrLctnUrl, Len(coXstrPrfx) + 1)
+    myXstrDirPath = Replace(myXstrDirPath, coXstrSpc, Space(1))
+    PfncstrGetExplorerWindowLocationURL = myXstrDirPath
+End Function
+
+ '定型Ｆ_起動中でアクティブ状態のエクスプローラのアドレスを取得する
+Private Function PfncstrExplorerAddressBar( _
+            Optional ByVal coXdobPauseTime As Double = 0.1) As String
+    PfncstrExplorerAddressBar = Empty
+  Dim myXstrSendKey As String, myXdatStart As Date
+'「ALT+D(アドレスバーを選択)」のキーストロークを送信
+    myXdatStart = Timer
+    Do While Timer < myXdatStart + coXdobPauseTime
+        DoEvents
+    Loop
+    myXstrSendKey = "%D"
+    Call SendKeys(myXstrSendKey, True)
+'「CTRL+C(選択部分のコピー)」のキーストロークを送信
+    myXdatStart = Timer
+    Do While Timer < myXdatStart + coXdobPauseTime
+        DoEvents
+    Loop
+    myXstrSendKey = "^C"
+    Call SendKeys(myXstrSendKey, True)
+'「ENTER」のキーストロークを送信
+    myXdatStart = Timer
+    Do While Timer < myXdatStart + coXdobPauseTime
+        DoEvents
+    Loop
+    myXstrSendKey = "{ENTER}"
+    Call SendKeys(myXstrSendKey, True)
+'クリップボードの格納データを取得
+  Dim myXdobClpBrd As New DataObject
+  Dim myXstrWndwAdrs As String
+    With myXdobClpBrd
+        .GetFromClipboard               'クリップボードからDataObjectにデータを取得
+        myXstrWndwAdrs = .GetText       'DataObjectのデータを変数に格納
+    End With
+    PfncstrExplorerAddressBar = myXstrWndwAdrs
+End Function
+
+ '定型Ｐ_一時停止する
+Private Sub PfixWait(Optional ByVal coXdobPauseTime As Double = 1)
+  Dim myXdatStart As Date: myXdatStart = Timer
+    Do While Timer < myXdatStart + coXdobPauseTime
+        DoEvents
+    Loop
+End Sub
+
+ '定型Ｆ_指定フォルダの存在を確認する
+Private Function PfncbisCheckFolderExist(ByVal myXstrDirPath As String) As Boolean
+    PfncbisCheckFolderExist = False
+    If myXstrDirPath = "" Then Exit Function
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    PfncbisCheckFolderExist = myXobjFSO.FolderExists(myXstrDirPath)
+    Set myXobjFSO = Nothing
+End Function
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_起動中のエクスプローラを選択してそのアドレスバーを取得する
+'Private Sub instCExplrAdrsSlct()
+'  Dim myXstrExplrAdrs As String
+''//CExplrAdrsSlctクラスモジュールのインスタンス生成
+'  Dim myXinsExplrAdrsSlct As CExplrAdrsSlct: Set myXinsExplrAdrsSlct = New CExplrAdrsSlct
+'    With myXinsExplrAdrsSlct
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        myXstrExplrAdrs = .fncstrExplorerAddress
+'    End With
+'    Set myXinsExplrAdrsSlct = Nothing
+'    Debug.Print "取得データ: " & myXstrExplrAdrs
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
