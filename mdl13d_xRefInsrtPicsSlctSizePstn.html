@@ -13,16 +13,16 @@
 'Includes CPicInsrt
 'Includes CPicArngSize
 'Includes PfncstrFileNameByFSO
-'Includes PfixChangeModuleConstValue
 'Includes PfixGetPlaceForShapeArrange
 'Includes PfncbisCheckArrayDimension
+'Includes PfixChangeModuleConstValue
 'Includes x
 
 Option Explicit
 Option Base 1
 
 '◆ModuleProc名_複数の画像ファイルをサイズと位置を指定して挿入
-'Rev.003
+'Rev.004
   
 '//モジュールメモリ
   Private Const meMstrMdlName As String = "xRefInsrtPicsSlctSizePstn"
@@ -604,63 +604,6 @@ End Sub
 
 '===============================================================================================
 
-''SetP_制御用変数を設定する
-'Private Sub setControlVariables()
-'    myXbisRngSlctUse = True
-'    'myXbisRngSlctUse = False : インプットボックスを使用しない
-'    'myXbisRngSlctUse = True  : インプットボックスを使用して画像のサイズと位置を指定する
-'End Sub
-''SetP_制御用変数を設定する
-'Private Sub setControlVariables1()
-'    myXlonRngOptn = 0
-'    'myXlonRngOptn = 0  : 選択範囲
-'    'myXlonRngOptn = 1  : 選択位置から最終行までの範囲
-'    'myXlonRngOptn = 2  : 選択位置から最終列までの範囲
-'    'myXlonRngOptn = 3  : 全データ範囲
-'    myXstrInptBxTtl = "画像挿入の位置とサイズ指定"
-'    myXstrInptBxPrmpt = "1枚目の画像を貼り付ける位置とサイズを指定して下さい。" & vbCrLf & _
-'                        "2枚目以降の画像は指定サイズに調整して貼り付けます。"
-'End Sub
-''SetP_制御用変数を設定する
-'Private Sub setControlVariables2()
-'    myXlonNforDrctn = 2
-'    'myXlonNforDrctn : 配置の方向に配置するShape数
-'    myXdouVIntrvl = 30
-'    myXdouHIntrvl = 30
-'    'myXdouXIntrvl : x [point]
-'    myXstrPstDrctn = "LftToRght"
-'    'myXstrPstDrctn = "LftToRght" : 配置の方向_左から右_Zタイプ
-'    'myXstrPstDrctn = "TopToBttm" : 配置の方向_上から下_Nタイプ
-'End Sub
-''SetP_制御用変数を設定する
-'Private Sub setControlVariables3()
-'    myXlonPstFrmt = 0
-'    'myXlonPstFrmt = 1 : "図 (PNG)"
-'    'myXlonPstFrmt = 2 : "図 (JPEG)"
-'    'myXlonPstFrmt = 3 : "図 (GIF)"
-'    'myXlonPstFrmt = 4 : "図 (拡張メタファイル)"
-'    'myXlonPstFrmt = 5 : "ビットマップ"
-'    'myXlonPstFrmt = 6 : "Microsoft Office 描画オブジェクト"
-'    'myXlonPstFrmt = ? : 形式変更しない
-'End Sub
-''SetP_制御用変数を設定する
-'Private Sub setControlVariables4()
-'    myXbisPicWthOtAspctRto = False
-'    'myXbisPicWthOtAspctRto = False : 画像の縦横比を固定してサイズを設定
-'    'myXbisPicWthOtAspctRto = True  : 画像の縦横比を固定せずにサイズを設定
-'    myXbisUnlckAspctRto = False
-'    'myXbisUnlckAspctRto = False : 画像の縦横比を固定する
-'    'myXbisUnlckAspctRto = True  : 画像の縦横比を固定しない
-'    myXlonPlcmnt = 2
-'    'myXlonPlcmnt = xlMoveAndSize = 1  : 画像をセルに合わせて移動やサイズ変更をする
-'    'myXlonPlcmnt = xlMove = 2         : 画像をセルに合わせて移動するがサイズ変更はしない
-'    'myXlonPlcmnt = xlFreeFloating = 3 : 画像をセルに合わせて移動やサイズ変更をしない
-'    myXdouTrmTop = 0
-'    myXdouTrmLft = 0
-'    myXdouTrmBttm = 0
-'    myXdouTrmRght = 0
-'    'myXdouTrmX : x [cm]
-'End Sub
 '◆ModuleProc名_複数の画像ファイルをサイズと位置を指定して挿入
 Private Sub callxRefInsrtPicsSlctSizePstn()
   Dim myXlonOrgFileCnt As Long, myZstrOrgFilePath() As String
