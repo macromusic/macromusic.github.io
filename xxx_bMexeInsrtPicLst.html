@@ -10,7 +10,7 @@
       <div>MacroSample</div>
       <pre>
 'Includes m1MexeFileLstup
-'Includes bMsub10InsrtPicsSlctPstn
+'Includes bMsub10InsrtPicsSlctRng
 
 Option Explicit
 Option Base 1
@@ -75,7 +75,7 @@ Private Sub ctrProc()
     If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
     
-'//Run:複数の画像ファイルをサイズは原型のままで位置を指定して挿入
+'//Run:複数の画像ファイルをサイズと位置をシートの行列位置で指定して挿入
     Call runProc
     If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
@@ -118,7 +118,7 @@ ExitPath:
     myXbisExitFlag = True
 End Sub
 
-'RunP_複数の画像ファイルをサイズは原型のままで位置を指定して挿入
+'RunP_複数の画像ファイルをサイズと位置をシートの行列位置で指定して挿入
 Private Sub runProc()
     myXbisExitFlag = False
     
@@ -126,7 +126,7 @@ Private Sub runProc()
   Dim myXlonExeFileCnt As Long, myZstrExeFileName() As String, myZstrExeFilePath() As String
     'myZstrExeFileName(k) : 実行ファイル名
     'myZstrExeFilePath(k) : 実行ファイルパス
-    Call bMsub10InsrtPicsSlctPstn.callProc( _
+    Call bMsub10InsrtPicsSlctRng.callProc( _
             myXbisCmpltFlag, _
             myXlonExeFileCnt, myZstrExeFileName, myZstrExeFilePath, _
             myXlonOrgFileCnt, myZstrOrgFilePath)
