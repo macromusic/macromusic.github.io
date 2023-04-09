@@ -9,6 +9,7 @@
     <body>
       <div>MacroSample</div>
       <pre>
+Attribute VB_Name = "m1MexeFileLstup"
 'Includes m1Msub1ShtFileLst
 'Includes m1Msub2SlctFldrPathExtd
 'Includes m1Msub3SubFileLstExtd
@@ -19,7 +20,7 @@ Option Explicit
 Option Base 1
 
 '◆ModuleProc名_処理ファイルをリストアップする
-'Rev.001
+'Rev.002
   
 '//モジュールメモリ
   Private Const meMstrMdlName As String = "m1MexeFileLstup"
@@ -29,11 +30,11 @@ Option Base 1
   Private myXbisCmpltFlag As Boolean
   
 '//出力データ
-  Dim myXlonFileCnt As Long, myZobjFile() As Object, _
-        myZstrFileName() As String, myZstrFilePath() As String, _
-        myXobjFilePstdCell As Object, _
-        myXstrDirPath As String, myXobjDirPstdCell As Object, _
-        myXstrExtsn As String
+  Private myXlonFileCnt As Long, myZobjFile() As Object, _
+            myZstrFileName() As String, myZstrFilePath() As String, _
+            myXobjFilePstdCell As Object, _
+            myXstrDirPath As String, myXobjDirPstdCell As Object, _
+            myXstrExtsn As String
     'myZobjFile(k) : ファイルオブジェクト
     'myZstrFileName(k) : ファイル名
     'myZstrFilePath(k) : ファイルパス
@@ -41,16 +42,34 @@ Option Base 1
 '//モジュール内変数_制御信号
   Private myXbisExitFlag As Boolean
   
-'//モジュール内変数_データ
-  Dim myXbisDirPstFlag As Boolean
+  Private myXbisDirPstFlag As Boolean
     'myXbisDirPstFlag = True  : 親フォルダパスの貼り付け有り
     'myXbisDirPstFlag = False : 親フォルダパスの貼り付け無し
+  
+'//モジュール内変数_データ
+  Private myXlonSrchShtNo As Long, myXobjSrchSheet As Object, _
+            myXlonShtSrchCnt As Long, myZvarSrchCndtn As Variant, _
+            myXbisInStrOptn As Boolean
+    'myZvarSrchCndtn(i, 1) : 検索文字列
+    'myZvarSrchCndtn(i, 2) : オフセット行数
+    'myZvarSrchCndtn(i, 3) : オフセット列数
+    'myZvarSrchCndtn(i, 4) : シート上文字列検索[=0]orコメント内文字列検索[=1]
+    'myXbisInStrOptn = False : 指定文字列と一致する条件で検索する
+    'myXbisInStrOptn = True  : 指定文字列を含む条件で検索する
+  
+  Private myXbisRowDrctn As Boolean
+    'myXbisRowDrctn = True  : 行方向のみを検索
+    'myXbisRowDrctn = False : 列方向のみを検索
   
 'iniP_モジュール内変数を初期化する
 Private Sub initializeModuleVariables()
     myXbisExitFlag = False
     
     myXbisDirPstFlag = False
+    myXlonSrchShtNo = Empty: Set myXobjSrchSheet = Nothing
+    myXlonShtSrchCnt = Empty: myZvarSrchCndtn = Empty
+    myXbisInStrOptn = False
+    myXbisRowDrctn = False
 End Sub
 
 '-----------------------------------------------------------------------------------------------
@@ -138,7 +157,7 @@ Private Sub ctrProc()
     If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
     
-'//S:ファイルを選択してそのパスを取得してシートに書き出す
+'//S:フォルダを選択してそのパスを取得してシートに書き出す
     Call snsProc2
     If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
@@ -174,6 +193,57 @@ ExitPath:
     myXbisExitFlag = True
 End Sub
 
+'SetP_制御用変数を設定する
+Private Sub setControlVariables1()
+    
+'    myXlonSrchShtNo = 4
+'    Set myXobjSrchSheet = ThisWorkbook.Worksheets(myXlonSrchShtNo)
+    Set myXobjSrchSheet = ActiveSheet
+
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    myXlonShtSrchCnt = 4
+    ReDim myZvarSrchCndtn(myXlonShtSrchCnt + L - 1, L + 3) As Variant
+    'myZvarSrchCndtn(i, 1) : 検索文字列
+    'myZvarSrchCndtn(i, 2) : オフセット行数
+    'myZvarSrchCndtn(i, 3) : オフセット列数
+    'myZvarSrchCndtn(i, 4) : シート上文字列検索[=0]orコメント内文字列検索[=1]
+  Dim k As Long: k = L - 1
+    k = k + 1   'k = 1
+    myZvarSrchCndtn(k, L + 0) = "親フォルダパス："
+    myZvarSrchCndtn(k, L + 1) = 0
+    myZvarSrchCndtn(k, L + 2) = 1
+    myZvarSrchCndtn(k, L + 3) = 0
+    k = k + 1   'k = 2
+    myZvarSrchCndtn(k, L + 0) = "検索するファイル拡張子："
+    myZvarSrchCndtn(k, L + 1) = 0
+    myZvarSrchCndtn(k, L + 2) = 1
+    myZvarSrchCndtn(k, L + 3) = 0
+    k = k + 1   'k = 3
+    myZvarSrchCndtn(k, L + 0) = "ファイル一覧"
+    myZvarSrchCndtn(k, L + 1) = 1
+    myZvarSrchCndtn(k, L + 2) = 0
+    myZvarSrchCndtn(k, L + 3) = 0
+    k = k + 1   'k = 4
+    myZvarSrchCndtn(k, L + 0) = "サブフォルダ内のファイルも対象："
+    myZvarSrchCndtn(k, L + 1) = 0
+    myZvarSrchCndtn(k, L + 2) = 1
+    myZvarSrchCndtn(k, L + 3) = 0
+    
+    myXbisInStrOptn = False
+    'myXbisInStrOptn = False : 指定文字列と一致する条件で検索する
+    'myXbisInStrOptn = True  : 指定文字列を含む条件で検索する
+    
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables2()
+    
+    myXbisRowDrctn = True
+    'myXbisRowDrctn = True  : 行方向のみを検索
+    'myXbisRowDrctn = False : 列方向のみを検索
+    
+End Sub
+
 'SnsP_エクセルシート上に記載されたファイルパス一覧を取得する
 Private Sub snsProc1()
     myXbisExitFlag = False
@@ -196,7 +266,7 @@ ExitPath:
     myXbisExitFlag = True
 End Sub
 
-'SnsP_ファイルを選択してそのパスを取得してシートに書き出す
+'SnsP_フォルダを選択してそのパスを取得してシートに書き出す
 Private Sub snsProc2()
     myXbisExitFlag = False
     
