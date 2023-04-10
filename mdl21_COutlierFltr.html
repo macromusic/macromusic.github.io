@@ -23,7 +23,7 @@ Option Explicit
 Option Base 1
 
 '◆ClassProc名_データ配列から標準偏差外れのデータを除去する
-'Rev.002
+'Rev.003
   
 '//モジュールメモリ
   Private Const meMstrMdlName As String = "COutlierFltr"
@@ -32,6 +32,7 @@ Option Base 1
   Private Const coXlonMdnFltrQnt As Long = 3
   
 '//PropertyGet_出力データ
+  Private Lc As Long
   Private myXlonStrtRow As Long, myXlonLastRow As Long
   Private myXlonCalRowCnt As Long, myXlonCalColCnt As Long, myZdouCalData() As Double
     'myZdouCalData(i, 1) : 計算処理後データ配列
@@ -85,6 +86,11 @@ Private Sub initializeModuleVariables()
 End Sub
 
 '-----------------------------------------------------------------------------------------------
+
+Public Property Get getOptnBase() As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    getOptnBase = L
+End Property
 
 Public Property Get getStrtRow() As Long
     getStrtRow = myXlonStrtRow
@@ -953,6 +959,7 @@ End Sub
 ''    'myZdouOrgData(i, 1) : 元データ配列
 ''    myXlonOrgRowCnt = UBound(myZdouOrgData, 1)
 ''    myXlonOrgColCnt = 1
+'  Dim Lc As Long
 ''  Dim myXlonStrtRow As Long, myXlonLastRow As Long
 ''  Dim myXlonCalRowCnt As Long, myXlonCalColCnt As Long, myZdouCalData() As Double
 ''    'myZdouCalData(i, 1) : 計算処理後データ配列
@@ -980,8 +987,9 @@ End Sub
 '        myXlonCalColCnt = .getCalColCnt
 '        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo JumpPath
 '        ReDim myZdouCalData(myXlonCalRowCnt, myXlonCalColCnt) As Double
+'        Lc = .getOptnBase
 '        For i = 1 To myXlonCalRowCnt
-'            myZdouCalData(i + Lo - 1, Lo) = .getCalData(i, 1)
+'            myZdouCalData(i + Lo - 1, Lo) = .getCalData(i, Lc)
 '        Next i
 '    End With
 'JumpPath:
@@ -1014,6 +1022,7 @@ End Sub
 '    'myZdouOrgData(i, 1) : 元データ配列
 ''    myXlonOrgRowCnt = UBound(myZdouOrgData, 1)
 ''    myXlonOrgColCnt = 1
+'  Dim Lc As Long
 ''  Dim myXlonStrtRow As Long, myXlonLastRow As Long
 ''  Dim myXlonCalRowCnt As Long, myXlonCalColCnt As Long, myZdouCalData() As Double
 '    'myZdouCalData(i, 1) : 計算処理後データ配列
@@ -1041,8 +1050,9 @@ End Sub
 '        myXlonCalColCnt = .getCalColCnt
 '        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo JumpPath
 '        ReDim myZdouCalData(myXlonCalRowCnt, myXlonCalColCnt) As Double
+'        Lc = .getOptnBase
 '        For i = 1 To myXlonCalRowCnt
-'            myZdouCalData(i + Lo - 1, Lo) = .getCalData(i, 1)
+'            myZdouCalData(i + Lo - 1, Lo) = .getCalData(i + Lc - 1, Lc)
 '        Next i
 '    End With
 'JumpPath:
