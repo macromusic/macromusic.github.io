@@ -13,13 +13,14 @@
 
  '定型Ｆ_指定行列が数値行列かどうかをチェックする
 Private Function PfncbisIsMatrixNumeric(ByRef myZvarMtrx As Variant) As Boolean
-    PfncbisIsMatrix = False
-  Dim myXdouTmp As Double, L1 As Long, L2 As Long
+    PfncbisIsMatrixNumeric = False
+  Dim myXvarTmp As Variant
     On Error GoTo ExitPath
-    L1 = LBound(myZvarMtrx, 1): L2 = LBound(myZvarMtrx, 2)
-    myXdouTmp = myZvarMtrx(L1, L2)
+    For Each myXvarTmp In myZvarMtrx
+        If IsNumeric(myXvarTmp) = False Then GoTo ExitPath
+    Next myXvarTmp
     On Error GoTo 0
-    PfncbisIsMatrix = True
+    PfncbisIsMatrixNumeric = True
 ExitPath:
 End Function
 
