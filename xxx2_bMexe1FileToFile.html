@@ -9,11 +9,9 @@
     <body>
       <div>MacroSample</div>
       <pre>
-'Includes m1MexeFileLstup
-'Includes m1MexeFileLstupSub
 'Includes bMsub1MultiToOne
-'Includes cMsub20RunFiles2
-'Includes cMsub20RunFiles3
+'Includes bMsub2OneToMulti
+'Includes bMsub3MultiToMulti
 
 Option Explicit
 Option Base 1
@@ -22,7 +20,7 @@ Option Base 1
 'Rev.001
   
 '//モジュールメモリ
-  Private Const meMstrMdlName As String = "bMexe1FileToFile"
+  Private Const meMstrMdlName As String = "bMexeFileToFile"
   
 '//出力制御信号
   Private myXbisCmpltFlag As Boolean
@@ -33,7 +31,7 @@ Option Base 1
   Private myXlonDataPrcsOptn As Long
     'myXlonDataPrcsOptn = 1 : 複数の元ファイル→1個のファイルへコピペ
     'myXlonDataPrcsOptn = 2 : 1個の元ファイル →複数のファイルへコピペ
-    'myXlonDataPrcsOptn = 3 : 1個の元ファイル →1個のファイルへコピペ(指定ファイルは複数可)
+    'myXlonDataPrcsOptn = 3 : 複数の元ファイル → 複数のファイルへコピペ (1対1)
   
 '//モジュール内変数_データ
   Private myXobjSrchSheet As Object, myXstrSrchVal As String
