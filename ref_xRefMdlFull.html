@@ -1,1 +1,593 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfncbisCheckArrayDimension
+'Includes PfncbisCheckArrayDimensionLength
+'Includes PfixChangeModuleConstValue
+'Includes x
 
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "xRefMdlFull"
+  Private Const meMlonExeNum As Long = 0
+  Private Const meMvarField As Variant = Empty
+  
+'//モジュール内定数
+  Private Const coXvarField As Variant = ""
+
+'//モジュール内定数_列挙体
+Private Enum EnumX
+'列挙体使用時の表記 : EnumX.rowX
+'■myEnumの表記ルール
+    '①シートNo. : "sht" & "Enum名" & " = " & "値" & "'シート名"
+    '②行No.     : "row" & "Enum名" & " = " & "値" & "'検索するシート上の文字列"
+    '③列No.     : "col" & "Enum名" & " = " & "値" & "'検索するシート上の文字列"
+    '④行No.     : "row" & "Enum名" & " = " & "値" & "'comment" & "'検索するコメントの文字列"
+    '⑤列No.     : "col" & "Enum名" & " = " & "値" & "'comment" & "'検索するコメントの文字列"
+    shtX = 1        'Sheet1
+'    rowX = 1        '行No
+'    colX = 1        '列No
+'    rowY = 1        'comment'行No
+'    colY = 1        'comment'列No
+End Enum
+  
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  Private myXbisFlag As Boolean
+  
+'//出力データ
+  Private myXvarField As Variant, myXobjObject As Object
+  Private myXlonDataRowCnt As Long, myXlonDataColCnt As Long
+  Private myZvarData() As Variant
+  
+'//入力制御信号
+  Private myXbisFlagIN As Boolean
+  
+'//入力データ
+  Private myXvarFieldIN As Variant, myXobjObjectIN As Object
+  Private myZvarOrgData() As Variant
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  Private myXbisFlagINT As Boolean
+  
+'//モジュール内変数_データ
+  Private myXvarFieldINT As Variant, myXobjObjectINT As Object
+  Private myZvarOrgDataINT() As Variant
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+'    myXvarFieldINT = Empty
+'    Set myXobjObjectINT = Nothing
+'    Erase myXvarFieldINT
+'    On Error Resume Next
+'    Erase myXvarFieldINT: If Err.Number = 13 Then myXvarFieldINT = Empty
+'    On Error GoTo 0
+'    Erase myZvarOrgDataINT
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_モジュールメモリのリセット
+Public Sub resetConstant()
+  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
+  Dim myZvarM(1, 2) As Variant
+    myZvarM(1, 1) = "meMlonExeNum": myZvarM(1, 2) = 0
+'    myZvarM(2, 1) = "meMvarField": myZvarM(2, 2) = Chr(34) & Chr(34)
+    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+End Sub
+
+'PublicP_
+Public Sub exeProc()
+
+'//プログラム構成
+    '入力: -
+    '処理: -
+    '出力: -
+    
+'//処理実行
+    Call callxRefMdlFull
+    
+'//処理結果表示
+    Select Case myXbisCmpltFlag
+        Case True: MsgBox "実行完了"
+        Case Else: MsgBox "異常あり", vbExclamation
+    End Select
+    
+End Sub
+
+'PublicP_
+Public Sub callProc( _
+            myXbisCmpltFlagOUT As Boolean, myXbisFlagOUT As Boolean, _
+            myXvarFieldOUT As Variant, myXobjObjectOUT As Object, _
+            myXlonDataRowCntOUT As Long, myXlonDataColCntOUT As Long, _
+            myZvarDataOUT() As Variant, _
+            ByVal myXbisFlagIN As Boolean, _
+            ByVal myXvarFieldIN As Variant, ByVal myXobjObjectIN As Object, _
+            ByRef myZvarOrgDataIN() As Variant)
+    
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    
+'//入力変数を初期化
+    myXbisFlagINT = False
+    myXvarFieldINT = Empty
+    Set myXobjObjectINT = Nothing
+    Erase myZvarOrgDataINT
+
+'//入力変数を取り込み
+    myXbisFlagINT = myXbisFlagIN
+    myXvarFieldINT = myXvarFieldIN
+    Set myXobjObjectINT = myXobjObjectIN
+    myZvarOrgDataINT() = myZvarOrgDataIN()
+    
+'  Dim Li As Long, Ui1 As Long, Ui2 As Long
+'    On Error GoTo ExitPath
+'    Li = LBound(myZvarOrgDataIN, 1)
+'    Ui1 = UBound(myZvarOrgDataIN, 1): Ui2 = UBound(myZvarOrgDataIN, 2)
+'    i = Ui1 + Lo - Li: j = Ui2 + Lo - Li
+'    ReDim myZvarOrgData(i, j) As Variant
+'    For j = LBound(myZvarOrgDataIN, 2) To UBound(myZvarOrgDataIN, 2)
+'        For i = LBound(myZvarOrgDataIN, 1) To UBound(myZvarOrgDataIN, 1)
+'            myZvarOrgData(i + Lo - Li, j + Lo - Li) = myZvarOrgDataIN(i, j)
+'        Next i
+'    Next j
+'    On Error GoTo 0
+    
+'//出力変数を初期化
+    myXbisCmpltFlagOUT = False
+    myXbisFlagOUT = False
+    myXvarFieldOUT = Empty
+    Set myXobjObjectOUT = Nothing
+    myXlonDataRowCntOUT = Empty: myXlonDataColCntOUT = Empty
+    Erase myZvarDataOUT
+    
+'//処理実行
+    Call ctrProc
+    If myXbisCmpltFlag = False Then Exit Sub
+    
+'//出力変数に格納
+    myXbisCmpltFlagOUT = myXbisCmpltFlag
+    myXbisFlagOUT = myXbisFlag
+    myXvarFieldOUT = myXvarField
+    Set myXobjObjectOUT = myXobjObject
+    
+    If myXlonDataRowCnt <= 0 Then GoTo JumpPath
+    myXlonDataRowCntOUT = myXlonDataRowCnt
+    
+    If myXlonDataColCnt <= 0 Then GoTo JumpPath
+    myXlonDataColCntOUT = myXlonDataColCnt
+    
+    myZvarDataOUT() = myZvarData()
+    
+'    If myXlonDataRowCntOUT <= 0 Or myXlonDataColCntOUT <= 0 Then GoTo JumpPath
+'    i = UBound(myZvarData, 1): j = UBound(myZvarData, 2)
+'    ReDim myZvarDataOUT(i, j) As Variant
+'    For j = LBound(myZvarData, 2) To UBound(myZvarData, 2)
+'        For i = LBound(myZvarData, 1) To UBound(myZvarData, 1)
+'            myZvarDataOUT(i, j) = myZvarData(i, j)
+'        Next i
+'    Next j
+JumpPath:
+
+ExitPath:
+End Sub
+
+'PublicF_
+Public Function fncbisCmpltFlag( _
+            ByVal myXbisCtrlIN As Boolean, _
+            ByVal myXvarVrblIN As Variant, ByVal myXobjObjeIN As Object) As Boolean
+    fncbisCmpltFlag = False
+    
+'//入力変数を初期化
+    myXbisFlagINT = False
+    myXvarFieldINT = Empty
+    Set myXobjObjectINT = Nothing
+    Erase myZvarOrgDataINT
+
+'//入力変数を取り込み
+    myXbisFlagINT = myXbisFlagIN
+    myXvarFieldINT = myXvarFieldIN
+    Set myXobjObjectINT = myXobjObjectIN
+    myZvarOrgDataINT() = myZvarOrgDataIN()
+    
+'//処理実行
+    Call ctrProc
+    If myXbisCmpltFlag = False Then Exit Sub
+    
+    fncbisCmpltFlag = myXbisCmpltFlag
+    
+End Function
+
+'-----------------------------------------------------------------------------------------------
+'Control  : ユーザから入力を受け取ってその内容に応じてSense、Process、Runを制御する
+'Sense    : Processで実行する演算処理用のデータを取得する
+'Process  : Senseで取得したデータを使用して演算処理をする
+'Run      : Processの処理結果を受けて画面表示などの出力処理をする
+'Remember : 記録した内容を必要に応じて取り出して処理に活用する
+'Record   : Sense、Process、Runで実行したプログラムで重要な内容を記録する
+'-----------------------------------------------------------------------------------------------
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call remProc: If myXbisExitFlag = True Then GoTo ExitPath
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables
+    
+'//S:
+    Call snsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//P:
+    Call prsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+'//Run:
+    Call runProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+    
+    Call checkOutputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+    myXbisCmpltFlag = True
+ExitPath:
+    If coXbisTestMode = False Then Call recProc
+    Call initializeModuleVariables
+End Sub
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+'    myXbisCmpltFlag = False: myXbisFlag = False
+'    myXvarField = Empty: Set myXobjObject = Nothing
+'    Erase myXvarField
+'    On Error Resume Next
+'    Erase myXvarField: If Err.Number = 13 Then myXvarField = Empty
+'    On Error GoTo 0
+End Sub
+
+'RemP_モジュールメモリに保存した変数を取り出す
+Private Sub remProc()
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    
+'    If myXvarFieldIN = Empty Then myXvarFieldIN = meMvarField
+    
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+'  Dim Li As Long, myXvarTmp As Variant
+'    On Error GoTo ExitPath
+'    Li = LBound(myZvarOrgData, 1): myXvarTmp = myZvarOrgData(Li, Li)
+'    On Error GoTo 0
+    
+'//入力配列変数を内部配列変数に入れ替える
+'  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+'  Dim Li As Long, Ui1 As Long, Ui2 As Long, i As Long, j As Long
+'    On Error GoTo ExitPath
+'    Li = LBound(myZvarOrgData, 1)
+'    Ui1 = UBound(myZvarOrgData, 1): Ui2 = UBound(myZvarOrgData, 2)
+'    i = Ui1 + Lo - Li: j = Ui2 + Lo - Li
+'    ReDim myZvarOrgDataINT(i, j) As Variant
+'    For j = LBound(myZvarOrgData, 2) To UBound(myZvarOrgData, 2)
+'        For i = LBound(myZvarOrgData, 1) To UBound(myZvarOrgData, 1)
+'            myZvarOrgDataINT(i + Lo - Li, j + Lo - Li) = myZvarOrgData(i, j)
+'        Next i
+'    Next j
+'    On Error GoTo 0
+    
+'//入力変数の内容を確認
+'    If myXvarFieldIN = "" Then GoTo ExitPath
+'    If myXobjObjectIN Is Nothing Then GoTo ExitPath
+    
+'//入力配列変数の内容を確認
+'    If PfncbisCheckArrayDimension(myXvarFieldIN, 1) = False Then GoTo ExitPath
+'    If PfncbisCheckArrayDimension(myXvarFieldIN, 2) = False Then GoTo ExitPath
+    
+'  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+'  Dim myXlonChckDmnsn As Long, myXlonChckLen() As Long
+'    myXlonChckDmnsn = 2
+'    ReDim myXlonChckLen(myXlonChckDmnsn + L - 1) As Long
+'    myXlonChckLen(L + 0) = 0
+'    myXlonChckLen(L + 1) = 2
+'    If PfncbisCheckArrayDimensionLength( _
+'        myXvarFieldIN, myXlonChckDmnsn, myXlonChckLen) = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+
+    myXbisFlagIN = True
+    myXvarFieldIN = coXvarFieldIN
+    Set myXobjObjectIN = myXobjObjectIN
+
+End Sub
+
+'SnsP_
+Private Sub snsProc()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3-1"   'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_
+Private Sub prsProc()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4-1"   'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_
+Private Sub runProc()
+    myXbisExitFlag = False
+    
+'    If myXvarField = "" Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "5-1"   'PassFlag
+    
+    'XarbProgCode
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'checkP_出力変数内容を確認する
+Private Sub checkOutputVariables()
+    myXbisExitFlag = False
+    
+'//出力変数の内容を確認
+'    If myXvarField = "" Then GoTo ExitPath
+'    If myXobjObject Is Nothing Then GoTo ExitPath
+    
+'//出力配列変数の内容を確認
+'    If PfncbisCheckArrayDimension(myXvarField, 1) = False Then GoTo ExitPath
+'    If PfncbisCheckArrayDimension(myXvarField, 2) = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RecP_使用した変数をモジュールメモリに保存する
+Private Sub recProc()
+    myXbisExitFlag = False
+    On Error GoTo ExitPath
+    
+  Dim myZvarM(1, 2) As Variant
+    myZvarM(1, 1) = "meMlonExeNum"
+    myZvarM(1, 2) = meMlonExeNum + 1
+'    myZvarM(1, 1) = "meMvarField"
+'    myZvarM(1, 2) = myXvarField
+
+  Dim myXstrMdlName As String: myXstrMdlName = meMstrMdlName
+    Call PfixChangeModuleConstValue(myXbisExitFlag, myXstrMdlName, myZvarM)
+    
+    On Error GoTo 0
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'モジュール内Ｐ_
+Private Sub MsubProc()
+End Sub
+
+'モジュール内Ｆ_
+Private Function MfncFunc() As Variant
+End Function
+
+'===============================================================================================
+
+ '定型Ｐ_
+Private Sub PfixProc()
+End Sub
+
+ '定型Ｆ_
+Private Function PfncFunc() As Variant
+End Function
+
+ '定型Ｆ_配列変数の次元数が指定次元と一致するかをチェックする
+Private Function PfncbisCheckArrayDimension( _
+            ByRef myZvarOrgData As Variant, ByVal myXlonDmnsn As Long) As Boolean
+    PfncbisCheckArrayDimension = False
+    If IsArray(myZvarOrgData) = False Then Exit Function
+    If myXlonDmnsn <= 0 Then Exit Function
+  Dim myXlonTmp As Long, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXlonTmp = UBound(myZvarOrgData, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    If k - 1 <> myXlonDmnsn Then Exit Function
+    PfncbisCheckArrayDimension = True
+End Function
+
+ '定型Ｆ_配列変数の次元数と配列長が指定値を満足するかをチェックする
+Private Function PfncbisCheckArrayDimensionLength( _
+            ByRef myZvarOrgData As Variant, ByVal myXlonChckAryDmnsn As Long, _
+            ByRef myXlonChckAryLen() As Long) As Boolean
+'myXlonChckAryDmnsn  : 配列の次元数の指定値
+'myXlonChckAryLen(i) : i次元目の配列長の指定値
+'myXlonChckAryLen(i) = 0 : 配列長のチェックを実施しない
+    PfncbisCheckArrayDimensionLength = False
+    If myXlonChckAryDmnsn <= 0 Then Exit Function
+  Dim Li As Long, Ui As Long, myXlonChckAryLenCnt As Long
+    On Error Resume Next
+    Li = LBound(myXlonChckAryLen): Ui = UBound(myXlonChckAryLen)
+    If Err.Number = 9 Then Exit Function
+    On Error GoTo 0
+    myXlonChckAryLenCnt = Ui - Li + 1
+    If myXlonChckAryLenCnt <= 0 Then Exit Function
+  Dim i As Long
+    For i = LBound(myXlonChckAryLen) To UBound(myXlonChckAryLen)
+        If myXlonChckAryLen(i) <= 0 Then Exit Function
+    Next i
+'//配列であることを確認
+    If IsArray(myZvarOrgData) = False Then Exit Function
+'//配列が空でないことを確認
+  Dim myXlonTmp As Long
+    On Error Resume Next
+    myXlonTmp = UBound(myZvarOrgData) - LBound(myZvarOrgData) + 1
+    If Err.Number = 9 Then Exit Function
+    On Error GoTo 0
+    If myXlonTmp <= 0 Then Exit Function
+'//配列の次元数を取得
+  Dim myXlonAryDmnsn As Long, myXvarTmp As Variant, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXvarTmp = UBound(myZvarOrgData, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    myXlonAryDmnsn = k - 1
+    If myXlonAryDmnsn <> myXlonChckAryDmnsn Then Exit Function
+    If myXlonAryDmnsn <> myXlonChckAryLenCnt Then Exit Function
+'//配列の最小添字と最大添字を取得
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    i = myXlonAryDmnsn + L - 1
+  Dim myZlonAryLBnd() As Long: ReDim myZlonAryLBnd(i) As Long
+  Dim myZlonAryUBnd() As Long: ReDim myZlonAryUBnd(i) As Long
+    k = 0
+    For i = LBound(myZlonAryLBnd) To UBound(myZlonAryLBnd)
+        k = k + 1
+        myZlonAryLBnd(i) = LBound(myZvarOrgData, k)
+        myZlonAryUBnd(i) = UBound(myZvarOrgData, k)
+    Next i
+'//配列長を取得
+    i = myXlonAryDmnsn + L - 1
+  Dim myZlonAryLen() As Long: ReDim myZlonAryLen(i) As Long
+    For i = LBound(myZlonAryLen) To UBound(myZlonAryLen)
+        myZlonAryLen(i) = myZlonAryUBnd(i) - myZlonAryLBnd(i) + 1
+    Next i
+'//次元数と配列長をチェック
+    For i = LBound(myZlonAryLen) To UBound(myZlonAryLen)
+        If myXlonChckAryLen(i + Li - L) <> 0 Then _
+            If myZlonAryLen(i) <> myXlonChckAryLen(i + Li - L) Then Exit Function
+    Next i
+    PfncbisCheckArrayDimensionLength = True
+    Erase myZlonAryLBnd: Erase myZlonAryUBnd: Erase myZlonAryLen
+End Function
+
+ '定型Ｐ_モジュール内定数の値を変更する
+Private Sub PfixChangeModuleConstValue(myXbisExitFlag As Boolean, _
+            ByVal myXstrMdlName As String, ByRef myZvarM() As Variant)
+    myXbisExitFlag = False
+    If myXstrMdlName = "" Then GoTo ExitPath
+  Dim L As Long, myXvarTmp As Variant
+    On Error GoTo ExitPath
+    L = LBound(myZvarM, 1): myXvarTmp = myZvarM(L, L)
+    On Error GoTo 0
+  Dim myXlonDclrLines As Long, myXobjCdMdl As Object
+    Set myXobjCdMdl = ThisWorkbook.VBProject.VBComponents(myXstrMdlName).CodeModule
+    myXlonDclrLines = myXobjCdMdl.CountOfDeclarationLines
+    If myXlonDclrLines <= 0 Then GoTo ExitPath
+  Dim i As Long, n As Long
+  Dim myXstrTmp As String, myXstrSrch As String, myXstrOrg As String, myXstrRplc As String
+Application.DisplayAlerts = False
+    For i = 1 To myXlonDclrLines
+        myXstrTmp = myXobjCdMdl.Lines(i, 1)
+        For n = LBound(myZvarM, 1) To UBound(myZvarM, 1)
+            myXstrSrch = "Const" & Space(1) & myZvarM(n, L) & Space(1) & "As" & Space(1)
+            If InStr(myXstrTmp, myXstrSrch) > 0 Then
+                myXstrOrg = Left(myXstrTmp, InStr(myXstrTmp, "=" & Space(1)) + 1)
+                myXstrRplc = myXstrOrg & myZvarM(n, L + 1)
+                Call myXobjCdMdl.ReplaceLine(i, myXstrRplc)
+            End If
+        Next n
+    Next i
+Application.DisplayAlerts = True
+    Set myXobjCdMdl = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+'===============================================================================================
+
+'◆ModuleProc名_
+Private Sub callxRefMdlFull()
+  Dim myXbisCompFlag As Boolean
+    Call xRefMdlFull.callProc( _
+            myXbisCompFlag, myXbisFlag, myXvarField, myXobjObject, _
+            myXbisFlagIN, myXvarFieldIN, myXobjObjectIN)
+'    Call variablesOfxRefMdlFull(myXlonDataCnt, myXvarField)     'Debug.Print
+End Sub
+Private Sub variablesOfxRefMdlFull( _
+            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+'//xRefMdlFull内から出力した変数の内容確認
+    Debug.Print "データ: " & myZvarField
+    Debug.Print "データ数: " & myXlonDataCnt
+    If myXlonDataCnt <= 0 Then Exit Sub
+  Dim k As Long
+    For k = LBound(myZvarField) To UBound(myZvarField)
+        Debug.Print "データ" & k & ": " & myZvarField(k)
+    Next k
+  Dim i As Long, j As Long
+    For i = LBound(myZvarField, 1) To UBound(myZvarField, 1)
+        For j = LBound(myZvarField, 2) To UBound(myZvarField, 2)
+            Debug.Print "データ" & i & "," & j & ": " & myZvarField(i, j)
+        Next j
+    Next i
+End Sub
+'
+'  Public Const coXbisTestMode As Boolean = True
+'  Public Const coXbisTestMode As Boolean = False
+'
+Private Sub resetConstantInxRefMdlFull()
+'//xRefMdlFullモジュールのモジュールメモリのリセット処理
+    Call xRefMdlFull.resetConstant
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
