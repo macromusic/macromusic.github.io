@@ -1,1 +1,183 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+Option Explicit
+Option Base 1
 
+  Dim myXobjDfltRng As Object
+  Dim myXobjSlctRng As Object
+  Dim myXlonSpltCnt As Long, myZobjSpltRng() As Object
+
+Private Sub TryProc()
+    Set myXobjDfltRng = Nothing: Set myXobjSlctRng = Nothing
+    myXlonSpltCnt = Empty: Erase myZobjSpltRng
+    
+'//定型Ｆ_InputBox用のデフォルト範囲を設定する
+  Dim myXstrDfltAdrs As String
+    myXstrDfltAdrs = PfncstrDefaultAddressInputBox(myXobjDfltRng)
+    
+'//InputBoxメソッドでセル範囲の入力
+  Dim myXstrPrompt As String, myXstrTitle As String
+    myXstrTitle = ""
+    myXstrPrompt = ""
+    Set myXobjSlctRng = PfncobjInputBoxRange(myXstrPrompt, myXstrTitle, myXstrDfltAdrs)
+    If myXobjSlctRng Is Nothing Then Exit Sub
+  
+'//指定セル範囲が連続か不連続かを確認
+  Dim myXbisSeries As Boolean
+    myXbisSeries = PfncbisCheckSeriesRangeByInputBox(myXobjSlctRng)
+    
+    Select Case myXbisSeries
+        Case True
+        '//指定セル範囲を最終行または最終列まで広げる
+            Set myXobjSlctRng = PfncobjExtendRangeToEnd(myXobjSlctRng)
+            myXobjSlctRng.Select
+        Case Else
+        '//指定セル範囲を分割して各セルの配列を抽出
+            Call PfixSplitRange(myXlonSpltCnt, myZobjSpltRng, myXobjSlctRng)
+    End Select
+  
+'//トライ実行
+  Dim myXlonDataCnt As Long, myZstrData() As String
+    'x
+
+    Debug.Print "データ" & myXobjSlctRng.Address(ReferenceStyle:=Application.ReferenceStyle, _
+                        RowAbsolute:=True, ColumnAbsolute:=True, external:=False)
+    Call PforDisplayVariables1(myXlonSpltCnt, myZobjSpltRng)
+'    Call PforDisplayVariables2(myXlonDataCnt, myZstrData)
+End Sub
+Private Sub PforDisplayVariables1( _
+            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+'//1次元配列変数の内容確認
+    Debug.Print "データ数: " & myXlonDataCnt
+    If myXlonDataCnt <= 0 Then Exit Sub
+  Dim k As Long
+    For k = LBound(myZvarField) To UBound(myZvarField)
+        Debug.Print "データ" & k & ": " & myZvarField(k).Address( _
+                        ReferenceStyle:=Application.ReferenceStyle, _
+                        RowAbsolute:=True, ColumnAbsolute:=True, external:=False)
+    Next k
+End Sub
+Private Sub PforDisplayVariables2( _
+            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+'//1次元配列変数の内容確認
+    Debug.Print "データ数: " & myXlonDataCnt
+    If myXlonDataCnt <= 0 Then Exit Sub
+  Dim k As Long
+    For k = LBound(myZvarField) To UBound(myZvarField)
+        Debug.Print "データ" & k & ": " & myZvarField(k)
+    Next k
+End Sub
+
+ '定型Ｆ_InputBox用のデフォルト範囲を設定する
+Private Function PfncstrDefaultAddressInputBox(ByVal myXobjDfltRng As Object) As String
+    PfncstrDefaultAddressInputBox = Empty
+  Dim myXstrDfltAdrs As String
+    On Error GoTo ExitPath
+    If myXobjDfltRng Is Nothing Then Set myXobjDfltRng = Selection
+    myXstrDfltAdrs = myXobjDfltRng.Address(ReferenceStyle:=Application.ReferenceStyle, _
+                        RowAbsolute:=True, ColumnAbsolute:=True, external:=False)
+    On Error GoTo 0
+    PfncstrDefaultAddressInputBox = myXstrDfltAdrs
+ExitPath:
+End Function
+
+ '定型Ｆ_InputBoxメソッドでセル範囲の入力を促す
+Private Function PfncobjInputBoxRange( _
+                    ByVal myXstrPrompt As String, ByVal myXstrTitle As String, _
+                    ByVal myXstrDefault As String) As Object
+    Set PfncobjInputBoxRange = Nothing
+    If myXstrTitle = "" Then myXstrTitle = "セル範囲の選択"
+    If myXstrPrompt = "" Then myXstrPrompt = myXstrTitle
+    On Error Resume Next
+    Set PfncobjInputBoxRange = Application.InputBox( _
+                                prompt:=myXstrPrompt, Title:=myXstrTitle, _
+                                Default:=myXstrDefault, Type:=8)
+    On Error GoTo 0
+'    Debug.Print "入力値: " & PfncobjInputBoxRange.Address(ReferenceStyle:=Application.ReferenceStyle, _
+'                                RowAbsolute:=True, ColumnAbsolute:=True, external:=True)    'Debug.Print
+End Function
+
+ '定型Ｆ_指定セル範囲が連続か不連続かを確認する
+Private Function PfncbisCheckSeriesRangeByInputBox( _
+            ByVal myXobjOrgRng As Object) As Boolean
+'PfncbisCheckSeriesRangeByInputBox = False : 不連続範囲
+'PfncbisCheckSeriesRangeByInputBox = True  : 連続範囲
+    PfncbisCheckSeriesRangeByInputBox = False
+    If myXobjOrgRng Is Nothing Then Exit Function
+  Dim myXbisSeries As Boolean: myXbisSeries = False
+    If InStr(myXobjOrgRng.Address, ",") <= 0 Then myXbisSeries = True
+    PfncbisCheckSeriesRangeByInputBox = myXbisSeries
+End Function
+
+ '定型Ｆ_指定セル範囲を最終行または最終列まで広げる
+Private Function PfncobjExtendRangeToEnd(myXobjOrgRng As Object) As Object
+    Set PfncobjExtendRangeToEnd = Nothing
+    If myXobjOrgRng Is Nothing Then Exit Function
+  Dim myXobjBook As Object, myXstrShtName As String
+    With myXobjOrgRng
+        Set myXobjBook = .Parent.Parent
+        myXstrShtName = .Parent.Name
+    End With
+    myXobjBook.Worksheets(myXstrShtName).Activate
+    myXobjOrgRng.Select
+  Dim myXlonMsgBox As Long, myXstrPrompt As String, myXstrTitle As String
+    myXstrTitle = "データ範囲の変更"
+    myXstrPrompt = "データ範囲を最終行まで広げますか？" & vbCrLf & vbCrLf _
+            & "　・「はい」　：最終行まで広げる場合に選択" & vbCrLf & vbCrLf _
+            & "　・「いいえ」：最終列まで広げる場合に選択" & vbCrLf & vbCrLf _
+            & "　・「キャンセル」：広げない場合に選択"
+    myXlonMsgBox = MsgBox(myXstrPrompt, vbYesNoCancel, myXstrTitle)
+  Dim myXobjExtndRng As Object, myXobjEndRng As Object
+    With myXobjBook.Worksheets(myXstrShtName)
+        Select Case myXlonMsgBox
+            Case vbYes
+                Set myXobjEndRng = .Cells(.Rows.Count, myXobjOrgRng.Column) _
+                                    .End(xlUp).Offset(, myXobjOrgRng.Columns.Count - 1)
+                Set myXobjExtndRng = .Range(myXobjOrgRng.Cells(1, 1), myXobjEndRng)
+            Case vbNo
+                Set myXobjEndRng = .Cells(myXobjOrgRng.Row, .Columns.Count) _
+                                    .End(xlToLeft).Offset(myXobjOrgRng.Rows.Count - 1)
+                Set myXobjExtndRng = .Range(myXobjOrgRng.Cells(1, 1), myXobjEndRng)
+            Case vbCancel
+                Set myXobjExtndRng = myXobjOrgRng
+        End Select
+    End With
+    Set PfncobjExtendRangeToEnd = myXobjExtndRng
+    Set myXobjBook = Nothing
+    Set myXobjExtndRng = Nothing: Set myXobjEndRng = Nothing
+End Function
+
+ '定型Ｐ_指定セル範囲を分割して各セルの配列を抽出する
+Private Sub PfixSplitRange( _
+            myXlonSpltCnt As Long, myZobjSpltRng() As Object, _
+            ByVal myXobjOrgRng As Object)
+'myZobjSpltRng(i) : 分割したセル配列
+    myXlonSpltCnt = Empty: Erase myZobjSpltRng
+    If myXobjOrgRng Is Nothing Then Exit Sub
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myXvarTmpCell As Variant, n As Long: n = L - 1
+    On Error Resume Next
+    For Each myXvarTmpCell In myXobjOrgRng
+        n = n + 1: ReDim Preserve myZobjSpltRng(n) As Object
+        Set myZobjSpltRng(n) = myXvarTmpCell
+    Next myXvarTmpCell
+    On Error GoTo 0
+    myXlonSpltCnt = n - L + 1
+    myXvarTmpCell = Empty
+End Sub
+
+'===============================================================================================
+'↓トライ用のプロシージャ記述領域
+
+      <br></pre>
+    </body>
+  </html>
