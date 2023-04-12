@@ -159,7 +159,9 @@ Private Function PfncobjCutPasteSpecialPicture( _
   Dim myXobjPstSht As Object
     Set myXobjPstSht = myXobjPicShp.Parent
     myXobjPstSht.Activate
+    DoEvents
     myXobjPicShp.Cut
+    DoEvents
     Call myXobjPstSht.PasteSpecial(Format:=myXstrPstFrmt)
     Set PfncobjCutPasteSpecialPicture = myXobjPstSht.Pictures(myXobjPstSht.Pictures.Count)
     On Error GoTo 0
