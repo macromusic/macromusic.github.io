@@ -34,6 +34,10 @@ Option Base 1
   Private myXbisCmpltFlag As Boolean
   
 '//出力データ
+  Private myXlonExeFldrCnt As Long, _
+            myZstrExeFldrPath() As String, myZstrExeFldrName() As String
+    'myZstrExeFldrPath(k) : 実行フォルダパス
+    'myZstrExeFldrName(k) : 実行フォルダ名
   
 '//入力制御信号
   
@@ -191,6 +195,7 @@ End Sub
 'iniP_出力変数を初期化する
 Private Sub initializeOutputVariables()
     myXbisCmpltFlag = False
+    myXlonExeFldrCnt = Empty: Erase myZstrExeFldrPath: Erase myZstrExeFldrName
 End Sub
 
 'RemP_保存した変数を取り出す
@@ -317,24 +322,31 @@ End Sub
 
 '◆ClassProc名_フォルダを複製する
 Private Sub instCFldrDplct()
+  Dim Lc As Long
   Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
   Dim i As Long
   Dim myXinsFldrDplct As CFldrDplct: Set myXinsFldrDplct = New CFldrDplct
     With myXinsFldrDplct
     '//クラス内変数への入力
         .letOrgFldrPath = myXstrOrgFldrPath
+        .letDplctFldrPathAry() = myZstrDplctFldrPath()
         .letAutoNaming = True
-        If myXlonDplctFldrCnt <= 0 Then GoTo JumpPath
-        .letDplctFldrCnt = myXlonDplctFldrCnt
-        For i = 1 To myXlonDplctFldrCnt
-            .letDplctFldrPathAry(i) = myZstrDplctFldrPath(i + L - 1)
-        Next i
     '//クラス内プロシージャの実行とクラス内変数からの出力
         .exeProc
         myXbisExitFlag = Not .getCmpltFlag
+        myXlonExeFldrCnt = .getExeFldrCnt
+        If myXlonExeFldrCnt <= 0 Then GoTo JumpPath
+        i = myXlonExeFldrCnt + L - 1
+        ReDim myZstrExeFldrPath(i) As String
+        ReDim myZstrExeFldrName(i) As String
+        Lc = .getOptnBase
+        For i = 1 To myXlonExeFldrCnt
+            myZstrExeFldrPath(i + L - 1) = .getExeFldrPathAry(i + Lc - 1)
+            myZstrExeFldrName(i + L - 1) = .getExeFldrNameAry(i + Lc - 1)
+        Next i
     End With
-    Set myXinsFldrDplct = Nothing
 JumpPath:
+    Set myXinsFldrDplct = Nothing
 End Sub
 
 '===============================================================================================
