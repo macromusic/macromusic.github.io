@@ -38,6 +38,11 @@ Option Base 1
   Private myXlonExeInfoCnt As Long, myZstrExeInfo() As String
     'myZstrExeInfo(i) : 実行情報
   
+  Private myXlonExeFileCnt As Long, _
+            myZstrExeFilePath() As String, myZstrExeFileName() As String
+    'myZstrExeFilePath(k) : 実行ファイルパス
+    'myZstrExeFileName(k) : 実行ファイル名
+  
 '//入力制御信号
   
 '//入力データ
@@ -204,6 +209,7 @@ End Sub
 Private Sub initializeOutputVariables()
     myXbisCmpltFlag = False
     myXlonExeInfoCnt = Empty: Erase myZstrExeInfo
+    myXlonExeFileCnt = Empty: Erase myZstrExeFilePath: Erase myZstrExeFileName
 End Sub
 
 'RemP_保存した変数を取り出す
@@ -469,24 +475,31 @@ End Sub
 
 '◆ClassProc名_ファイルを複製する
 Private Sub instCFileDplct()
+  Dim Lc As Long
   Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
   Dim i As Long
   Dim myXinsFileDplct As CFileDplct: Set myXinsFileDplct = New CFileDplct
     With myXinsFileDplct
     '//クラス内変数への入力
         .letOrgFilePath = myXstrOrgFilePath
+        .letDplctFilePathAry() = myZstrDplctFilePath()
         .letAutoNaming = True
-        If myXlonDplctFileCnt <= 0 Then GoTo JumpPath
-        .letDplctFileCnt = myXlonDplctFileCnt
-        For i = 1 To myXlonDplctFileCnt
-            .letDplctFilePathAry(i) = myZstrDplctFilePath(i + L - 1)
-        Next i
     '//クラス内プロシージャの実行とクラス内変数からの出力
         .exeProc
         myXbisExitFlag = Not .getCmpltFlag
+        myXlonExeFileCnt = .getExeFileCnt
+        If myXlonExeFileCnt <= 0 Then GoTo JumpPath
+        i = myXlonExeFileCnt + L - 1
+        ReDim myZstrExeFilePath(i) As String
+        ReDim myZstrExeFileName(i) As String
+        Lc = .getOptnBase
+        For i = 1 To myXlonExeFileCnt
+            myZstrExeFilePath(i + L - 1) = .getExeFilePathAry(i + Lc - 1)
+            myZstrExeFileName(i + L - 1) = .getExeFileNameAry(i + Lc - 1)
+        Next i
     End With
-    Set myXinsFileDplct = Nothing
 JumpPath:
+    Set myXinsFileDplct = Nothing
 End Sub
 
 '===============================================================================================
