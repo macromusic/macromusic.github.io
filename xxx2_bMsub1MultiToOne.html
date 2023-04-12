@@ -9,6 +9,8 @@
     <body>
       <div>MacroSample</div>
       <pre>
+'Includes m1MexeFileLstup
+'Includes m1MexeFileLstupSub
 'Includes CSrchSht
 'Includes CXlsOpen
 'Includes CXlsClose
@@ -20,7 +22,7 @@
 Option Explicit
 Option Base 1
 
-'◆ModuleProc名_複数ファイルに対して連続処理を実施する
+'◆ModuleProc名_複数の元ファイル → 1個のファイルへコピペ
 'Rev.001
   
 '//モジュールメモリ
@@ -54,7 +56,7 @@ Option Base 1
     'myZobjPstnRng(i) : 行列位置のセル
 
   Private myXlonOrgFileNo As Long, myXstrOrgFileName As String, myXstrOrgFilePath As String
-  Private myXstrSubFilePath As String
+  Private myXlonSubFileNo As Long, myXstrSubFileName As String, myXstrSubFilePath As String
 
   Private myXstrOpnFullName As String
   Private myXbisOpnRdOnly As Boolean
@@ -70,6 +72,8 @@ Option Base 1
   Private myXstrSaveBkName As String
   
   Private myXlonOrgRngSlctCnt As Long, myXlonSubRngSlctCnt As Long
+  
+  Private myXobjWrkSht As Object, myXobjFrstCell As Object, myXobjLastCell As Object
   
   Private myXstrInptBxPrmpt As String, myXstrInptBxTtl As String
   Private myXobjSlctRng As Object
@@ -109,13 +113,15 @@ Private Sub initializeModuleVariables()
     Erase myZobjOrgPstnRng: Erase myZobjSubPstnRng
     
     myXlonOrgFileNo = Empty: myXstrOrgFileName = Empty: myXstrOrgFilePath = Empty
-    myXstrSubFilePath = Empty
+    myXlonSubFileNo = Empty: myXstrSubFileName = Empty: myXstrSubFilePath = Empty
     
     myXstrOpnFullName = Empty: myXbisOpnRdOnly = False: Set myXobjOpndBook = Nothing
     Set myXobjOpndOrgBook = Nothing: Set myXobjOpndSubBook = Nothing
     myXstrCloseFullName = Empty: myXbisSaveON = False: myXstrSaveBkName = Empty
     
     myXlonOrgRngSlctCnt = Empty: myXlonSubRngSlctCnt = Empty
+    
+    Set myXobjWrkSht = Nothing: Set myXobjFrstCell = Nothing: Set myXobjLastCell = Nothing
     
     myXstrInptBxPrmpt = Empty: myXstrInptBxTtl = Empty
     Set myXobjSlctRng = Nothing
@@ -185,14 +191,19 @@ Private Sub ctrProc()
         If myXbisExitFlag = True Then GoTo NextPath
         If myXbisEndFlag = True Then GoTo ExitPath
 '        Debug.Print "PassFlag: " & meMstrMdlName & "3-" & k   'PassFlag
+ 
+    '//P:各ファイルのデータ加工処理
+        Call prsProcForLoop
+        If myXbisExitFlag = True Then GoTo NextPath
+'        Debug.Print "PassFlag: " & meMstrMdlName & "4-" & k   'PassFlag
         
     '//Run:各ファイルのデータ出力処理
         Call runProcForLoop
         If myXbisExitFlag = True Then GoTo NextPath
         If myXbisEndFlag = True Then GoTo ExitPath
-'        Debug.Print "PassFlag: " & meMstrMdlName & "4-" & k   'PassFlag
+'        Debug.Print "PassFlag: " & meMstrMdlName & "5-" & k   'PassFlag
         
-        If myXlonSubRngSlctCnt = 3 Then Application.ScreenUpdating = False
+        If myXlonSubRngSlctCnt = 2 Then Application.ScreenUpdating = False
         
 NextPath:
         If myXbisExitFlag = True Then
@@ -200,12 +211,12 @@ NextPath:
             Debug.Print "エラーデータ" & n & ": " & myXstrOrgFileName
         End If
     Next k
-'    Debug.Print "PassFlag: " & meMstrMdlName & "5"    'PassFlag
+'    Debug.Print "PassFlag: " & meMstrMdlName & "6"    'PassFlag
 
 '//Run:ファイナライズ処理
     Call runFinalize
     If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "6"   'PassFlag
+'    Debug.Print "PassFlag: " & meMstrMdlName & "7"   'PassFlag
     
     Application.ScreenUpdating = True
     
@@ -378,8 +389,7 @@ Private Sub snsProcForLoop()
     If myXobjOpndBook Is Nothing Then GoTo ExitPath
     Set myXobjOpndOrgBook = myXobjOpndBook
     
-'//データ取得する範囲を指定
-  Dim myXobjWrkSht As Object, myXobjFrstCell As Object, myXobjLastCell As Object
+'//データ取得範囲を指定
   Dim L As Long: L = LBound(myZobjOrgPstnRng)
     
     myXlonOrgRngSlctCnt = myXlonOrgRngSlctCnt + 1
@@ -388,6 +398,7 @@ Private Sub snsProcForLoop()
         Set myXobjFrstCell = myXobjWrkSht.Cells(myXlonOrgBgnRow, myXlonOrgBgnCol)
         Set myXobjLastCell = myXobjWrkSht.Cells(myXlonOrgEndRow, myXlonOrgEndCol)
         Set myXobjDataRng = Range(myXobjFrstCell, myXobjLastCell)
+        myXobjWrkSht.Activate
         myXobjDataRng.Select
         
         myXstrInptBxTtl = "元データの取得範囲の指定"
@@ -395,7 +406,7 @@ Private Sub snsProcForLoop()
         Call instCRngSlct
         If myXobjSlctRng Is Nothing Then GoTo EndPath
         
-    '//データ取得する範囲を取得
+    '//データ取得範囲を取得
         myXlonOrgShtNo = myXlonShtNo
         myXlonOrgBgnRow = myXlonBgnRow
         myXlonOrgEndRow = myXlonEndRow
@@ -405,7 +416,7 @@ Private Sub snsProcForLoop()
         myXlonOrgRowOfst = 0
         myXlonOrgColOfst = 0
         
-    '//データ取得する範囲をシートに記入
+    '//データ取得範囲をシートに記入
         myZobjOrgPstnRng(L + 0).Value = myXlonOrgShtNo
         myZobjOrgPstnRng(L + 1).Value = myXlonOrgBgnRow
         myZobjOrgPstnRng(L + 2).Value = myXlonOrgEndRow
@@ -427,7 +438,6 @@ Private Sub snsProcForLoop()
             myXlonShtDataRowCnt, myXlonShtDataColCnt, myZvarShtData, _
             myXobjDataRng)
     If myXlonShtDataRowCnt <= 0 Or myXlonShtDataColCnt <= 0 Then GoTo ExitPath
-    myZvarPstVrbl = myZvarShtData
     
 '//元データファイルを閉じる
     myXstrCloseFullName = myXstrOrgFilePath
@@ -436,7 +446,6 @@ Private Sub snsProcForLoop()
     Call instCXlsClose
     If myXbisExitFlag = True Then GoTo ExitPath
     
-    Set myXobjWrkSht = Nothing: Set myXobjFrstCell = Nothing: Set myXobjLastCell = Nothing
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
@@ -445,18 +454,29 @@ EndPath:
     myXbisEndFlag = True
 End Sub
 
+'PrcsP_各ファイルのデータ加工処理
+Private Sub prsProcForLoop()
+    myXbisExitFlag = False
+    
+    myZvarPstVrbl = myZvarShtData
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
 'RunP_各ファイルのデータ出力処理
 Private Sub runProcForLoop()
     myXbisExitFlag = False
     
 '//データ保存ファイルの貼り付け位置を指定
-  Dim myXobjWrkSht As Object
   Dim L As Long: L = LBound(myZobjSubPstnRng)
     
     myXlonSubRngSlctCnt = myXlonSubRngSlctCnt + 1
     If myXlonSubRngSlctCnt = 1 Then
         Set myXobjWrkSht = myXobjOpndSubBook.Worksheets(myXlonSubShtNo)
         Set myXobjPstFrstCell = myXobjWrkSht.Cells(myXlonSubBgnRow, myXlonSubBgnCol)
+        myXobjWrkSht.Activate
         myXobjPstFrstCell.Select
         
         myXstrInptBxTtl = "1個目のデータ貼り付け位置の指定"
@@ -483,6 +503,7 @@ Private Sub runProcForLoop()
     ElseIf myXlonSubRngSlctCnt = 2 Then
         Set myXobjWrkSht = myXobjOpndSubBook.Worksheets(myXlonSubShtNo)
         Set myXobjPstFrstCell = myXobjWrkSht.Cells(myXlonSubBgnRow, myXlonSubBgnCol)
+        myXobjWrkSht.Activate
         myXobjPstFrstCell.Select
         
         myXstrInptBxTtl = "2個目のデータ貼り付け位置の指定"
@@ -516,7 +537,6 @@ Private Sub runProcForLoop()
     Call instCVrblToSht
     If myXbisExitFlag = True Then GoTo ExitPath
     
-    Set myXobjWrkSht = Nothing
     Exit Sub
 ExitPath:
     myXbisExitFlag = True
