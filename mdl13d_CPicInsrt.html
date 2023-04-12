@@ -9,6 +9,11 @@
     <body>
       <div>MacroSample</div>
       <pre>
+Attribute VB_Name = "CPicInsrt"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
 'Includes PfncbisCheckFileExist
 'Includes PfixInsertPicture
 'Includes PfncobjCutPasteSpecialPicture
@@ -174,7 +179,9 @@ Private Function PfncobjCutPasteSpecialPicture( _
   Dim myXobjPstSht As Object
     Set myXobjPstSht = myXobjPicShp.Parent
     myXobjPstSht.Activate
+    DoEvents
     myXobjPicShp.Cut
+    DoEvents
     Call myXobjPstSht.PasteSpecial(Format:=myXstrPstFrmt)
     Set PfncobjCutPasteSpecialPicture = myXobjPstSht.Pictures(myXobjPstSht.Pictures.Count)
     On Error GoTo 0
