@@ -22,7 +22,7 @@ Option Explicit
 Option Base 1
 
 '◆ModuleProc名_フォルダを複製する
-'Rev.001
+'Rev.002
   
 '//モジュールメモリ
   Private Const meMstrMdlName As String = "xRefFldrDplct"
@@ -91,6 +91,8 @@ End Sub
 'PublicP_
 Public Sub callProc( _
             myXbisCmpltFlagOUT As Boolean, _
+            myXlonExeFldrCntOUT As Long, _
+            myZstrExeFldrPathOUT() As String, myZstrExeFldrNameOUT() As String, _
             ByVal myXstrOrgFldrPathIN As String, _
             ByVal myXlonOrgInfoCntIN As Long, ByRef myZstrOrgInfoIN() As String, _
             ByVal myXstrSaveDirPathIN As String)
@@ -111,6 +113,10 @@ Public Sub callProc( _
 '//出力変数を初期化
     myXbisCmpltFlagOUT = False
     
+    myXlonExeFldrCntOUT = Empty
+    Erase myZstrExeFldrPathOUT
+    Erase myZstrExeFldrNameOUT
+    
 '//処理実行
     Call ctrProc
     If myXbisCmpltFlag = False Then Exit Sub
@@ -118,7 +124,10 @@ Public Sub callProc( _
 '//出力変数に格納
     myXbisCmpltFlagOUT = myXbisCmpltFlag
     
-ExitPath:
+    myXlonExeFldrCntOUT = myXlonExeFldrCnt
+    myZstrExeFldrPathOUT() = myZstrExeFldrPath()
+    myZstrExeFldrNameOUT() = myZstrExeFldrName()
+    
 End Sub
 
 'CtrlP_
@@ -131,12 +140,6 @@ Private Sub ctrProc()
     
 '//C:制御用変数を設定
     Call setControlVariables
-    
-'//指定フォルダの存在を確認
-    If PfncbisCheckFolderExist(myXstrOrgFldrPath) = False Then GoTo ExitPath
-    
-'//指定フォルダの存在を確認
-    If PfncbisCheckFolderExist(myXstrSaveDirPath) = False Then GoTo ExitPath
     
 '//指定フォルダのフォルダ名情報を取得(FileSystemObject使用)
   Dim myXstrPrntPath As String, myXstrDirName As String
@@ -212,6 +215,12 @@ End Sub
 'checkP_入力変数内容を確認する
 Private Sub checkInputVariables()
     myXbisExitFlag = False
+    
+'//指定フォルダの存在を確認
+    If PfncbisCheckFolderExist(myXstrOrgFldrPath) = False Then GoTo ExitPath
+    
+'//指定フォルダの存在を確認
+    If PfncbisCheckFolderExist(myXstrSaveDirPath) = False Then GoTo ExitPath
     
 '//配列変数の次元数を取得
   Dim myXlonAryDmnsn As Long
@@ -465,17 +474,20 @@ Private Sub callxRefFldrDplct()
   Dim myXlonOrgInfoCnt As Long, myZstrOrgInfo() As String
   Dim myXstrSaveDirPath As String
     'myZstrOrgInfo(i) : 元情報
-    myXstrOrgFldrPath = ThisWorkbook.Path & "\"
+    myXstrOrgFldrPath = ThisWorkbook.Path & "\新しいフォルダー"
     myXlonOrgInfoCnt = 2
     ReDim myZstrOrgInfo(2) As String
     myZstrOrgInfo(1) = "A"
     myZstrOrgInfo(2) = "B"
-    myXstrSaveDirPath = ThisWorkbook.Path & "\"
+    myXstrSaveDirPath = ThisWorkbook.Path & "\try"
 '  Dim myXbisCmpltFlag As Boolean
-'  Dim myXlonExeInfoCnt As Long, myZstrExeInfo() As String
-'    'myZstrExeInfo(i) : 実行情報
+'  Private myXlonExeFldrCnt As Long, _
+'            myZstrExeFldrPath() As String, myZstrExeFldrName() As String
+'    'myZstrExeFldrPath(k) : 実行フォルダパス
+'    'myZstrExeFldrName(k) : 実行フォルダ名
     Call xRefFldrDplct.callProc( _
             myXbisCmpltFlag, _
+            myXlonExeFldrCnt, myZstrExeFldrPath(), myZstrExeFldrName(), _
             myXstrOrgFldrPath, myXlonOrgInfoCnt, myZstrOrgInfo, myXstrSaveDirPath)
 End Sub
 '
