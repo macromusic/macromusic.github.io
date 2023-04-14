@@ -10,7 +10,8 @@
       <div>MacroSample</div>
       <pre>
 'Includes m1MexeFileLstup
-'Includes m1MexeFileLstupSub
+'Includes m2ShtSrsDataLst
+'Includes m3FileDplct
 'Includes CSrchSht
 'Includes CXlsOpen
 'Includes CXlsClose
@@ -39,8 +40,12 @@ Option Base 1
   Private myXlonOrgFileCnt As Long, myZstrOrgFilePath() As String
     'myZstrOrgFilePath(i) : 元データファイルパス
 
-  Private myXlonSubFileCnt As Long, myZstrSubFilePath() As String
-    'myZstrSubFilePath(i) : データ保存ファイルパス
+  Private myXstrSaveDirPath As String, myXstrFrmFilePath As String
+  Private myXlonSubFileCnt As Long, myZstrSubFileBase() As String
+    'myZstrSubFileBase(i) : データ保存ファイルベース名
+  Private myXlonExeFileCnt As Long, myZstrExeFilePath() As String, myZstrExeFileName() As String
+    'myZstrExeFilePath(k) : 実行ファイルパス
+    'myZstrExeFileName(k) : 実行ファイル名
 
   Private myXlonSrchShtNo As Long, myXobjSrchSheet As Object, _
             myXlonShtSrchCnt As Long, myZvarSrchCndtn As Variant, _
@@ -104,7 +109,9 @@ Private Sub initializeModuleVariables()
     myXbisEndFlag = False
     
     myXlonOrgFileCnt = Empty: Erase myZstrOrgFilePath
-    myXlonSubFileCnt = Empty: Erase myZstrSubFilePath
+    myXstrSaveDirPath = Empty: myXstrFrmFilePath = Empty
+    myXlonSubFileCnt = Empty: Erase myZstrSubFileBase
+    myXlonExeFileCnt = Empty: Erase myZstrExeFilePath: Erase myZstrExeFileName
     
     myXlonSrchShtNo = Empty: Set myXobjSrchSheet = Nothing
     myXlonShtSrchCnt = Empty: myZvarSrchCndtn = Empty
@@ -179,10 +186,10 @@ Private Sub ctrProc()
   Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
   Dim n As Long: n = Lo - 1
   Dim k As Long
-    For k = LBound(myZstrSubFilePath) To UBound(myZstrSubFilePath)
+    For k = LBound(myZstrExeFilePath) To UBound(myZstrExeFilePath)
         myXstrSubFilePath = Empty: myXstrSubFileName = Empty
         myXlonSubFileNo = k
-        myXstrSubFilePath = myZstrSubFilePath(k)
+        myXstrSubFilePath = myZstrExeFilePath(k)
         myXstrSubFileName = PfncstrFileNameByFSO(myXstrSubFilePath)
         If myXstrSubFileName = "" Then GoTo NextPath
         
@@ -334,9 +341,25 @@ Private Sub snsProcBeforeLoop()
     If myXlonOrgFileCnt <> 1 Then GoTo ExitPath
     myXstrOrgFilePath = myZstrOrgFilePath(LBound(myZstrOrgFilePath))
     
-'//データ保存ファイルリストを取得
-    Call m1MexeFileLstupSub.callProc(myXlonSubFileCnt, myZstrSubFilePath)
+'//データ保存ファイル名リストを取得
+  Dim myXbisCompFlag As Boolean
+    Call m2ShtSrsDataLst.callProc( _
+            myXbisCompFlag, _
+            myXstrSaveDirPath, myXstrFrmFilePath, _
+            myXlonSubFileCnt, myZstrSubFileBase)
+    If myXbisCompFlag = False Then GoTo ExitPath
+    If myXstrSaveDirPath = "" Then GoTo ExitPath
+    If myXstrFrmFilePath = "" Then GoTo ExitPath
     If myXlonSubFileCnt <= 0 Then GoTo ExitPath
+    
+'//フォーマットファイルを複製
+    Call m3FileDplct.callProc( _
+            myXbisCompFlag, _
+            myXlonExeFileCnt, myZstrExeFilePath(), myZstrExeFileName(), _
+            myXstrFrmFilePath, myXlonSubFileCnt, myZstrSubFileBase, myXstrSaveDirPath)
+    If myXbisCompFlag = False Then GoTo ExitPath
+    If myXlonExeFileCnt <> myXlonSubFileCnt Then GoTo ExitPath
+    myXstrSubFilePath = myZstrExeFilePath(LBound(myZstrExeFilePath))
     
 '//シート上のデータから文字列を検索してデータと位置情報を取得
     Call setControlVariables1
