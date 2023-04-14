@@ -1,1 +1,473 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes CSrchShtCmnt
+'Includes CSeriesData
+'Includes CFileDplct
+'Includes PfncbisCheckFolderExist
+'Includes PfncbisCheckFileExist
+'Includes PfixGetFileNameInformationByFSO
+'Includes PfncstrFilePathReplaceParentBaseExtension
 
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_複数情報に対してファイルを複製する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "RunInfosFileDplct"
+  Private Const meMlonExeNum As Long = 0
+  
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//出力データ
+  Private myXlonExeInfoCnt As Long, myZstrExeInfo() As String
+    'myZstrExeInfo(i) : 実行情報
+  
+  Private myXlonExeFileCnt As Long, _
+            myZstrExeFilePath() As String, myZstrExeFileName() As String
+    'myZstrExeFilePath(k) : 実行ファイルパス
+    'myZstrExeFileName(k) : 実行ファイル名
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonSrchShtNo As Long, myXobjSrchSheet As Object, _
+            myXlonShtSrchCnt As Long, myZvarSrchCndtn As Variant, _
+            myXbisInStrOptn As Boolean
+    'myZvarSrchCndtn(i, 1) : 検索文字列
+    'myZvarSrchCndtn(i, 2) : オフセット行数
+    'myZvarSrchCndtn(i, 3) : オフセット列数
+    'myZvarSrchCndtn(i, 4) : シート上文字列検索[=0]orコメント内文字列検索[=1]
+    'myXbisInStrOptn = False : 指定文字列と一致する条件で検索する
+    'myXbisInStrOptn = True  : 指定文字列を含む条件で検索する
+  
+  Private myXlonTrgtValCnt As Long, myZstrTrgtVal() As String, myZobjTrgtRng() As Object
+'    'myZstrTrgtVal(i) : 取得文字列
+'    'myZobjTrgtRng(i) : 行列位置のセル
+  
+  Private myXbisRowDrctn As Boolean
+    'myXbisRowDrctn = True  : 行方向のみを検索
+    'myXbisRowDrctn = False : 列方向のみを検索
+  
+  Private myXlonBgnRow As Long, myXlonBgnCol As Long
+  
+  Private myXlonSrsDataCnt As Long, myZstrSrsData() As String
+    'myZstrSrsData(k) : 取得文字列
+  
+  Private myXstrSaveDirPath As String
+  Private myXstrOrgFilePath As String
+  Private myXlonOrgInfoCnt As Long, myZstrOrgInfo() As String
+    'myZstrOrgInfo(i) : 元情報
+  
+  Private myXlonRunInfoNo As Long, myXstrRunInfo As String
+  Private myXlonDplctFileCnt As Long, myZstrDplctFilePath() As String
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonSrchShtNo = Empty: Set myXobjSrchSheet = Nothing
+    myXlonShtSrchCnt = Empty: myZvarSrchCndtn = Empty
+    myXbisInStrOptn = False
+    myXlonTrgtValCnt = Empty: Erase myZstrTrgtVal: Erase myZobjTrgtRng
+    myXbisRowDrctn = False
+    myXlonBgnRow = Empty: myXlonBgnCol = Empty
+    myXlonSrsDataCnt = Empty: Erase myZstrSrsData
+    myXlonRunInfoNo = Empty: myXstrRunInfo = Empty
+    myXlonDplctFileCnt = Empty: Erase myZstrDplctFilePath
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    
+'//処理実行
+    Call ctrProc
+    
+    Select Case myXbisCmpltFlag
+        Case True: MsgBox "実行完了"
+        Case Else: MsgBox "異常あり", vbExclamation
+    End Select
+    
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"    'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables1
+    Call setControlVariables2
+    
+'//S:Loop前の情報取得処理
+    Call snsProcBeforeLoop
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"    'PassFlag
+    
+'//C:情報一覧を順次実行
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim n As Long: n = Lo - 1
+  Dim Li As Long: Li = LBound(myZstrOrgInfo)
+  Dim myXvarTmpInfo As Variant, k As Long: k = Li - 1
+    For Each myXvarTmpInfo In myZstrOrgInfo
+        myXstrRunInfo = Empty
+        k = k + 1: myXlonRunInfoNo = k
+        myXstrRunInfo = CStr(myXvarTmpInfo)
+        If myXstrRunInfo = "" Then GoTo NextPath
+ 
+    '//P:各情報のデータ加工処理
+        Call prsProcForLoop
+        If myXbisExitFlag = True Then GoTo NextPath
+'        Debug.Print "PassFlag: " & meMstrMdlName & "3-" & k   'PassFlag
+        
+        n = n + 1
+        ReDim Preserve myZstrExeInfo(n) As String
+        myZstrExeInfo(n) = myXstrRunInfo
+NextPath:
+    Next myXvarTmpInfo
+    myXlonExeInfoCnt = n - Lo + 1
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"    'PassFlag
+
+'//Run:ファイナライズ処理
+    Call runFinalize
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "5"   'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+    myXlonExeInfoCnt = Empty: Erase myZstrExeInfo
+    myXlonExeFileCnt = Empty: Erase myZstrExeFilePath: Erase myZstrExeFileName
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables1()
+    
+    Set myXobjSrchSheet = ActiveSheet
+
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    myXlonShtSrchCnt = 4
+    ReDim myZvarSrchCndtn(myXlonShtSrchCnt + L - 1, L + 3) As Variant
+    'myZvarSrchCndtn(i, 1) : 検索文字列
+    'myZvarSrchCndtn(i, 2) : オフセット行数
+    'myZvarSrchCndtn(i, 3) : オフセット列数
+    'myZvarSrchCndtn(i, 4) : シート上文字列検索[=0]orコメント内文字列検索[=1]
+  Dim k As Long: k = L - 1
+    k = k + 1   'k = 1
+    myZvarSrchCndtn(k, L + 0) = "保存先フォルダパス ："
+    myZvarSrchCndtn(k, L + 1) = 0
+    myZvarSrchCndtn(k, L + 2) = 1
+    myZvarSrchCndtn(k, L + 3) = 0
+    k = k + 1   'k = 2
+    myZvarSrchCndtn(k, L + 0) = "親フォルダパス ："
+    myZvarSrchCndtn(k, L + 1) = 0
+    myZvarSrchCndtn(k, L + 2) = 1
+    myZvarSrchCndtn(k, L + 3) = 0
+    k = k + 1   'k = 3
+    myZvarSrchCndtn(k, L + 0) = "フォーマットファイル名 ："
+    myZvarSrchCndtn(k, L + 1) = 0
+    myZvarSrchCndtn(k, L + 2) = 1
+    myZvarSrchCndtn(k, L + 3) = 0
+    k = k + 1   'k = 4
+    myZvarSrchCndtn(k, L + 0) = "複製ファイル名一覧"
+    myZvarSrchCndtn(k, L + 1) = 1
+    myZvarSrchCndtn(k, L + 2) = 0
+    myZvarSrchCndtn(k, L + 3) = 0
+    
+    myXbisInStrOptn = False
+    'myXbisInStrOptn = False : 指定文字列と一致する条件で検索する
+    'myXbisInStrOptn = True  : 指定文字列を含む条件で検索する
+    
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables2()
+    
+    myXbisRowDrctn = True
+    'myXbisRowDrctn = True  : 行方向のみを検索
+    'myXbisRowDrctn = False : 列方向のみを検索
+    
+End Sub
+
+'SnsP_Loop前の情報取得処理
+Private Sub snsProcBeforeLoop()
+    myXbisExitFlag = False
+    
+'//シート上の記載データを取得
+    Call instCSrchShtCmnt
+    If myXlonTrgtValCnt <= 0 Then GoTo ExitPath
+    If myXlonTrgtValCnt <> myXlonShtSrchCnt Then GoTo ExitPath
+    
+  Dim Lc As Long: Lc = LBound(myZstrTrgtVal)
+    
+'//指定フォルダの存在を確認
+    myXstrSaveDirPath = myZstrTrgtVal(Lc + 0)
+    If PfncbisCheckFolderExist(myXstrSaveDirPath) = False Then GoTo ExitPath
+    
+'//指定ファイルの存在を確認
+  Dim myXstrOrgDirPath As String, myXstrOrgFileName As String
+    myXstrOrgDirPath = myZstrTrgtVal(Lc + 1)
+    myXstrOrgFileName = myZstrTrgtVal(Lc + 2)
+    myXstrOrgFilePath = myXstrOrgDirPath & "\" & myXstrOrgFileName
+    
+    If PfncbisCheckFileExist(myXstrOrgFilePath) = False Then GoTo ExitPath
+    
+'//複製ファイル名一覧を取得
+  Dim myXobjInfoPstdFrstCell As Object
+    Set myXobjInfoPstdFrstCell = myZobjTrgtRng(Lc + 3)
+    If myXobjInfoPstdFrstCell Is Nothing Then GoTo ExitPath
+    
+    myXlonBgnRow = myXobjInfoPstdFrstCell.Row
+    myXlonBgnCol = myXobjInfoPstdFrstCell.Column
+    Call instCSeriesData
+    If myXlonSrsDataCnt <= 0 Then GoTo ExitPath
+    myZstrOrgInfo() = myZstrSrsData()
+    
+    Set myXobjInfoPstdFrstCell = Nothing
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_各情報のデータ加工処理
+Private Sub prsProcForLoop()
+    myXbisExitFlag = False
+    
+'//指定ファイルのファイル名情報を取得(FileSystemObject使用)
+  Dim myXstrPrntPath As String, myXstrFileName As String, _
+        myXstrBaseName As String, myXstrExtsn As String
+    Call PfixGetFileNameInformationByFSO( _
+            myXstrPrntPath, myXstrFileName, myXstrBaseName, myXstrExtsn, _
+            myXstrOrgFilePath)
+
+'//ファイルパス内のディレクトリパスorベース名or拡張子を置換
+  Dim myXstrOrgPrnt As String, myXstrOrgBase As String, myXstrOrgExt As String
+  Dim myXstrNewPrnt As String, myXstrNewBase As String, myXstrNewExt As String
+  Dim myXstrDplctFilePath As String
+    
+    myXstrOrgPrnt = myXstrPrntPath
+    myXstrNewPrnt = myXstrSaveDirPath
+    myXstrDplctFilePath = PfncstrFilePathReplaceParentBaseExtension( _
+                            myXstrOrgFilePath, _
+                            myXstrOrgPrnt, myXstrOrgBase, myXstrOrgExt, _
+                            myXstrNewPrnt, myXstrNewBase, myXstrNewExt)
+    myXstrOrgPrnt = Empty: myXstrNewPrnt = Empty
+    
+    myXstrOrgBase = myXstrBaseName
+    myXstrNewBase = myXstrRunInfo
+    myXstrDplctFilePath = PfncstrFilePathReplaceParentBaseExtension( _
+                            myXstrDplctFilePath, _
+                            myXstrOrgPrnt, myXstrOrgBase, myXstrOrgExt, _
+                            myXstrNewPrnt, myXstrNewBase, myXstrNewExt)
+  
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long
+    myXlonDplctFileCnt = 1
+    i = myXlonDplctFileCnt + L - 1: ReDim myZstrDplctFilePath(i) As String
+    myZstrDplctFilePath(1) = myXstrDplctFilePath
+
+'//ファイルを複製
+    Call instCFileDplct
+    If myXbisExitFlag = True Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_ファイナライズ処理
+Private Sub runFinalize()
+    myXbisExitFlag = False
+    
+  Dim i As Long
+    If myXlonExeInfoCnt > 0 Then
+        For i = LBound(myZstrExeInfo) To UBound(myZstrExeInfo)
+            Debug.Print "元情報名" & i & ": " & myZstrExeInfo(i)
+        Next i
+    End If
+    
+    If myXlonExeFileCnt > 0 Then
+        For i = LBound(myZstrExeFileName) To UBound(myZstrExeFileName)
+            Debug.Print "複製ファイル名" & i & ": " & myZstrExeFileName(i)
+        Next i
+    End If
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'◆ClassProc名_シート上のデータから文字列を検索してデータと位置情報を取得する
+Private Sub instCSrchShtCmnt()
+  Dim Lc As Long
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+  Dim myXinsSrchShtCmnt As CSrchShtCmnt: Set myXinsSrchShtCmnt = New CSrchShtCmnt
+    With myXinsSrchShtCmnt
+    '//文字列検索シートと検索条件を設定
+        Set .setSrchSheet = myXobjSrchSheet
+        .letSrchCndtn = myZvarSrchCndtn
+        .letInStrOptn = myXbisInStrOptn
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXlonTrgtValCnt = .getValCnt
+        If myXlonTrgtValCnt <= 0 Then GoTo JumpPath
+        i = myXlonTrgtValCnt + Lo - 1: j = Lo + 1
+        ReDim myZstrTrgtVal(i) As String
+        ReDim myZobjTrgtRng(i) As Object
+        Lc = .getOptnBase
+        For i = 1 To myXlonTrgtValCnt
+            myZstrTrgtVal(i + Lo - 1) = .getValAry(i + Lc - 1)
+            Set myZobjTrgtRng(i + Lo - 1) = .getPstnRngAry(i + Lc - 1)
+        Next i
+    End With
+JumpPath:
+    Set myXinsSrchShtCmnt = Nothing
+End Sub
+
+'◆ClassProc名_シート上の連続するデータ範囲を取得する
+Private Sub instCSeriesData()
+  Dim Lc As Long
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim k As Long
+  Dim myXinsSeriesData As CSeriesData: Set myXinsSeriesData = New CSeriesData
+    With myXinsSeriesData
+    '//クラス内変数への入力
+        Set .setSrchSheet = myXobjSrchSheet
+        .letBgnRowCol(1) = myXlonBgnRow
+        .letBgnRowCol(2) = myXlonBgnCol
+        .letRowDrctn = myXbisRowDrctn
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXlonSrsDataCnt = .getSrsDataCnt
+        If myXlonSrsDataCnt <= 0 Then GoTo JumpPath
+        k = myXlonSrsDataCnt + Lo - 1
+        ReDim myZstrSrsData(k) As String
+        Lc = .getOptnBase
+        For k = 1 To myXlonSrsDataCnt
+            myZstrSrsData(k + Lo - 1) = .getSrsDataAry(k + Lc - 1)
+        Next k
+    End With
+JumpPath:
+    Set myXinsSeriesData = Nothing
+End Sub
+
+'◆ClassProc名_ファイルを複製する
+Private Sub instCFileDplct()
+  Dim Lc As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long
+  Dim myXinsFileDplct As CFileDplct: Set myXinsFileDplct = New CFileDplct
+    With myXinsFileDplct
+    '//クラス内変数への入力
+        .letOrgFilePath = myXstrOrgFilePath
+        .letDplctFilePathAry() = myZstrDplctFilePath()
+        .letAutoNaming = True
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXbisExitFlag = Not .getCmpltFlag
+        myXlonExeFileCnt = .getExeFileCnt
+        If myXlonExeFileCnt <= 0 Then GoTo JumpPath
+        i = myXlonExeFileCnt + L - 1
+        ReDim myZstrExeFilePath(i) As String
+        ReDim myZstrExeFileName(i) As String
+        Lc = .getOptnBase
+        For i = 1 To myXlonExeFileCnt
+            myZstrExeFilePath(i + L - 1) = .getExeFilePathAry(i + Lc - 1)
+            myZstrExeFileName(i + L - 1) = .getExeFileNameAry(i + Lc - 1)
+        Next i
+    End With
+JumpPath:
+    Set myXinsFileDplct = Nothing
+End Sub
+
+'===============================================================================================
+
+ '定型Ｆ_指定フォルダの存在を確認する
+Private Function PfncbisCheckFolderExist(ByVal myXstrDirPath As String) As Boolean
+    PfncbisCheckFolderExist = False
+    If myXstrDirPath = "" Then Exit Function
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    PfncbisCheckFolderExist = myXobjFSO.FolderExists(myXstrDirPath)
+    Set myXobjFSO = Nothing
+End Function
+
+ '定型Ｆ_指定ファイルの存在を確認する
+Private Function PfncbisCheckFileExist(ByVal myXstrFilePath As String) As Boolean
+    PfncbisCheckFileExist = False
+    If myXstrFilePath = "" Then Exit Function
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+    PfncbisCheckFileExist = myXobjFSO.FileExists(myXstrFilePath)
+    Set myXobjFSO = Nothing
+End Function
+
+ '定型Ｐ_指定ファイルのファイル名情報を取得する(FileSystemObject使用)
+Private Sub PfixGetFileNameInformationByFSO( _
+            myXstrPrntPath As String, myXstrFileName As String, _
+            myXstrBaseName As String, myXstrExtsn As String, _
+            ByVal myXstrFilePath As String)
+    myXstrPrntPath = Empty: myXstrFileName = Empty
+    myXstrBaseName = Empty: myXstrExtsn = Empty
+    If myXstrFilePath = "" Then Exit Sub
+  Dim myXobjFSO As Object: Set myXobjFSO = CreateObject("Scripting.FileSystemObject")
+  Dim myXbisFileExist As Boolean
+    With myXobjFSO
+        myXbisFileExist = .FileExists(myXstrFilePath)
+        If myXbisFileExist = False Then Exit Sub
+        myXstrPrntPath = .GetParentFolderName(myXstrFilePath)   '親フォルダパス
+        myXstrFileName = .GetFileName(myXstrFilePath)           'ファイル名
+        myXstrBaseName = .GetBaseName(myXstrFilePath)           'ファイルベース名
+        myXstrExtsn = .GetExtensionName(myXstrFilePath)         'ファイル拡張子
+    End With
+    Set myXobjFSO = Nothing
+End Sub
+
+ '定型Ｆ_ファイルパス内のディレクトリパスorベース名or拡張子を置換する
+Private Function PfncstrFilePathReplaceParentBaseExtension( _
+            ByVal myXstrOrgFilePath As String, _
+            ByVal myXstrOrgPrnt As String, ByVal myXstrOrgBase As String, _
+            ByVal myXstrOrgExt As String, _
+            ByVal myXstrNewPrnt As String, ByVal myXstrNewBase As String, _
+            ByVal myXstrNewExt As String) As String
+    PfncstrFilePathReplaceParentBaseExtension = Empty
+    If myXstrOrgFilePath = "" Then Exit Function
+    If myXstrNewPrnt = "" And myXstrNewBase = "" And myXstrNewExt = "" Then Exit Function
+  Dim myXstrNewFilePath As String
+    If InStr(myXstrOrgFilePath, myXstrOrgPrnt) > 0 And myXstrNewPrnt <> "" Then _
+        myXstrNewFilePath = Replace(myXstrOrgFilePath, myXstrOrgPrnt, myXstrNewPrnt)
+    If InStr(myXstrOrgFilePath, myXstrOrgBase) > 0 And myXstrNewBase <> "" Then _
+        myXstrNewFilePath = Replace(myXstrOrgFilePath, myXstrOrgBase, myXstrNewBase)
+    If InStr(myXstrOrgFilePath, myXstrOrgExt) > 0 And myXstrNewExt <> "" Then _
+        myXstrNewFilePath = Replace(myXstrOrgFilePath, myXstrOrgExt, myXstrNewExt)
+    PfncstrFilePathReplaceParentBaseExtension = myXstrNewFilePath
+End Function
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
