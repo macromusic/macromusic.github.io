@@ -1,1 +1,355 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfnclonIsArrayExtd
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_指定配列変数から数値データ配列を取得する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CVrblNumAry"
+  
+'//PropertyGet_出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//PropertyGet_出力データ
+  Private Lc As Long
+  Private myXlonNumRowCnt As Long, myXlonNumColCnt As Long, myZdouNumData() As Double
+  Private myXstrHdrRowCnt As Long, myXstrHdrColCnt As Long, myZstrHdr() As String
+  
+'//PropertySetLet_入力データ
+  Private myZvarVrblData As Variant
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonNumBgnRow As Long, myXlonNumBgnCol As Long, _
+            myXlonNumEndRow As Long, myXlonNumEndCol As Long
+    
+  Private myXlonHdrBgnRow As Long, myXlonHdrBgnCol As Long, _
+            myXlonHdrEndRow As Long, myXlonHdrEndCol As Long
+    
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonNumBgnRow = Empty: myXlonNumBgnCol = Empty
+    myXlonNumEndRow = Empty: myXlonNumEndCol = Empty
+    myXlonHdrBgnRow = Empty: myXlonHdrBgnCol = Empty
+    myXlonHdrEndRow = Empty: myXlonHdrEndCol = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getOptnBase() As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    getOptnBase = L
+End Property
+
+Public Property Get getCmpltFlag() As Boolean
+    getCmpltFlag = myXbisCmpltFlag
+End Property
+
+Public Property Get getNumRowCnt() As Long
+    getNumRowCnt = myXlonNumRowCnt
+End Property
+
+Public Property Get getNumColCnt() As Long
+    getNumColCnt = myXlonNumColCnt
+End Property
+
+Public Property Get getNumDataAry(ByVal i As Long, ByVal j As Long) As Double
+    getNumDataAry = myZdouNumData(i, j)
+'myZdouNumData(i, j) : 数値データ内容
+End Property
+
+Public Property Get getHdrRowCnt() As Long
+    getHdrRowCnt = myXstrHdrRowCnt
+End Property
+
+Public Property Get getHdrColCnt() As Long
+    getHdrColCnt = myXstrHdrColCnt
+End Property
+
+Public Property Get getHdrAry(ByVal i As Long, ByVal j As Long) As String
+    getHdrAry = myZstrHdr(i, j)
+'myZstrHdr(i, j) : ヘッダー内容
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+    
+    myXlonNumRowCnt = Empty: myXlonNumColCnt = Empty: Erase myZdouNumData
+    myXstrHdrRowCnt = Empty: myXstrHdrColCnt = Empty: Erase myZstrHdr
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letVrblData(ByVal RHS As Variant)
+    myZvarVrblData = RHS
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+'//指定変数が配列で空かどうかチェック
+    If PfnclonIsArrayExtd(myZvarVrblData) <> 1 Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    Call ctrProc
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//S:数値データ内容を取得
+    Call snsProc1
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//S:ヘッダー内容を取得
+    Call snsProc2
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'SnsP_数値データ内容を取得
+Private Sub snsProc1()
+    myXbisExitFlag = False
+
+'//数値データの最初のデータ位置を取得
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long, j As Long, m As Long, n As Long, myXvarTmp As Variant
+    m = L - 1: n = L - 1
+    If UBound(myZvarVrblData, 1) <= UBound(myZvarVrblData, 2) Then
+        For i = LBound(myZvarVrblData, 1) To UBound(myZvarVrblData, 1)
+            myXvarTmp = Empty
+            myXvarTmp = myZvarVrblData(i, i)
+            If IsNumeric(myXvarTmp) = True Then
+                m = i
+                n = i
+                Exit For
+            End If
+        Next i
+    Else
+        For j = LBound(myZvarVrblData, 2) To UBound(myZvarVrblData, 2)
+            myXvarTmp = Empty
+            myXvarTmp = myZvarVrblData(j, j)
+            If IsNumeric(myXvarTmp) = True Then
+                m = j
+                n = j
+                Exit For
+            End If
+        Next j
+    End If
+    If m = L - 1 Or n = L - 1 Then GoTo ExitPath
+    
+    myXlonNumBgnRow = L - 1: myXlonNumBgnCol = L - 1
+    For i = LBound(myZvarVrblData, 1) To UBound(myZvarVrblData, 1)
+        myXvarTmp = Empty
+        myXvarTmp = myZvarVrblData(i, n)
+        If IsNumeric(myXvarTmp) = True Then
+            myXlonNumBgnRow = i
+            Exit For
+        End If
+    Next i
+    For j = LBound(myZvarVrblData, 2) To UBound(myZvarVrblData, 2)
+        myXvarTmp = Empty
+        myXvarTmp = myZvarVrblData(m, j)
+        If IsNumeric(myXvarTmp) = True Then
+            myXlonNumBgnCol = j
+            Exit For
+        End If
+    Next j
+    If myXlonNumBgnRow = L - 1 Or myXlonNumBgnCol = L - 1 Then GoTo ExitPath
+    
+'//数値データ内容を取得
+    myXlonNumEndRow = UBound(myZvarVrblData, 1)
+    myXlonNumEndCol = UBound(myZvarVrblData, 2)
+    
+    myXlonNumRowCnt = myXlonNumEndRow - myXlonNumBgnRow + 1
+    myXlonNumColCnt = myXlonNumEndCol - myXlonNumBgnCol + 1
+    
+    i = myXlonNumRowCnt + L - 1: j = myXlonNumColCnt + L - 1
+    ReDim myZdouNumData(i, j) As Double
+    
+    m = L - 1: n = L - 1
+    On Error GoTo ExitPath
+    For j = myXlonNumBgnCol To myXlonNumEndCol
+        n = n + 1
+        m = 0
+        For i = myXlonNumBgnRow To myXlonNumEndRow
+            m = m + 1
+            myZdouNumData(m, n) = CDbl(myZvarVrblData(i, j))
+        Next i
+    Next j
+    On Error GoTo 0
+    If m <> myXlonNumRowCnt + L - 1 Or n <> myXlonNumColCnt + L - 1 Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXlonNumRowCnt = 0: myXlonNumColCnt = 0
+    myXbisExitFlag = True
+End Sub
+
+'SnsP_ヘッダー内容を取得
+Private Sub snsProc2()
+
+    If myXlonNumBgnRow = LBound(myZvarVrblData, 1) Then Exit Sub
+    
+'//ヘッダー範囲を取得
+    myXlonHdrBgnRow = LBound(myZvarVrblData, 1)
+    myXlonHdrEndRow = myXlonNumBgnRow - 1
+    
+    myXlonHdrBgnCol = myXlonNumBgnCol
+    myXlonHdrEndCol = UBound(myZvarVrblData, 2)
+    
+    myXstrHdrRowCnt = myXlonHdrEndRow - myXlonHdrBgnRow + 1
+    myXstrHdrColCnt = myXlonHdrEndCol - myXlonHdrBgnCol + 1
+    If myXstrHdrRowCnt <= 0 Or myXstrHdrColCnt <= 0 Then Exit Sub
+    
+'//ヘッダー内容を取得
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    i = myXstrHdrColCnt + L - 1: j = myXstrHdrColCnt + L - 1
+    ReDim myZstrHdr(i, j) As String
+    
+  Dim m As Long, n As Long: m = L - 1: n = L - 1
+    On Error GoTo ExitPath
+    For j = myXlonHdrBgnCol To myXlonHdrEndCol
+        n = n + 1
+        m = 0
+        For i = myXlonHdrBgnRow To myXlonHdrEndRow
+            m = m + 1
+            myZstrHdr(m, n) = CStr(myZvarVrblData(i, j))
+        Next i
+    Next j
+    On Error GoTo 0
+    If m <> myXstrHdrRowCnt + L - 1 Or n <> myXstrHdrColCnt + L - 1 Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXstrHdrRowCnt = 0: myXstrHdrColCnt = 0
+End Sub
+
+'===============================================================================================
+
+ '定型Ｆ_指定変数が配列で空かどうかチェックする
+Private Function PfnclonIsArrayExtd(ByRef myZvarOrgData As Variant) As Long
+'PfnclonIsArrayExtd = 1  : 空ではない配列変数
+'PfnclonIsArrayExtd = 0  : 空の配列変数
+'PfnclonIsArrayExtd = -1 : 配列ではない変数
+    PfnclonIsArrayExtd = Empty
+  Dim myXlonChckFlag As Long, myXlonTmp As Long
+'//配列であることを確認
+    If IsArray(myZvarOrgData) = False Then
+        myXlonChckFlag = -1: GoTo JumpPath
+    End If
+'//配列が空でないことを確認
+    myXlonChckFlag = 0
+    On Error GoTo JumpPath
+    myXlonTmp = UBound(myZvarOrgData) - LBound(myZvarOrgData) + 1
+    On Error GoTo 0
+    If myXlonTmp <= 0 Then GoTo JumpPath
+    myXlonChckFlag = 1
+JumpPath:
+    PfnclonIsArrayExtd = myXlonChckFlag
+End Function
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_指定配列変数から数値データ配列を取得する
+'Private Sub instCVrblNumAry()
+'  Dim Lc As Long
+'  Dim myXbisCmpltFlag As Boolean
+'  Dim myXlonNumRowCnt As Long, myXlonNumColCnt As Long, myZdouNumData() As Double
+'  Dim myXstrHdrRowCnt As Long, myXstrHdrColCnt As Long, myZstrHdr() As String
+''//クラス内変数への入力
+'  Dim myZvarVrblData As Variant
+''//CVrblNumAryクラスモジュールのインスタンス生成
+'  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+'  Dim i As Long, j As Long
+'  Dim myXinsVrblNumAry As CVrblNumAry: Set myXinsVrblNumAry = New CVrblNumAry
+'    With myXinsVrblNumAry
+'    '//クラス内変数への入力
+'        .letVrblData = myZvarVrblData
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        .exeProc
+'        myXbisCmpltFlag = .getCmpltFlag
+'        myXlonNumRowCnt = .getNumRowCnt
+'        myXlonNumColCnt = .getNumColCnt
+'        If myXlonNumRowCnt <= 0 Or myXlonNumColCnt <= 0 Then GoTo JumpPath
+'        i = myXlonNumRowCnt + Lo - 1: j = myXlonNumColCnt + Lo - 1
+'        ReDim myZdouNumData(i, j) As Double
+'        Lc = .getOptnBase
+'        For j = 1 To myXlonNumColCnt
+'            For i = 1 To myXlonNumRowCnt
+'                myZdouNumData(i + Lo - 1, j + Lo - 1) = .getNumDataAry(i + Lc - 1, j + Lc - 1)
+'            Next i
+'        Next j
+'        myXstrHdrRowCnt = .getHdrRowCnt
+'        myXstrHdrColCnt = .getHdrColCnt
+'        If myXstrHdrRowCnt <= 0 Or myXstrHdrColCnt <= 0 Then GoTo JumpPath
+'        i = myXstrHdrRowCnt + Lo - 1: j = myXstrHdrColCnt + Lo - 1
+'        ReDim myZstrHdr(i, j) As String
+'        For j = 1 To myXstrHdrColCnt
+'            For i = 1 To myXstrHdrRowCnt
+'                myZstrHdr(i + Lo - 1, j + Lo - 1) = .getHdrAry(i + Lc - 1, j + Lc - 1)
+'            Next i
+'        Next j
+'    End With
+'JumpPath:
+'    Set myXinsVrblNumAry = Nothing
+'    Call variablesOfCVrblNumAry(myXlonNumRowCnt, myZdouNumData)  'Debug.Print
+'ExitPath:
+'End Sub
+'Private Sub variablesOfCVrblNumAry( _
+'            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+''//CVrblNumAryクラス内から出力した変数の内容確認
+'    Debug.Print "データ数: " & myXlonDataCnt
+'    If myXlonDataCnt <= 0 Then Exit Sub
+'  Dim i As Long, j As Long
+'    For i = LBound(myZvarField, 1) To UBound(myZvarField, 1)
+'        For j = LBound(myZvarField, 2) To UBound(myZvarField, 2)
+'            Debug.Print "データ" & i & "," & j & ": " & myZvarField(i, j)
+'        Next j
+'    Next i
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
