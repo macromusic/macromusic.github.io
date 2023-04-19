@@ -1,1 +1,294 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes CVrblToSht
+'Includes PfncbisCheckArrayDimensionLength
 
+Option Explicit
+Option Base 1
+
+Implements IntfcSgnlPrcs
+
+'◆ClassProc名_データ演算：X
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "xcRefSgnlPrcsImplIntfc"
+  
+'//PropertyGet_出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//PropertyGet_出力データ
+  Private Lc As Long
+  Private myXlonCalDataCnt As Long, myZdouCalData() As Double
+    'myZdouCalData(i, 1) : 演算結果データ
+  
+'//PropertySetLet_入力データ
+  Private myZdouOrgData() As Double, myZvarCalPara() As Variant
+    'myZdouOrgData(i, 1) : 元データ
+    'myZvarCalPara(i, 1) : 演算用パラメータ
+  Private myXobjPstFrstCell As Object
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonHdrCnt As Long, myZstrHeader() As String
+  Private myXlonPstCnt As Long, myZvarPstData As Variant
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonHdrCnt = Empty: Erase myZstrHeader
+    myXlonPstCnt = Empty: myZvarPstData = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Private Property Get IntfcSgnlPrcs_ifgetOptnBase() As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    IntfcSgnlPrcs_ifgetOptnBase = L
+End Property
+
+Private Property Get IntfcSgnlPrcs_ifgetCmpltFlag() As Boolean
+    IntfcSgnlPrcs_ifgetCmpltFlag = myXbisCmpltFlag
+End Property
+
+Private Property Get IntfcSgnlPrcs_ifgetCalDataCnt() As Long
+    IntfcSgnlPrcs_ifgetCalDataCnt = myXlonCalDataCnt
+End Property
+
+Private Property Get IntfcSgnlPrcs_ifgetCalDataAry(ByVal i As Long, ByVal j As Long) As Double
+    IntfcSgnlPrcs_ifgetCalDataAry = myZdouCalData(i, j)
+'myZdouCalData(i, 1) : 演算結果データ
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+    myXlonCalDataCnt = Empty: Erase myZdouCalData
+End Sub
+
+'checkP_出力変数内容を確認する
+Private Sub checkOutputVariables()
+    myXbisExitFlag = False
+    
+    If myXlonCalDataCnt <= 0 Then GoTo ExitPath
+    If PfncbisCheckArrayDimensionLength( _
+            myZdouCalData, 2, myXlonCalDataCnt, 1) = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Private Property Let IntfcSgnlPrcs_ifletOrgDataAry(ByRef RHS() As Double)
+'myZdouOrgData(i, 1) : 元データ
+    myZdouOrgData() = RHS()
+End Property
+
+Private Property Let IntfcSgnlPrcs_ifletCalParaAry(ByRef RHS() As Variant)
+'myZvarCalPara(i, 1) : 演算用定数
+    myZvarCalPara() = RHS()
+End Property
+
+Private Property Set IntfcSgnlPrcs_ifsetPstFrstCell(ByVal RHS As Object)
+    Set myXobjPstFrstCell = RHS
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    On Error GoTo ExitPath
+    
+  Dim Li As Long: Li = LBound(myZdouOrgData, 1)
+  Dim myXdouTmp As Double, myXvarTmp As Variant
+    myXdouTmp = myZdouOrgData(Li, Li)
+    
+    On Error GoTo 0
+    
+    If myXobjPstFrstCell Is Nothing Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Private Sub IntfcSgnlPrcs_ifControlProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+    
+    Call setControlVariables
+    
+    Call prsProc: If myXbisExitFlag = True Then GoTo ExitPath
+    Call runProc: If myXbisExitFlag = True Then GoTo ExitPath
+    
+    Call checkOutputVariables
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+End Sub
+
+'PrcsP_データ演算
+Private Sub prsProc()
+    myXbisExitFlag = False
+    
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim Li As Long: Li = LBound(myZdouOrgData, 1)
+  Dim Ui As Long: Ui = UBound(myZdouOrgData, 1)
+  Dim i As Long
+    
+'//Headerの設定
+    myXlonHdrCnt = 1
+    i = myXlonHdrCnt + Lo - 1
+    ReDim myZstrHeader(i, Lo) As String
+    
+    myZstrHeader(Lo, Lo) = "n"
+    
+'//データ演算
+    myXlonCalDataCnt = Ui - Li + 1
+    ReDim myZdouCalData(Ui, Lo) As Double
+    
+    For i = Li To Ui
+        myZdouCalData(i, Lo) = myZdouOrgData(i, Li) * myZvarCalPara(Li, Li)
+    Next i
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_
+Private Sub runProc()
+    myXbisExitFlag = False
+    
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = L - 1
+    
+    myXlonPstCnt = myXlonHdrCnt + myXlonCalDataCnt
+    i = myXlonPstCnt + L - 1
+    ReDim myZvarPstData(i, L) As Variant
+    
+    For i = LBound(myZstrHeader, 1) To UBound(myZstrHeader, 1)
+        n = n + 1
+        myZvarPstData(n, L) = myZstrHeader(i, L)
+    Next i
+    For i = LBound(myZdouCalData, 1) To UBound(myZdouCalData, 1)
+        n = n + 1
+        myZvarPstData(n, L) = myZdouCalData(i, L)
+    Next i
+    
+    Call instCVrblToSht
+    If myXbisExitFlag = True Then
+        myXlonCalDataCnt = 0
+        GoTo ExitPath
+    End If
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'◆ClassProc名_変数情報をエクセルシートに書き出す
+Private Sub instCVrblToSht()
+    myXbisExitFlag = False
+  Dim myXinsVrblToSht As CVrblToSht: Set myXinsVrblToSht = New CVrblToSht
+    With myXinsVrblToSht
+    '//クラス内変数への入力
+        .letVrbl = myZvarPstData
+        Set .setPstFrstCell = myXobjPstFrstCell
+        .letInptBxOFF = False
+        .letEachWrtON = False
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        myXbisExitFlag = Not .fncbisCmpltFlag
+    End With
+    Set myXinsVrblToSht = Nothing
+End Sub
+
+'===============================================================================================
+
+ '定型Ｆ_配列変数の次元数と配列長が指定値を満足するかをチェックする
+Private Function PfncbisCheckArrayDimensionLength( _
+            ByRef myZvarOrgData As Variant, ByVal myXlonAryDmnsn As Long, _
+            ByVal myXlonAryRowCnt As Long, ByVal myXlonAryColCnt As Long) As Boolean
+    PfncbisCheckArrayDimensionLength = False
+    If myXlonAryDmnsn <= 0 Or myXlonAryDmnsn > 2 Then
+        Exit Function
+    ElseIf myXlonAryDmnsn = 1 Then
+        If myXlonAryRowCnt <= 0 Then Exit Function
+    ElseIf myXlonAryDmnsn = 2 Then
+        If myXlonAryRowCnt <= 0 Or myXlonAryColCnt <= 0 Then Exit Function
+    End If
+'//配列であることを確認
+    If IsArray(myZvarOrgData) = False Then Exit Function
+'//配列が空でないことを確認
+  Dim myXlonTmp As Long
+    On Error Resume Next
+    myXlonTmp = UBound(myZvarOrgData) - LBound(myZvarOrgData) + 1
+    If Err.Number = 9 Then Exit Function
+    On Error GoTo 0
+    If myXlonTmp <= 0 Then Exit Function
+'//配列の次元数を取得
+  Dim myXlonRet As Long, myXvarTmp As Variant, k As Long: k = 0
+    On Error Resume Next
+    Do
+        k = k + 1: myXvarTmp = UBound(myZvarOrgData, k)
+    Loop While Err.Number = 0
+    On Error GoTo 0
+    myXlonRet = k - 1
+    If myXlonRet <> myXlonAryDmnsn Then Exit Function
+'//配列の最小添字と最大添字を取得
+  Dim n As Long, i As Long: i = myXlonAryDmnsn + LBound(myZvarOrgData) - 1
+  Dim myZlonAryLBnd() As Long: ReDim myZlonAryLBnd(i) As Long
+  Dim myZlonAryUBnd() As Long: ReDim myZlonAryUBnd(i) As Long
+    n = 0
+    For i = LBound(myZlonAryLBnd) To UBound(myZlonAryLBnd)
+        n = n + 1
+        myZlonAryLBnd(i) = LBound(myZvarOrgData, n)
+        myZlonAryUBnd(i) = UBound(myZvarOrgData, n)
+    Next i
+'//配列長を取得
+    i = myXlonAryDmnsn + LBound(myZvarOrgData) - 1
+  Dim myZlonAryLen() As Long: ReDim myZlonAryLen(i) As Long
+    Select Case myXlonAryDmnsn
+        Case 1
+            myZlonAryLen(i) = myZlonAryUBnd(i) - myZlonAryLBnd(i) + 1
+            If myZlonAryLen(i) <> myXlonAryRowCnt Then Exit Function
+        Case 2
+            myZlonAryLen(i - 1) = myZlonAryUBnd(i - 1) - myZlonAryLBnd(i - 1) + 1
+            If myZlonAryLen(i - 1) <> myXlonAryRowCnt Then Exit Function
+            myZlonAryLen(i - 0) = myZlonAryUBnd(i - 0) - myZlonAryLBnd(i - 0) + 1
+            If myZlonAryLen(i - 0) <> myXlonAryColCnt Then Exit Function
+    End Select
+    Erase myZlonAryLBnd: Erase myZlonAryUBnd: Erase myZlonAryLen
+    PfncbisCheckArrayDimensionLength = True
+End Function
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
