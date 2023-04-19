@@ -1,1 +1,307 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes CVrblNumAry
+'Includes CVrblToSht
+'Includes PfixGetSheetRangeDataVariantArray
 
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_シート上の指定範囲またはデータ全範囲から数値データ配列を取得する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "m2Msub1ShtNumAry"
+  
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//出力データ
+  Private myXlonNumRowCnt As Long, myXlonNumColCnt As Long, myZdouNumData() As Double
+  Private myXstrHdrRowCnt As Long, myXstrHdrColCnt As Long, myZstrHdr() As String
+    'myZdouNumData(i, j) : 数値データ内容
+    'myZstrHdr(i, j) : ヘッダー内容
+  
+'//入力データ
+  Private myXobjSheet As Object, myXobjFrstCell As Object, myXobjLastCell As Object
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Dim myXlonRowCnt As Long, myXlonColCnt As Long, myZvarShtData() As Variant
+
+  Private myXbisInptBxOFF As Boolean
+    'myXbisInptBxOFF = False : 指定位置が無い場合にInputBoxで範囲指定する
+    'myXbisInptBxOFF = True  : 指定位置が無い場合にInputBoxで範囲指定しない
+  Private myXbisEachWrtON As Boolean
+    'myXbisEachWrtON = False : 配列変数内データを一度に書き出しする
+    'myXbisEachWrtON = True  : 配列変数内データを1データづつ書き出しする
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonRowCnt = Empty: myXlonColCnt = Empty: Erase myZvarShtData
+    myXbisInptBxOFF = False: myXbisEachWrtON = False
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub callProc( _
+            myXbisCmpltFlagOUT As Boolean, _
+            myXlonNumRowCntOUT As Long, myXlonNumColCntOUT As Long, _
+            myZdouNumDataOUT() As Double, _
+            myXstrHdrRowCntOUT As Long, myXstrHdrColCntOUT As Long, _
+            myZstrHdrOUT() As String, _
+            ByVal myXobjSheetIN As Object, _
+            ByVal myXobjFrstCellIN As Object, ByVal myXobjLastCellIN As Object)
+    
+'//入力変数を初期化
+    Set myXobjSheet = Nothing
+    Set myXobjFrstCell = Nothing
+    Set myXobjLastCell = Nothing
+
+'//入力変数を取り込み
+    Set myXobjSheet = myXobjSheetIN
+    Set myXobjFrstCell = myXobjFrstCellIN
+    Set myXobjLastCell = myXobjLastCellIN
+    
+'//出力変数を初期化
+    myXbisCmpltFlagOUT = False
+    
+    myXlonNumRowCntOUT = Empty: myXlonNumColCntOUT = Empty: Erase myZdouNumDataOUT
+    myXstrHdrRowCntOUT = Empty: myXstrHdrColCntOUT = Empty: Erase myZstrHdrOUT
+    
+'//処理実行
+    Call ctrProc
+    If myXbisCmpltFlag = False Then Exit Sub
+    
+'//出力変数に格納
+    myXbisCmpltFlagOUT = myXbisCmpltFlag
+    
+    If myXlonNumRowCnt <= 0 Or myXlonNumColCnt <= 0 Then GoTo JumpPath
+    myXlonNumRowCntOUT = myXlonNumRowCnt
+    myXlonNumColCntOUT = myXlonNumColCnt
+    myZdouNumDataOUT() = myZdouNumData()
+    
+JumpPath:
+    If myXstrHdrRowCnt <= 0 Or myXstrHdrColCnt <= 0 Then GoTo ExitPath
+    myXstrHdrRowCntOUT = myXstrHdrRowCnt
+    myXstrHdrColCntOUT = myXstrHdrColCnt
+    myZstrHdrOUT() = myZstrHdr()
+
+ExitPath:
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables
+    
+'//S:シート上の数値データ配列を取得
+    Call snsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+    myXlonNumRowCnt = Empty: myXlonNumColCnt = Empty: Erase myZdouNumData
+    myXstrHdrRowCnt = Empty: myXstrHdrColCnt = Empty: Erase myZstrHdr
+End Sub
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If myXobjSheet Is Nothing Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+    
+    myXbisInptBxOFF = False
+    'myXbisInptBxOFF = False : 指定位置が無い場合にInputBoxで範囲指定する
+    'myXbisInptBxOFF = True  : 指定位置が無い場合にInputBoxで範囲指定しない
+    
+    myXbisEachWrtON = False
+    'myXbisEachWrtON = False : 配列変数内データを一度に書き出しする
+    'myXbisEachWrtON = True  : 配列変数内データを1データづつ書き出しする
+
+End Sub
+
+'SnsP_シート上の数値データ配列を取得
+Private Sub snsProc()
+    myXbisExitFlag = False
+    
+'//シート上の指定範囲またはデータ全範囲のデータをVariant配列に取込む
+    Call PfixGetSheetRangeDataVariantArray( _
+            myXlonRowCnt, myXlonColCnt, myZvarShtData, _
+            myXobjSheet, myXobjFrstCell, myXobjLastCell)
+    If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then GoTo ExitPath
+    
+'//指定配列変数から数値データ配列を取得
+    Call instCVrblNumAry
+    If myXlonNumRowCnt <= 0 Or myXlonNumColCnt <= 0 Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'◆ClassProc名_指定配列変数から数値データ配列を取得する
+Private Sub instCVrblNumAry()
+  Dim Lc As Long
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+  Dim myXinsVrblNumAry As CVrblNumAry: Set myXinsVrblNumAry = New CVrblNumAry
+    With myXinsVrblNumAry
+    '//クラス内変数への入力
+        .letVrblData = myZvarShtData()
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXlonNumRowCnt = .getNumRowCnt
+        myXlonNumColCnt = .getNumColCnt
+        If myXlonNumRowCnt <= 0 Or myXlonNumColCnt <= 0 Then GoTo JumpPath
+        i = myXlonNumRowCnt + Lo - 1: j = myXlonNumColCnt + Lo - 1
+        ReDim myZdouNumData(i, j) As Double
+        Lc = .getOptnBase
+        For j = 1 To myXlonNumColCnt
+            For i = 1 To myXlonNumRowCnt
+                myZdouNumData(i + Lo - 1, j + Lo - 1) = .getNumDataAry(i + Lc - 1, j + Lc - 1)
+            Next i
+        Next j
+        myXstrHdrRowCnt = .getHdrRowCnt
+        myXstrHdrColCnt = .getHdrColCnt
+        If myXstrHdrRowCnt <= 0 Or myXstrHdrColCnt <= 0 Then GoTo JumpPath
+        i = myXstrHdrRowCnt + Lo - 1: j = myXstrHdrColCnt + Lo - 1
+        ReDim myZstrHdr(i, j) As String
+        For j = 1 To myXstrHdrColCnt
+            For i = 1 To myXstrHdrRowCnt
+                myZstrHdr(i + Lo - 1, j + Lo - 1) = .getHdrAry(i + Lc - 1, j + Lc - 1)
+            Next i
+        Next j
+    End With
+JumpPath:
+    Set myXinsVrblNumAry = Nothing
+End Sub
+
+'◆ClassProc名_変数情報をエクセルシートに書き出す
+Private Sub instCVrblToSht()
+  Dim myXinsVrblToSht As CVrblToSht: Set myXinsVrblToSht = New CVrblToSht
+    With myXinsVrblToSht
+    '//クラス内変数への入力
+        .letVrbl = myZvarPstData
+        Set .setPstFrstCell = myXobjPstFrstCell
+        .letInptBxOFF = False
+        .letEachWrtON = False
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        myXbisExitFlag = Not .fncbisCmpltFlag
+    End With
+    Set myXinsVrblToSht = Nothing
+End Sub
+
+'===============================================================================================
+
+ '定型Ｐ_シート上の指定範囲またはデータ全範囲のデータをVariant配列に取込む
+Private Sub PfixGetSheetRangeDataVariantArray( _
+            myXlonRowCnt As Long, myXlonColCnt As Long, myZvarShtData() As Variant, _
+            ByVal myXobjSheet As Object, _
+            ByVal myXobjFrstCell As Object, ByVal myXobjLastCell As Object)
+'myZvarShtData(i, j) : データ
+    myXlonRowCnt = Empty: myXlonColCnt = Empty: Erase myZvarShtData
+    If myXobjSheet Is Nothing Then Exit Sub
+'//シート上の指定範囲をオブジェクト配列に取込む
+  Dim myXobjShtRng As Object
+    If myXobjFrstCell Is Nothing Then Set myXobjFrstCell = myXobjSheet.Cells(1, 1)
+    If myXobjLastCell Is Nothing Then _
+        Set myXobjLastCell = myXobjSheet.Cells.SpecialCells(xlCellTypeLastCell)
+    Set myXobjShtRng = myXobjSheet.Range(myXobjFrstCell, myXobjLastCell)
+    myXlonRowCnt = myXobjShtRng.Rows.Count
+    myXlonColCnt = myXobjShtRng.Columns.Count
+    If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then Exit Sub
+'//オブジェクト配列からデータを取得
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+  Dim myZvarRngData As Variant, i As Long, j As Long
+    i = myXlonRowCnt + L - 1: j = myXlonColCnt + L - 1
+    ReDim myZvarShtData(i, j) As Variant
+    myZvarRngData = myXobjShtRng.Value
+    On Error Resume Next
+    If myXlonRowCnt * myXlonColCnt = 1 Then
+        myZvarShtData(L, L) = myZvarRngData
+    Else
+        For j = LBound(myZvarRngData, 2) To UBound(myZvarRngData, 2)
+            For i = LBound(myZvarRngData, 1) To UBound(myZvarRngData, 1)
+                myZvarShtData(i, j) = myZvarRngData(i, j)
+            Next i
+        Next j
+    End If
+    On Error GoTo 0
+    Set myXobjShtRng = Nothing: myZvarRngData = Empty
+End Sub
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+'===============================================================================================
+
+'◆ModuleProc名_シート上の指定範囲またはデータ全範囲から数値データ配列を取得する
+Private Sub callm2Msub1ShtNumAry()
+  Dim myXobjSheet As Object, myXobjFrstCell As Object, myXobjLastCell As Object
+    Set myXobjSheet = ActiveSheet
+  Dim myXbisCompFlag As Boolean
+  Dim myXlonNumRowCnt As Long, myXlonNumColCnt As Long, myZdouNumData() As Double
+  Dim myXstrHdrRowCnt As Long, myXstrHdrColCnt As Long, myZstrHdr() As String
+    'myZdouNumData(i, j) : 数値データ内容
+    'myZstrHdr(i, j) : ヘッダー内容
+    Call m2Msub1ShtNumAry.callProc( _
+            myXbisCompFlag, _
+            myXlonNumRowCnt, myXlonNumColCnt, myZdouNumData, _
+            myXstrHdrRowCnt, myXstrHdrColCnt, myZstrHdr, _
+            myXobjSheet, myXobjFrstCell, myXobjLastCell)
+    Call variablesOfm2Msub1ShtNumAry(myXlonNumRowCnt, myZdouNumData)     'Debug.Print
+End Sub
+Private Sub variablesOfm2Msub1ShtNumAry( _
+            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+'//m2Msub1ShtNumAry内から出力した変数の内容確認
+    Debug.Print "データ数: " & myXlonDataCnt
+    If myXlonDataCnt <= 0 Then Exit Sub
+  Dim i As Long, j As Long
+    For i = LBound(myZvarField, 1) To UBound(myZvarField, 1)
+        For j = LBound(myZvarField, 2) To UBound(myZvarField, 2)
+            Debug.Print "データ" & i & "," & j & ": " & myZvarField(i, j)
+        Next j
+    Next i
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
