@@ -1,1 +1,188 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes m1Msub1ShtNumAry
+'Includes m1Msub2SgnlPrcsWithIntfc
 
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_Interfaceを使用して連続の信号処理を実行する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "m1Mexe"
+  
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXobjSheet As Object, myXobjFrstCell As Object, myXobjLastCell As Object
+  Private myXlonNumRowCnt As Long, myXlonNumColCnt As Long, myZdouNumData() As Double
+  Private myXstrHdrRowCnt As Long, myXstrHdrColCnt As Long, myZstrHdr() As String
+    'myZdouNumData(i, j) : 数値データ内容
+    'myZstrHdr(i, j) : ヘッダー内容
+
+  Private myZdouOrgData() As Double, myZvarCalPara() As Variant, myXobjPstFrstCell As Object
+    'myZdouOrgData(i, 1) : 元データ
+    'myZvarCalPara(i, 1) : 演算用パラメータ
+  Private myXlonCalDataCnt As Long, myZdouCalData() As Double
+    'myZdouCalData(i, 1) : 演算結果データ
+  Private myXlonIntfcCnt As Long, myZinsSgnlPrcs() As IntfcSgnlPrcs
+    'myZinsSgnlPrcs(i) : 演算用インスタンス
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    Set myXobjSheet = Nothing: Set myXobjFrstCell = Nothing: Set myXobjLastCell = Nothing
+    myXlonNumRowCnt = Empty: myXlonNumColCnt = Empty: Erase myZdouNumData
+    myXstrHdrRowCnt = Empty: myXstrHdrColCnt = Empty: Erase myZstrHdr
+    
+    Erase myZdouOrgData: Erase myZvarCalPara: Set myXobjPstFrstCell = Nothing
+    myXlonCalDataCnt = Empty: Erase myZdouCalData
+    myXlonIntfcCnt = Empty: Erase myZinsSgnlPrcs
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+
+'//プログラム構成
+    '入力: -シート上の指定範囲またはデータ全範囲から数値データ配列を取得する
+    '処理: -Interfaceを使用して信号処理を実行する
+    '出力: -
+    
+'//処理実行
+    Call ctrProc
+    
+'//処理結果表示
+    Select Case myXbisCmpltFlag
+        Case True: MsgBox "実行完了"
+        Case Else: MsgBox "異常あり", vbExclamation
+    End Select
+    
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables
+    
+'//S:シート上の指定範囲またはデータ全範囲から数値データ配列を取得
+    Call snsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//P:Interfaceを使用して信号処理を実行
+    Call prsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+'//Run:グラフ化
+    Call runProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+    
+'//元データ位置を設定
+    Set myXobjSheet = ActiveSheet
+    With myXobjSheet
+        Set myXobjFrstCell = .Cells(10, 4)
+        Set myXobjLastCell = .Cells(.Rows.Count, 4).End(xlUp)
+    End With
+
+'//演算用パラメータを設定
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+    ReDim myZvarCalPara(Lo, Lo) As Variant
+    myZvarCalPara(Lo, Lo) = 2
+    
+    Set myXobjPstFrstCell = myXobjFrstCell.Offset(, 1)
+    
+'//演算モジュールを設定
+    myXlonIntfcCnt = 2
+    ReDim myZinsSgnlPrcs(myXlonIntfcCnt + Lo - 1) As IntfcSgnlPrcs
+    Set myZinsSgnlPrcs(Lo + 0) = New xcRefSgnlPrcsImplIntfc
+    Set myZinsSgnlPrcs(Lo + 1) = New xcRefSgnlPrcsImplIntfc
+'    Set myZinsSgnlPrcs(Lo + 1) = New x
+    
+End Sub
+
+'SnsP_シート上の指定範囲またはデータ全範囲から数値データ配列を取得
+Private Sub snsProc()
+    myXbisExitFlag = False
+    
+  Dim myXbisCompFlag As Boolean
+    Call m1Msub1ShtNumAry.callProc( _
+            myXbisCompFlag, _
+            myXlonNumRowCnt, myXlonNumColCnt, myZdouNumData, _
+            myXstrHdrRowCnt, myXstrHdrColCnt, myZstrHdr, _
+            myXobjSheet, myXobjFrstCell, myXobjLastCell)
+    If myXbisCompFlag = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_Interfaceを使用して信号処理を実行
+Private Sub prsProc()
+    myXbisExitFlag = False
+    
+  Dim myXbisCompFlag As Boolean
+    Call m1Msub2SgnlPrcsWithIntfc.callProc( _
+            myXbisCompFlag, myXlonCalDataCnt, myZdouCalData, _
+            myZdouNumData, myZvarCalPara, myXobjPstFrstCell, myZinsSgnlPrcs)
+    If myXbisCompFlag = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_グラフ化
+Private Sub runProc()
+    myXbisExitFlag = False
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
