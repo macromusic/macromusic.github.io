@@ -1,1 +1,227 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes m2Msub1ShtNumAry
+'Includes m2Msub2SgnlPrcs
+'Includes CVrblToSht
 
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_マクロを使用して連続の信号処理を実行する
+'Rev.001
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "m2Mexe"
+  
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXobjSheet As Object, myXobjFrstCell As Object, myXobjLastCell As Object
+  Private myXlonNumRowCnt As Long, myXlonNumColCnt As Long, myZdouNumData() As Double
+  Private myXstrHdrRowCnt As Long, myXstrHdrColCnt As Long, myZstrHdr() As String
+    'myZdouNumData(i, j) : 数値データ内容
+    'myZstrHdr(i, j) : ヘッダー内容
+
+  Private myZdouOrgData() As Double, myZvarCalPara() As Variant
+    'myZdouOrgData(i, 1) : 元データ
+    'myZvarCalPara(i, 1) : 演算用パラメータ
+  Private myXlonCalDataCnt As Long, myZdouCalData() As Double
+    'myZdouCalData(i, 1) : 演算結果データ
+  Private myXlonHdrCnt As Long, myZstrHeader() As String
+    'myZstrHeader(i, 1) : ヘッダーデータ
+
+  Private myZvarPstData As Variant, myXobjPstFrstCell As Object
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    Set myXobjSheet = Nothing: Set myXobjFrstCell = Nothing: Set myXobjLastCell = Nothing
+    myXlonNumRowCnt = Empty: myXlonNumColCnt = Empty: Erase myZdouNumData
+    myXstrHdrRowCnt = Empty: myXstrHdrColCnt = Empty: Erase myZstrHdr
+    
+    Erase myZdouOrgData: Erase myZvarCalPara
+    myXlonCalDataCnt = Empty: Erase myZdouCalData
+    myXlonHdrCnt = Empty: Erase myZstrHeader
+    
+    myZvarPstData = Empty: Set myXobjPstFrstCell = Nothing
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+
+'//プログラム構成
+    '入力: -シート上の指定範囲またはデータ全範囲から数値データ配列を取得する
+    '処理: -Interfaceを使用して信号処理を実行する
+    '出力: -
+    
+'//処理実行
+    Call ctrProc
+    
+'//処理結果表示
+    Select Case myXbisCmpltFlag
+        Case True: MsgBox "実行完了"
+        Case Else: MsgBox "異常あり", vbExclamation
+    End Select
+    
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//C:制御用変数を設定
+    Call setControlVariables
+    
+'//S:シート上の指定範囲またはデータ全範囲から数値データ配列を取得
+    Call snsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//P:Interfaceを使用して信号処理を実行
+    Call prsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+'//Run:変数情報をエクセルシートに書き出す
+    Call runProc1
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "4"     'PassFlag
+    
+'//Run:グラフ化
+    Call runProc2
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "5"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXbisCmpltFlag = False
+End Sub
+
+'SetP_制御用変数を設定する
+Private Sub setControlVariables()
+    
+'//元データ位置を設定
+    Set myXobjSheet = ActiveSheet
+    With myXobjSheet
+        Set myXobjFrstCell = .Cells(10, 4)
+        Set myXobjLastCell = .Cells(.Rows.Count, 4).End(xlUp)
+    End With
+
+'//演算用パラメータを設定
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+    ReDim myZvarCalPara(Lo, Lo) As Variant
+    myZvarCalPara(Lo, Lo) = 2
+    
+    Set myXobjPstFrstCell = myXobjFrstCell.Offset(, 1)
+    
+End Sub
+
+'SnsP_シート上の指定範囲またはデータ全範囲から数値データ配列を取得
+Private Sub snsProc()
+    myXbisExitFlag = False
+    
+  Dim myXbisCompFlag As Boolean
+    Call m2Msub1ShtNumAry.callProc( _
+            myXbisCompFlag, _
+            myXlonNumRowCnt, myXlonNumColCnt, myZdouNumData, _
+            myXstrHdrRowCnt, myXstrHdrColCnt, myZstrHdr, _
+            myXobjSheet, myXobjFrstCell, myXobjLastCell)
+    If myXbisCompFlag = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_Interfaceを使用して信号処理を実行
+Private Sub prsProc()
+    myXbisExitFlag = False
+    
+  Dim myXbisCompFlag As Boolean
+    Call m2Msub2SgnlPrcs.callProc( _
+            myXbisCompFlag, myXlonCalDataCnt, myZdouCalData, myXlonHdrCnt, myZstrHeader, _
+            myZdouNumData, myZvarCalPara)
+    If myXbisCompFlag = False Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_変数情報をエクセルシートに書き出す
+Private Sub runProc1()
+    myXbisExitFlag = False
+    
+    myZvarPstData = myZstrHeader()
+    Call instCVrblToSht
+    If myXbisExitFlag = True Then GoTo ExitPath
+    
+    Set myXobjPstFrstCell = myXobjPstFrstCell.Offset(myXlonHdrCnt)
+    myZvarPstData = myZdouCalData()
+    Call instCVrblToSht
+    If myXbisExitFlag = True Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'RunP_グラフ化
+Private Sub runProc2()
+    myXbisExitFlag = False
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'◆ClassProc名_変数情報をエクセルシートに書き出す
+Private Sub instCVrblToSht()
+    myXbisExitFlag = False
+  Dim myXinsVrblToSht As CVrblToSht: Set myXinsVrblToSht = New CVrblToSht
+    With myXinsVrblToSht
+    '//クラス内変数への入力
+        .letVrbl = myZvarPstData
+        Set .setPstFrstCell = myXobjPstFrstCell
+        .letInptBxOFF = False
+        .letEachWrtON = False
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        myXbisExitFlag = Not .fncbisCmpltFlag
+    End With
+    Set myXinsVrblToSht = Nothing
+End Sub
+
+'===============================================================================================
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
