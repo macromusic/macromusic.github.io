@@ -9,7 +9,7 @@
     <body>
       <div>MacroSample</div>
       <pre>
-'Includes PfncbisIsMatrix
+'Includes PfncbisIsMatrixNumeric
 'Includes PfixArrayPartColumnNumeric
 'Includes Pfix1DArrayExtractNumeric
 'Includes PfixTrapezoidWaveLong
@@ -23,7 +23,7 @@ Option Explicit
 Option Base 1
 
 '◆ClassProc名_データ配列から標準偏差外れのデータを除去する
-'Rev.003
+'Rev.004
   
 '//モジュールメモリ
   Private Const meMstrMdlName As String = "COutlierFltr"
@@ -187,7 +187,7 @@ Private Sub checkInputVariablesMean()
     If myXlonCalRng < -1 Or myXlonCalRng > 1 Then myXlonCalRng = 0
     If myXlonCalDataRngOptn < 1 Or myXlonCalDataRngOptn > 3 Then myXlonCalDataRngOptn = 1
     
-    If PfncbisIsMatrix(myZdouOrgData) = False Then GoTo ExitPath
+    If PfncbisIsMatrixNumeric(myZdouOrgData) = False Then GoTo ExitPath
     
   Dim L As Long, i As Long, j As Long
     L = LBound(myZdouOrgData, 1)
@@ -228,7 +228,7 @@ Private Sub checkInputVariablesMedian()
     If myXlonCalRng < -1 Or myXlonCalRng > 1 Then myXlonCalRng = 0
     If myXlonCalDataRngOptn < 1 Or myXlonCalDataRngOptn > 3 Then myXlonCalDataRngOptn = 1
     
-    If PfncbisIsMatrix(myZdouOrgData) = False Then GoTo ExitPath
+    If PfncbisIsMatrixNumeric(myZdouOrgData) = False Then GoTo ExitPath
     
   Dim L As Long, i As Long, j As Long
     L = LBound(myZdouOrgData, 1)
@@ -422,7 +422,7 @@ Private Sub prsCalDeviationFromRegressionLine()
 '//台形波形を生成
   Dim myXlonAdjstValCnt As Long, myZlonAdjstVal() As Long
     Call PfixTrapezoidWaveLong(myXlonAdjstValCnt, myZlonAdjstVal, _
-            myXlonOrgYCnt, myXlonCalStrtNo, myXlonCalLastNo, -1, -1, 0)
+            myXlonOrgYCnt, myXlonCalStrtNo, myXlonCalLastNo, 1, -1, -1, 0)
     If myXlonAdjstValCnt <> myXlonOrgYCnt Then GoTo ExitPath
     
 '//計算処理:Y軸データと回帰直線との差分
@@ -485,7 +485,7 @@ Private Sub prsCalMean()
 '//台形波形を生成
   Dim myXlonAdjstValCnt As Long, myZlonAdjstVal() As Long
     Call PfixTrapezoidWaveLong(myXlonAdjstValCnt, myZlonAdjstVal, _
-            myXlonOrgYCnt, myXlonCalStrt, myXlonCalLast, -1, -1, 0)
+            myXlonOrgYCnt, myXlonCalStrt, myXlonCalLast, 1, -1, -1, 0)
     If myXlonAdjstValCnt <> myXlonOrgYCnt Then GoTo ExitPath
     
 '//計算処理:平均値
@@ -524,7 +524,7 @@ Private Sub prsCalMedian()
 '//台形波形を生成
   Dim myXlonAdjstValCnt As Long, myZlonAdjstVal() As Long
     Call PfixTrapezoidWaveLong(myXlonAdjstValCnt, myZlonAdjstVal, _
-            myXlonOrgYCnt, myXlonCalStrt, myXlonCalLast, -1, -1, 0)
+            myXlonOrgYCnt, myXlonCalStrt, myXlonCalLast, 1, -1, -1, 0)
     If myXlonAdjstValCnt <> myXlonOrgYCnt Then GoTo ExitPath
     
 '//計算処理:中央値
@@ -562,7 +562,7 @@ Private Sub prsProcStandardDeviationOutliersFilterWithMean()
 '//台形波形を生成
   Dim myXlonAdjstValCnt As Long, myZlonAdjstVal() As Long
     Call PfixTrapezoidWaveLong(myXlonAdjstValCnt, myZlonAdjstVal, _
-            myXlonOrgYCnt, myXlonCalStrtNo, myXlonCalLastNo, -1, -1, 0)
+            myXlonOrgYCnt, myXlonCalStrtNo, myXlonCalLastNo, 1, -1, -1, 0)
     If myXlonAdjstValCnt <> myXlonOrgYCnt Then GoTo ExitPath
     
 '//計算する最初のデータ位置と最後のデータ位置を設定
@@ -629,7 +629,7 @@ Private Sub prsProcStandardDeviationOutliersFilterWithMedian()
 '//台形波形を生成
   Dim myXlonAdjstValCnt As Long, myZlonAdjstVal() As Long
     Call PfixTrapezoidWaveLong(myXlonAdjstValCnt, myZlonAdjstVal, _
-            myXlonOrgYCnt, myXlonCalStrtNo, myXlonCalLastNo, -1, -1, 0)
+            myXlonOrgYCnt, myXlonCalStrtNo, myXlonCalLastNo, 1, -1, -1, 0)
     If myXlonAdjstValCnt <> myXlonOrgYCnt Then GoTo ExitPath
     
 '//計算する最初のデータ位置と最後のデータ位置を設定
@@ -705,15 +705,18 @@ End Sub
 
 '===============================================================================================
 
- '定型Ｆ_指定変数が数値行列かどうかをチェックする
-Private Function PfncbisIsMatrix(ByRef myZvarMtrx As Variant) As Boolean
-    PfncbisIsMatrix = False
-  Dim myXdouTmp As Double, L1 As Long, L2 As Long
+ '定型Ｆ_指定行列が数値行列かどうかをチェックする
+Private Function PfncbisIsMatrixNumeric(ByRef myZvarMtrx As Variant) As Boolean
+    PfncbisIsMatrixNumeric = False
+  Dim myXvarTmp As Variant, myXdouTmp As Double, L1 As Long, L2 As Long
     On Error GoTo ExitPath
     L1 = LBound(myZvarMtrx, 1): L2 = LBound(myZvarMtrx, 2)
     myXdouTmp = myZvarMtrx(L1, L2)
+    For Each myXvarTmp In myZvarMtrx
+        If IsNumeric(myXvarTmp) = False Then GoTo ExitPath
+    Next myXvarTmp
     On Error GoTo 0
-    PfncbisIsMatrix = True
+    PfncbisIsMatrixNumeric = True
 ExitPath:
 End Function
 
@@ -779,6 +782,7 @@ Private Sub PfixTrapezoidWaveLong( _
             myXlonCalDataCnt As Long, myZlonCalData() As Long, _
             ByVal myXlonDataQnt As Long, _
             ByVal myXlonInflctPntBgn As Long, ByVal myXlonInflctPntEnd As Long, _
+            Optional ByVal L As Long = 1, _
             Optional ByVal coXlonStrtStp As Long = -1, _
             Optional ByVal coXlonLastStp As Long = 1, _
             Optional ByVal coXlonCnstVal As Long = 0)
@@ -786,36 +790,34 @@ Private Sub PfixTrapezoidWaveLong( _
 'myXlonDataQnt : 必要なデータ数
 'myXlonInflctPntBgn : 開始側の変曲点
 'myXlonInflctPntEnd : 終了側の変曲点
+'L : Option Base
 'coXlonStrtStp : 開始側のデータ変化ステップ
 'coXlonLastStp : 終了側のデータ変化ステップ
 'coXlonCnstVal : 一定状態の値
     myXlonCalDataCnt = Empty:  Erase myZlonCalData
     If myXlonDataQnt <= 0 Then Exit Sub
-    If myXlonInflctPntBgn < 1 Then Exit Sub
-    If myXlonInflctPntEnd > myXlonDataQnt Then Exit Sub
+    If myXlonInflctPntBgn < L Then Exit Sub
+    If myXlonInflctPntEnd > myXlonDataQnt + L - 1 Then Exit Sub
     If myXlonInflctPntBgn > myXlonInflctPntEnd Then Exit Sub
-    On Error GoTo ExitPath
-  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
-    Erase myZlonTmp
-    On Error GoTo 0
+    If L < 0 Or 1 < L Then Exit Sub
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
   Dim i As Long, n As Long
     myXlonCalDataCnt = myXlonDataQnt
-    i = myXlonCalDataCnt + L - 1: ReDim myZlonCalData(i) As Long
-    If myXlonInflctPntBgn = 1 Then GoTo JumpPath1
+    i = myXlonCalDataCnt + Lo - 1: ReDim myZlonCalData(i) As Long
+    If myXlonInflctPntBgn = L Then GoTo JumpPath1
     n = myXlonInflctPntBgn
-    For i = 1 To myXlonInflctPntBgn - 1
+    For i = L To myXlonInflctPntBgn - 1
         n = n - 1
         myZlonCalData(i) = coXlonCnstVal - coXlonStrtStp * n
     Next i
 JumpPath1:
-    If coXlonCnstVal = 0 Then GoTo JumpPath2
     For i = myXlonInflctPntBgn To myXlonInflctPntEnd
         myZlonCalData(i) = coXlonCnstVal
     Next i
 JumpPath2:
-    If myXlonInflctPntEnd = 1 Then Exit Sub
+    If myXlonInflctPntEnd = myXlonDataQnt + L - 1 Then Exit Sub
     n = 0
-    For i = myXlonInflctPntEnd + 1 To myXlonDataQnt
+    For i = myXlonInflctPntEnd + 1 To myXlonDataQnt + L - 1
         n = n + 1
         myZlonCalData(i) = coXlonCnstVal + coXlonLastStp * n
     Next i
