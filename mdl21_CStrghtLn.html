@@ -9,7 +9,7 @@
     <body>
       <div>MacroSample</div>
       <pre>
-'Includes PfncbisIsMatrix
+'Includes PfncbisIsMatrixNumeric
 'Includes PfixArrayPartColumnNumeric
 'Includes PfixStraightLineYArray
 'Includes PfixStraightLineXArray
@@ -19,7 +19,7 @@ Option Explicit
 Option Base 1
 
 '◆ClassProc名_データ配列の全区間の直線データを取得する
-'Rev.003
+'Rev.004
   
 '//モジュールメモリ
   Private Const meMstrMdlName As String = "CStrghtLn"
@@ -145,7 +145,7 @@ Private Sub checkInputVariables()
     
     If myXlonCalDataRngOptn < 1 Or myXlonCalDataRngOptn > 2 Then myXlonCalDataRngOptn = 1
     
-    If PfncbisIsMatrix(myZdouOrgData) = False Then GoTo ExitPath
+    If PfncbisIsMatrixNumeric(myZdouOrgData) = False Then GoTo ExitPath
     
   Dim L As Long, i As Long, j As Long
     L = LBound(myZdouOrgData, 1)
@@ -474,15 +474,18 @@ End Sub
 
 '===============================================================================================
 
- '定型Ｆ_指定変数が数値行列かどうかをチェックする
-Private Function PfncbisIsMatrix(ByRef myZvarMtrx As Variant) As Boolean
-    PfncbisIsMatrix = False
-  Dim myXdouTmp As Double, L1 As Long, L2 As Long
+ '定型Ｆ_指定行列が数値行列かどうかをチェックする
+Private Function PfncbisIsMatrixNumeric(ByRef myZvarMtrx As Variant) As Boolean
+    PfncbisIsMatrixNumeric = False
+  Dim myXvarTmp As Variant, myXdouTmp As Double, L1 As Long, L2 As Long
     On Error GoTo ExitPath
     L1 = LBound(myZvarMtrx, 1): L2 = LBound(myZvarMtrx, 2)
     myXdouTmp = myZvarMtrx(L1, L2)
+    For Each myXvarTmp In myZvarMtrx
+        If IsNumeric(myXvarTmp) = False Then GoTo ExitPath
+    Next myXvarTmp
     On Error GoTo 0
-    PfncbisIsMatrix = True
+    PfncbisIsMatrixNumeric = True
 ExitPath:
 End Function
 
