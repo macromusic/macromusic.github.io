@@ -14,8 +14,10 @@
  '定型Ｆ_指定行列が数値行列かどうかをチェックする
 Private Function PfncbisIsMatrixNumeric(ByRef myZvarMtrx As Variant) As Boolean
     PfncbisIsMatrixNumeric = False
-  Dim myXvarTmp As Variant
+  Dim myXvarTmp As Variant, myXdouTmp As Double, L1 As Long, L2 As Long
     On Error GoTo ExitPath
+    L1 = LBound(myZvarMtrx, 1): L2 = LBound(myZvarMtrx, 2)
+    myXdouTmp = myZvarMtrx(L1, L2)
     For Each myXvarTmp In myZvarMtrx
         If IsNumeric(myXvarTmp) = False Then GoTo ExitPath
     Next myXvarTmp
@@ -44,30 +46,10 @@ Private Function PfncbisCheckMatrixLength( _
 ExitPath:
 End Function
 
- '定型Ｆ_指定行列が指定範囲で処理可能かをチェックする
-Private Function PfncbisCheckMatrixRange(ByRef myZdouMtrx() As Double, _
-            ByVal myXlonBgnRow As Long, ByVal myXlonBgnCol As Long, _
-            ByVal myXlonEndRow As Long, ByVal myXlonEndCol As Long) As Boolean
-    PfncbisCheckMatrixRange = False
-  Dim myXdouTmp As Double
-    On Error GoTo ExitPath
-    If myXlonBgnRow < LBound(myZdouMtrx, 1) Then Exit Sub
-    If myXlonBgnCol < LBound(myZdouMtrx, 2) Then Exit Sub
-    If myXlonEndRow > UBound(myZdouMtrx, 1) Then Exit Sub
-    If myXlonEndCol > UBound(myZdouMtrx, 2) Then Exit Sub
-    If myXlonEndRow < myXlonBgnRow Then Exit Sub
-    If myXlonEndCol < myXlonBgnCol Then Exit Sub
-    myXdouTmp = myZdouOrgData(myXlonBgnRow, myXlonBgnCol)
-    myXdouTmp = myZdouOrgData(myXlonEndRow, myXlonEndCol)
-    On Error GoTo 0
-    PfncbisCheckMatrixRange = True
-ExitPath:
-End Function
-
  '定型Ｆ_2個の指定行列で四則演算の行列計算可能かをチェックする
 Private Function PfncbisIsAbleMatrixArithmeticOperations( _
             ByRef myZdouLMtrx() As Double, ByRef myZdouRMtrx() As Double) As Boolean
-    PfncbisIsAbleToMatrixArithmeticOperations = False
+    PfncbisIsAbleMatrixArithmeticOperations = False
     On Error GoTo ExitPath
   Dim myXdouTmp As Double
     myXdouTmp = myZdouLMtrx(LBound(myZdouLMtrx, 1), LBound(myZdouLMtrx, 2))
@@ -77,7 +59,7 @@ Private Function PfncbisIsAbleMatrixArithmeticOperations( _
     If LBound(myZdouLMtrx, 2) <> LBound(myZdouRMtrx, 2) Then Exit Function
     If UBound(myZdouLMtrx, 1) <> UBound(myZdouRMtrx, 1) Then Exit Function
     If UBound(myZdouLMtrx, 2) <> UBound(myZdouRMtrx, 2) Then Exit Function
-    PfncbisIsAbleToMatrixArithmeticOperations = True
+    PfncbisIsAbleMatrixArithmeticOperations = True
 ExitPath:
 End Function
 
