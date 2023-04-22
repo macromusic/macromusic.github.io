@@ -1,1 +1,599 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes PfncbisIsMatrixNumeric
+'Includes PfixArrayPartColumnNumeric
+'Includes PfncdouSum
+'Includes PincMaxMinQuartile
+'Includes PfixQuickSortOfNumeric1DArray
+'Includes PfncdouArithmeticMean
+'Includes PfncdouStDevP
+'Includes PfncdouStDevS
+'Includes PfnclonMatchNumeric
 
+Option Explicit
+Option Base 1
+
+'◆ClassProc名_数値配列内のデータから統計量を計算する
+'Rev.002
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "CBscSttstcs"
+  
+'//PropertyGet_出力データ
+  Private myXlonDataCnt As Long
+  Private myXdouSum As Double
+  Private myXdouMax As Double, myXlonMaxDataNo As Long
+  Private myXdouThrdQrtl As Double
+  Private myXdouMedian As Double
+  Private myXdouFrstQrtl As Double
+  Private myXdouMin As Double, myXlonMinDataNo As Long
+  Private myXdouArthmtcMean As Double
+  Private myXdouStDevP As Double, myXdouStDevS As Double
+  Private myXdouMaxAbs As Double, myXlonMaxAbsDataNo As Long
+  
+'//PropertySetLet_入力データ
+  Private myZdouOrgData() As Double
+    'myZdouOrgData(i, 1) : 元データ配列
+  Private myXlonBgnRow As Long, myXlonEndRow As Long
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+  
+'//モジュール内変数_データ
+  Private myXlonInptRowCnt As Long, myXlonInptColCnt As Long, myZdouInptData() As Double
+  Private myXlonTmpDataCnt As Long, myZdouTmpData() As Double
+
+'iniP_モジュール内変数を初期化する
+Private Sub initializeModuleVariables()
+    myXbisExitFlag = False
+    
+    myXlonInptRowCnt = Empty: myXlonInptColCnt = Empty: Erase myZdouInptData
+    myXlonTmpDataCnt = Empty: Erase myZdouTmpData
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Get getDataCnt() As Long
+    getDataCnt = myXlonDataCnt
+'myXlonDataCnt : N数
+End Property
+
+Public Property Get getSum() As Double
+    getSum = myXdouSum
+'myXdouSum : 合計
+End Property
+
+Public Property Get getMax() As Double
+    getMax = myXdouMax
+'myXdouMax : 最大値
+End Property
+
+Public Property Get getMaxDataNo() As Long
+    getMaxDataNo = myXlonMaxDataNo
+'myXlonMaxDataNo : 最大値のデータNo
+End Property
+
+Public Property Get getThrdQrtl() As Double
+    getThrdQrtl = myXdouThrdQrtl
+'myXdouThrdQrtl : 第三四分位数
+End Property
+
+Public Property Get getMedian() As Double
+    getMedian = myXdouMedian
+'myXdouMedian : 中央値
+End Property
+
+Public Property Get getFrstQrtl() As Double
+    getFrstQrtl = myXdouFrstQrtl
+'myXdouFrstQrtl : 第一四分位数
+End Property
+
+Public Property Get getMin() As Double
+    getMin = myXdouMin
+'myXdouMin : 最小値
+End Property
+
+Public Property Get getMinDataNo() As Long
+    getMinDataNo = myXlonMinDataNo
+'myXlonMinDataNo : 最小値のデータNo
+End Property
+
+Public Property Get getArthmtcMean() As Double
+    getArthmtcMean = myXdouArthmtcMean
+'myXdouArthmtcMean : 平均値
+End Property
+
+Public Property Get getStDevP() As Double
+    getStDevP = myXdouStDevP
+'myXdouStDevP : 標準偏差
+End Property
+
+Public Property Get getStDevS() As Double
+    getStDevS = myXdouStDevS
+'myXdouStDevS : 不偏標本標準偏差
+End Property
+
+Public Property Get getMaxAbs() As Double
+    getMaxAbs = myXdouMaxAbs
+'myXdouMaxAbs : 絶対値の最大値
+End Property
+
+Public Property Get getMaxAbsDataNo() As Long
+    getMaxAbsDataNo = myXlonMaxAbsDataNo
+'myXlonMaxAbsDataNo : 絶対値の最大値のデータNo
+End Property
+
+'iniP_出力変数を初期化する
+Private Sub initializeOutputVariables()
+    myXlonDataCnt = Empty
+    myXdouSum = Empty
+    myXdouMax = Empty: myXlonMaxDataNo = Empty
+    myXdouThrdQrtl = Empty
+    myXdouMedian = Empty
+    myXdouFrstQrtl = Empty
+    myXdouMin = Empty: myXlonMinDataNo = Empty
+    myXdouArthmtcMean = Empty
+    myXdouStDevP = Empty: myXdouStDevS = Empty
+    myXdouMaxAbs = Empty: myXlonMaxAbsDataNo = Empty
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+Public Property Let letOrgDataAry(ByRef RHS() As Double)
+    myZdouOrgData = RHS
+'myZdouOrgData(i, 1) : 元データ配列
+End Property
+
+Public Property Let letBgnRow(ByVal RHS As Long)
+    myXlonBgnRow = RHS
+End Property
+
+Public Property Let letEndRow(ByVal RHS As Long)
+    myXlonEndRow = RHS
+End Property
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariables()
+    myXbisExitFlag = False
+    
+    If PfncbisIsMatrixNumeric(myZdouOrgData) = False Then GoTo ExitPath
+    
+  Dim L As Long, i As Long, j As Long
+    L = LBound(myZdouOrgData, 1)
+    myXlonInptRowCnt = UBound(myZdouOrgData, 1) - L + 1
+    myXlonInptColCnt = UBound(myZdouOrgData, 2) - L + 1
+    ReDim myZdouInptData(myXlonInptRowCnt, myXlonInptColCnt) As Double
+    For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
+        For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
+            myZdouInptData(i - L + 1, j - L + 1) = myZdouOrgData(i, j)
+        Next i
+    Next j
+    
+    If myXlonBgnRow < LBound(myZdouInptData, 1) Then myXlonBgnRow = LBound(myZdouInptData, 1)
+    If myXlonEndRow < myXlonBgnRow Or myXlonEndRow > UBound(myZdouInptData, 1) Then _
+        myXlonEndRow = UBound(myZdouInptData, 1)
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub exeProc()
+    Call ctrProc
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+    
+'//S:計算するデータ配列を取得
+    Call snsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+    
+'//P:統計量を計算
+    Call prsProc
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+ExitPath:
+    Call initializeModuleVariables
+End Sub
+
+'SnsP_計算するデータ配列を取得する
+Private Sub snsProc()
+    myXbisExitFlag = False
+    
+'//2次元の数値配列の指定列から一部を1次元配列で取得
+  Const coXlonCalCol As Long = 1
+  Const coXlonCalStep As Long = 1
+    Call PfixArrayPartColumnNumeric( _
+            myXlonTmpDataCnt, myZdouTmpData, _
+            myZdouInptData, coXlonCalCol, myXlonBgnRow, myXlonEndRow, coXlonCalStep)
+    If myXlonTmpDataCnt <= 0 Then GoTo ExitPath
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_統計量を計算する
+Private Sub prsProc()
+    myXbisExitFlag = False
+    
+'//データ数
+    myXlonDataCnt = UBound(myZdouTmpData) - LBound(myZdouTmpData) + 1
+'    myXlonDataCnt = Application.WorksheetFunction.Count(myZdouTmpData)
+    
+'//合計
+    myXdouSum = PfncdouSum(myZdouTmpData)
+'    myXdouSum = Application.WorksheetFunction.Sum(myZdouTmpData)
+    
+'//最大＆最小＆第三四分位数＆第一四分位数＆中央値
+    Call PincMaxMinQuartile( _
+            myXdouMax, myXdouMin, myXdouThrdQrtl, myXdouFrstQrtl, myXdouMedian, _
+            myZdouTmpData)
+            
+'    myXdouMax = Application.WorksheetFunction.Max(myZdouTmpData)
+'    myXdouMedian = Application.WorksheetFunction.Median(myZdouTmpData)
+'    myXdouMin = Application.WorksheetFunction.Min(myZdouTmpData)
+'
+'    myXdouMax = Application.WorksheetFunction.Quartile(myZdouTmpData, 4)
+'    myXdouThrdQrtl = Application.WorksheetFunction.Quartile(myZdouTmpData, 3)
+'    myXdouMedian = Application.WorksheetFunction.Quartile(myZdouTmpData, 2)
+'    myXdouFrstQrtl = Application.WorksheetFunction.Quartile(myZdouTmpData, 1)
+'    myXdouMin = Application.WorksheetFunction.Quartile(myZdouTmpData, 0)
+    
+'//最大＆最小となるデータNo
+    myXlonMaxDataNo = PfnclonMatchNumeric(myXdouMax, myZdouTmpData, False)
+    myXlonMinDataNo = PfnclonMatchNumeric(myXdouMin, myZdouTmpData, False)
+    
+'//相加平均
+    myXdouArthmtcMean = PfncdouArithmeticMean(myZdouTmpData)
+'    myXdouArthmtcMean = Application.WorksheetFunction.Average(myZdouTmpData)
+    
+'//標準偏差
+    myXdouStDevP = PfncdouStDevP(myZdouTmpData)
+'    myXdouStDevP = Application.WorksheetFunction.StDev_P(myZdouTmpData)
+    
+'//不偏標本標準偏差
+    myXdouStDevS = PfncdouStDevS(myZdouTmpData)
+'    myXdouStDevS = Application.WorksheetFunction.StDev_S(myZdouTmpData)
+    
+'//絶対値で最大となるデータ＆データNo
+    If Abs(myXdouMax) >= Abs(myXdouMin) Then
+        myXdouMaxAbs = myXdouMax
+    Else
+        myXdouMaxAbs = myXdouMin
+    End If
+    myXlonMaxAbsDataNo = PfnclonMatchNumeric(myXdouMaxAbs, myZdouTmpData, False)
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+ '定型Ｆ_指定行列が数値行列かどうかをチェックする
+Private Function PfncbisIsMatrixNumeric(ByRef myZvarMtrx As Variant) As Boolean
+    PfncbisIsMatrixNumeric = False
+  Dim myXvarTmp As Variant, myXdouTmp As Double, L1 As Long, L2 As Long
+    On Error GoTo ExitPath
+    L1 = LBound(myZvarMtrx, 1): L2 = LBound(myZvarMtrx, 2)
+    myXdouTmp = myZvarMtrx(L1, L2)
+    For Each myXvarTmp In myZvarMtrx
+        If IsNumeric(myXvarTmp) = False Then GoTo ExitPath
+    Next myXvarTmp
+    On Error GoTo 0
+    PfncbisIsMatrixNumeric = True
+ExitPath:
+End Function
+
+ '定型Ｐ_2次元の数値配列の指定列から一部を1次元配列で取得する
+Private Sub PfixArrayPartColumnNumeric( _
+            myXlonExtrctCnt As Long, myZdouExtrctData() As Double, _
+            ByRef myZdouOrgData() As Double, ByVal myXlonExtrctCol As Long, _
+            ByVal myXlonBgnRow As Long, ByVal myXlonEndRow As Long, _
+            Optional ByVal coXlonStep As Long = 1)
+'myZdouExtrctData(i) : 抽出データ配列
+'myZdouOrgData(i, j) : 元データ配列
+    myXlonExtrctCnt = Empty: Erase myZdouExtrctData
+  Dim myXdouTmp As Double, Li As Long
+    On Error GoTo ExitPath
+    If myXlonBgnRow < LBound(myZdouOrgData, 1) Then Exit Sub
+    If myXlonEndRow > UBound(myZdouOrgData, 1) Then Exit Sub
+    If myXlonEndRow < myXlonBgnRow Then Exit Sub
+    If myXlonExtrctCol < LBound(myZdouOrgData, 2) _
+        Or myXlonExtrctCol > UBound(myZdouOrgData, 2) Then Exit Sub
+    If coXlonStep <= 0 Or coXlonStep > UBound(myZdouOrgData, 1) Then Exit Sub
+    myXdouTmp = myZdouOrgData(myXlonBgnRow, myXlonExtrctCol)
+    Li = LBound(myZdouOrgData, 1)
+    On Error GoTo 0
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, n As Long: n = Lo - 1
+    For i = myXlonBgnRow To myXlonEndRow Step coXlonStep
+        n = n + 1: ReDim Preserve myZdouExtrctData(n) As Double
+        myZdouExtrctData(n) = myZdouOrgData(i, myXlonExtrctCol)
+    Next i
+    myXlonExtrctCnt = n - Lo + 1
+ExitPath:
+End Sub
+
+ '定型Ｆ_配列計算-合計
+Private Function PfncdouSum(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouSum = Empty
+  Dim i As Long, myXdouSum As Double: myXdouSum = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+    Next i
+    PfncdouSum = myXdouSum
+End Function
+
+ '定型Ｐ_配列計算-最大＆最小＆四分位数
+Private Sub PincMaxMinQuartile( _
+            myXdouMax As Double, myXdouMin As Double, _
+            myXdouThrdQrtl As Double, myXdouFrstQrtl As Double, myXdouMedian As Double, _
+            ByRef myZdouOrgData() As Double)
+'Includes PfixQuickSortOfNumeric1DArray
+'myXdouThrdQrtl : 第三四分位数
+'myXdouFrstQrtl : 第一四分位数
+'myZdouOrgData(i) : 元データ配列
+    myXdouMax = Empty: myXdouMin = Empty: myXdouMedian = Empty
+  Dim L As Long: L = LBound(myZdouOrgData)
+  Dim U As Long: U = UBound(myZdouOrgData)
+  Dim myXlonCnt As Long: myXlonCnt = U - L + 1
+  Dim myZdouTmp() As Double: myZdouTmp() = myZdouOrgData()
+    Call PfixQuickSortOfNumeric1DArray(myZdouTmp, L, U, 1)
+    myXdouMax = myZdouTmp(U)
+    myXdouMin = myZdouTmp(L)
+  Dim m As Long, n As Long, i As Long, j As Long, myXdouM1 As Double, myXdouM2 As Double
+    If myXlonCnt Mod 2 = 1 Then
+        m = Int((L + U) / 2)
+        myXdouMedian = myZdouTmp(m)
+        myXlonCnt = U - (m + 1) + 1
+        If myXlonCnt Mod 2 = 1 Then
+            i = Int(((m + 1) + U) / 2)
+            myXdouThrdQrtl = myZdouTmp(i)
+            i = Int((L + (m - 1)) / 2)
+            myXdouFrstQrtl = myZdouTmp(i)
+        Else
+            i = Int(((m + 1) + U) / 2): j = i + 1
+            myXdouM1 = myZdouTmp(i): myXdouM2 = myZdouTmp(j)
+            myXdouThrdQrtl = (myXdouM1 + myXdouM2) / 2
+            i = Int((L + (m - 1)) / 2): j = i + 1
+            myXdouM1 = myZdouTmp(i): myXdouM2 = myZdouTmp(j)
+            myXdouFrstQrtl = (myXdouM1 + myXdouM2) / 2
+        End If
+    Else
+        m = Int((L + U) / 2): n = m + 1
+        myXdouM1 = myZdouTmp(m): myXdouM2 = myZdouTmp(n)
+        myXdouMedian = (myXdouM1 + myXdouM2) / 2
+        myXlonCnt = U - n + 1
+        If myXlonCnt Mod 2 = 1 Then
+            i = Int((n + U) / 2)
+            myXdouThrdQrtl = myZdouTmp(i)
+            j = Int((L + m) / 2)
+            myXdouFrstQrtl = myZdouTmp(j)
+        Else
+            i = Int((n + U) / 2): j = i + 1
+            myXdouM1 = myZdouTmp(i): myXdouM2 = myZdouTmp(j)
+            myXdouThrdQrtl = (myXdouM1 + myXdouM2) / 2
+            i = Int((L + m) / 2): j = i + 1
+            myXdouM1 = myZdouTmp(i): myXdouM2 = myZdouTmp(j)
+            myXdouFrstQrtl = (myXdouM1 + myXdouM2) / 2
+        End If
+    End If
+    Erase myZdouTmp
+End Sub
+
+ '定型Ｐ_1次元の数値配列のクイックソート
+Private Sub PfixQuickSortOfNumeric1DArray( _
+            myZdouSrtData() As Double, _
+            ByVal myXlonLbnd As Long, ByVal myXlonUbnd As Long, _
+            Optional ByVal coXlonOrder As Long = 1)
+'myZdouSrtData(i) : 数値情報
+'coXlonOrder = 1    : 昇順 (Ascending Order)
+'coXlonOrder = -1   : 降順 (Descending Order)
+'→SetProc:定型プロシージャ使用前のコード部分に記述
+'    myXlonLbnd = LBound(myZdouSrtData)
+'    myXlonUbnd = UBound(myZdouSrtData)
+'    If myXlonUbnd <= myXlonLbnd Then Exit Sub
+'←EndProc
+  Dim myXlonMed As Long, myXdouMed As Double
+    myXlonMed = Int((myXlonLbnd + myXlonUbnd) / 2)
+    myXdouMed = myZdouSrtData(myXlonMed)
+  Dim i As Long, j As Long
+    i = myXlonLbnd: j = myXlonUbnd
+  Dim myXdouBufi As Double, myXdouBufj As Double, myXdouTmp As Double
+    Do
+        myXdouBufi = myZdouSrtData(i)
+        Do While coXlonOrder * (myXdouBufi - myXdouMed) < 0
+            i = i + 1: myXdouBufi = myZdouSrtData(i)
+        Loop
+        myXdouBufj = myZdouSrtData(j)
+        Do While coXlonOrder * (myXdouBufj - myXdouMed) > 0
+            j = j - 1: myXdouBufj = myZdouSrtData(j)
+        Loop
+        If i >= j Then Exit Do
+        myXdouTmp = myZdouSrtData(i)
+        myZdouSrtData(i) = myZdouSrtData(j)
+        myZdouSrtData(j) = myXdouTmp
+        i = i + 1: j = j - 1
+    Loop
+    If myXlonLbnd < i - 1 Then _
+        Call PfixQuickSortOfNumeric1DArray(myZdouSrtData, myXlonLbnd, i - 1, coXlonOrder)
+    If myXlonUbnd > j + 1 Then _
+        Call PfixQuickSortOfNumeric1DArray(myZdouSrtData, j + 1, myXlonUbnd, coXlonOrder)
+End Sub
+
+ '定型Ｆ_配列計算-相加平均
+Private Function PfncdouArithmeticMean(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouArithmeticMean = Empty
+  Dim myXdouAveTmp As Double: myXdouAveTmp = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1: myXdouAveTmp = myXdouAveTmp + myZdouOrgData(i)
+    Next i
+    PfncdouArithmeticMean = myXdouAveTmp / n
+End Function
+
+ '定型Ｆ_配列計算-標準偏差
+Private Function PfncdouStDevP(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouStDevP = Empty
+  Dim myXdouSumSq As Double: myXdouSumSq = 0
+  Dim myXdouSum As Double: myXdouSum = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1
+        myXdouSumSq = myXdouSumSq + (myZdouOrgData(i)) ^ 2
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+    Next i
+    If n <= 0 Then Exit Function
+    PfncdouStDevP = ((myXdouSumSq - (myXdouSum ^ 2) / n) / n) ^ 0.5
+End Function
+
+ '定型Ｆ_配列計算-不偏標本標準偏差
+Private Function PfncdouStDevS(ByRef myZdouOrgData() As Double) As Double
+'myZdouOrgData(i) : 元データ配列
+    PfncdouStDevS = Empty
+  Dim myXdouSumSq As Double: myXdouSumSq = 0
+  Dim myXdouSum As Double: myXdouSum = 0
+  Dim i As Long, n As Long: n = 0
+    For i = LBound(myZdouOrgData) To UBound(myZdouOrgData)
+        n = n + 1
+        myXdouSumSq = myXdouSumSq + (myZdouOrgData(i)) ^ 2
+        myXdouSum = myXdouSum + myZdouOrgData(i)
+    Next i
+    If n <= 1 Then Exit Function
+    PfncdouStDevS = ((myXdouSumSq - (myXdouSum ^ 2) / n) / (n - 1)) ^ 0.5
+End Function
+
+ '定型Ｆ_1次元配列で数値を検索して最初のデータ位置を取得する
+Private Function PfnclonMatchNumeric( _
+            ByVal myXdouIfCndtn As Double, ByRef myZdouOrgData() As Double, _
+            Optional ByVal coXbisNearest As Boolean = False) As Long
+'myZdouOrgData(i): 元データ配列
+'coXbisNearest = False : 指定数値と一致する値
+'coXbisNearest = True  : 指定数値に最も近い値
+    PfnclonMatchNumeric = Empty
+  Dim myXdouTmp As Double, Li As Long, Ui As Long
+    On Error GoTo ExitPath
+    Li = LBound(myZdouOrgData): myXdouTmp = myZdouOrgData(Li)
+    Ui = UBound(myZdouOrgData)
+    On Error GoTo 0
+  Dim i As Long, n As Long
+    If coXbisNearest = True Then
+      Dim myXdouPrvs As Double, myXdouPrsnt As Double, myXlonSgn As Long
+        myXdouTmp = myZdouOrgData(Li) - myXdouIfCndtn
+        If myXdouTmp >= 0 Then
+            myXlonSgn = 1
+        Else
+            myXlonSgn = -1
+        End If
+        For i = Li + 1 To Ui
+            myXdouTmp = myZdouOrgData(i) - myXdouIfCndtn
+            If myXlonSgn * myXdouTmp < 0 Then
+                myXdouPrvs = myZdouOrgData(i - 1) - myXdouIfCndtn
+                myXdouPrsnt = myZdouOrgData(i) - myXdouIfCndtn
+                If Abs(myXdouPrsnt) >= Abs(myXdouPrvs) Then
+                    n = i - 1
+                Else
+                    n = i
+                End If
+                Exit For
+            End If
+        Next i
+    Else
+        For i = Li To Ui
+            If myZdouOrgData(i) = myXdouIfCndtn Then
+                n = i: Exit For
+            End If
+        Next i
+    End If
+    PfnclonMatchNumeric = n
+ExitPath:
+End Function
+
+'DummyＰ_
+Private Sub CsubDummy()
+End Sub
+
+'===============================================================================================
+
+''◆ClassProc名_数値配列内のデータから統計量を計算する
+'Private Sub instCBscSttstcs()
+'  Dim myXlonDataCnt As Long
+'  Dim myXdouSum As Double
+'  Dim myXdouMax As Double, myXlonMaxDataNo As Long
+'  Dim myXdouThrdQrtl As Double
+'  Dim myXdouMedian As Double
+'  Dim myXdouFrstQrtl As Double
+'  Dim myXdouMin As Double, myXlonMinDataNo As Long
+'  Dim myXdouArthmtcMean As Double
+'  Dim myXdouStDevP As Double, myXdouStDevS As Double
+'  Dim myXdouMaxAbs As Double, myXlonMaxAbsDataNo As Long
+''//クラス内変数への入力
+'  Dim myXlonBgnRow As Long, myXlonEndRow As Long
+'    myXlonBgnRow = 1
+'    myXlonEndRow = 0
+'  Dim myXlonOrgCnt As Long
+'    myXlonOrgCnt = 5
+'  Dim myZdouOrgData() As Double
+'    'myZdouOrgData(i, 1) : 元データ配列
+'    ReDim myZdouOrgData(myXlonOrgCnt, 1) As Double
+'    myZdouOrgData(1, 1) = 1
+'    myZdouOrgData(2, 1) = 2
+'    myZdouOrgData(3, 1) = 3
+'    myZdouOrgData(4, 1) = 4
+'    myZdouOrgData(5, 1) = 5
+''//CBscSttstcsクラスモジュールのインスタンス生成
+'  Dim i As Long
+'  Dim myXinsBscSttstcs As CBscSttstcs: Set myXinsBscSttstcs = New CBscSttstcs
+'    With myXinsBscSttstcs
+'    '//クラス内変数への入力
+'        .letOrgDataAry = myZdouOrgData
+'        .letBgnRow = myXlonBgnRow
+'        .letEndRow = myXlonEndRow
+'    '//クラス内プロシージャの実行とクラス内変数からの出力
+'        .exeProc
+'        myXlonDataCnt = .getDataCnt
+'        myXdouSum = .getSum
+'        myXdouMax = .getMax
+'        myXlonMaxDataNo = .getMaxDataNo
+'        myXdouThrdQrtl = .getThrdQrtl
+'        myXdouMedian = .getMedian
+'        myXdouFrstQrtl = .getFrstQrtl
+'        myXdouMin = .getMin
+'        myXlonMinDataNo = .getMinDataNo
+'        myXdouArthmtcMean = .getArthmtcMean
+'        myXdouStDevP = .getStDevP
+'        myXdouStDevS = .getStDevS
+'        myXdouMaxAbs = .getMaxAbs
+'        myXlonMaxAbsDataNo = .getMaxAbsDataNo
+'    End With
+'JumpPath:
+'    Set myXinsBscSttstcs = Nothing
+'End Sub
+
+      <br></pre>
+    </body>
+  </html>
