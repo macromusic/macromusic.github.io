@@ -13,31 +13,26 @@
 'Includes PfncvarStandardNormalRandomNumber
 'Includes PfncvarNormalRandomNumber
 'Includes PfncvarRangeNormalRandomNumber
-'Includes PfncbisCheckArrayDimension
 
 Option Explicit
 Option Base 1
 
 '◆ClassProc名_乱数を生成する
-'Rev.001
+'Rev.002
   
 '//モジュールメモリ
   Private Const meMstrMdlName As String = "CRndmNmbr"
   
-'//PropertyGet_出力制御信号
-  Private myXbisCmpltFlag As Boolean
-  
 '//PropertyGet_出力データ
-  Private myXdouRndNum As Double
-  Private myXlonRndDataCnt As Long, myZdouRndData() As Double
-  
-'//PropertySetLet_入力制御信号
-  Private myXlonRndType As Long
+  Private Lc As Long
+  Private myXvarRndDataCnt As Variant, myZvarRndData() As Variant
+    'myZvarRndData(i) : 乱数データ
   
 '//PropertySetLet_入力データ
   Private myXdouMean As Double, myXdouDev As Double, myXdouStDev As Double, _
             myXdouLSL As Double, myXdouUSL As Double
-  Private myXlonRptN As Long
+  Private myXvarN As Variant
+    'myXvarN : 必要な乱数データ数
 
 '//モジュール内変数_制御信号
   Private myXbisExitFlag As Boolean
@@ -49,51 +44,26 @@ End Sub
 
 '-----------------------------------------------------------------------------------------------
 
-Public Property Get getCmpltFlag() As Boolean
-    getCmpltFlag = myXbisCmpltFlag
-End Property
-
-Public Property Get getRndNum() As Double
-    getRndNum = myXdouRndNum
-'myXdouRndNum : 乱数
+Public Property Get getOptnBase() As Long
+  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
+    getOptnBase = L
 End Property
 
 Public Property Get getRndDataCnt() As Long
-    getRndDataCnt = myXlonRndDataCnt
+    getRndDataCnt = myXvarRndDataCnt
 End Property
 
-Public Property Get getRndDataAry(ByVal i As Long) As Double
-    getRndDataAry = myZdouRndData(i)
-'myZdouRndData(i) : 乱数データ
+Public Property Get getRndDataAry(ByVal i As Long) As Variant
+    getRndDataAry = myZvarRndData(i)
+'myZvarRndData(i) : 乱数データ
 End Property
 
 'iniP_出力変数を初期化する
 Private Sub initializeOutputVariables()
-    myXbisCmpltFlag = False
-    myXlonRndDataCnt = Empty: Erase myZdouRndData
-End Sub
-
-'checkP_出力変数内容を確認する
-Private Sub checkOutputVariables()
-    myXbisExitFlag = False
-    
-    If myXlonRndDataCnt <= 0 Then GoTo ExitPath
-    If PfncbisCheckArrayDimension(myZdouRndData, 1) = False Then GoTo ExitPath
-    
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
+    myXvarRndDataCnt = Empty: Erase myZvarRndData
 End Sub
 
 '-----------------------------------------------------------------------------------------------
-
-Public Property Let letRndType(ByVal RHS As Long)
-    myXlonRndType = RHS
-'myXlonRndType = 1 : 一様乱数を生成
-'myXlonRndType = 2 : 標準正規乱数を生成
-'myXlonRndType = 3 : 正規乱数を生成
-'myXlonRndType = 4 : 指定範囲内の正規乱数を生成
-End Property
 
 Public Property Let letMean(ByVal RHS As Double)
     myXdouMean = RHS
@@ -115,159 +85,142 @@ Public Property Let letUSL(ByVal RHS As Double)
     myXdouUSL = RHS
 End Property
 
-Public Property Let letRptN(ByVal RHS As Long)
-    myXlonRptN = RHS
-'myXlonRptN = 1 : 1個の乱数を生成
-'myXlonRptN = N : N個の乱数を生成
+Public Property Let letN(ByVal RHS As Variant)
+    myXvarN = RHS
 End Property
 
-'checkP_入力変数内容を確認する
-Private Sub checkInputVariables()
-    myXbisExitFlag = False
-    
-    If myXlonRndType < 1 Or myXlonRndType > 4 Then GoTo ExitPath
-    
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
-End Sub
-
 '-----------------------------------------------------------------------------------------------
 
-'PublicF_
-Public Function fncdouRndNum() As Double
-    fncdouRndNum = Empty
-    myXlonRptN = 1
-    Call ctrProc
-    fncdouRndNum = myXdouRndNum
+'PublicF_一様乱数
+Public Function fncvarUniformRandomNumber() As Variant
+    fncvarUniformRandomNumber = Empty
+  Dim myXvarRndNum As Variant
+    myXvarRndNum = PfncvarUniformRandomNumber(myXdouMean, myXdouDev)
+    fncvarUniformRandomNumber = myXvarRndNum
 End Function
 
-'CtrlP_
-Private Sub ctrProc()
+'PublicF_標準正規乱数
+Public Function fncvarStandardNormalRandomNumber() As Variant
+    fncvarStandardNormalRandomNumber = Empty
+  Dim myXvarRndNum As Variant
+    myXvarRndNum = PfncvarStandardNormalRandomNumber()
+    fncvarStandardNormalRandomNumber = myXvarRndNum
+End Function
+
+'PublicF_正規乱数
+Public Function fncvarNormalRandomNumber() As Variant
+    fncvarNormalRandomNumber = Empty
+  Dim myXvarRndNum As Variant
+    myXvarRndNum = PfncvarNormalRandomNumber(myXdouMean, myXdouStDev)
+    fncvarNormalRandomNumber = myXvarRndNum
+End Function
+
+'PublicF_指定範囲内の正規乱数
+Public Function fncvarRangeNormalRandomNumber() As Variant
+    fncvarRangeNormalRandomNumber = Empty
+  Dim myXvarRndNum As Variant
+    myXvarRndNum = PfncvarRangeNormalRandomNumber(myXdouMean, myXdouStDev, myXdouLSL, myXdouUSL)
+    fncvarRangeNormalRandomNumber = myXvarRndNum
+End Function
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicF_N個の一様乱数
+Public Sub exeProcUniformRandomNumber()
+    Call ctrProcUniformRandomNumber
+End Sub
+
+'CtrlP_N個の一様乱数を生成
+Private Sub ctrProcUniformRandomNumber()
     Call initializeOutputVariables
     Call initializeModuleVariables
-    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
     
-'//C:分岐
-    If myXlonRptN = 1 Then
-    '//P:1個の乱数を生成
-        Call prsProc1
-        
-    Else
-    '//P:N個の乱数を生成
-        Call prsProc2
-    End If
+  Dim k As Long, n As Long
+    For k = 1 To myXvarN
+        n = n + 1
+        ReDim Preserve myZvarRndData(n) As Variant
+        myZvarRndData(n) = PfncvarUniformRandomNumber(myXdouMean, myXdouDev)
+    Next k
+    If n <> myXvarN Then Exit Sub
+    myXvarRndDataCnt = n
     
-    Call checkOutputVariables: If myXbisExitFlag = True Then GoTo ExitPath
-    myXbisCmpltFlag = True
-ExitPath:
     Call initializeModuleVariables
 End Sub
 
 '-----------------------------------------------------------------------------------------------
 
-'PublicP_
-Public Sub exeProc()
-    Call ctrProc
+'PublicF_N個の標準正規乱数
+Public Sub exeProcStandardNormalRandomNumber()
+    Call ctrProcStandardNormalRandomNumber
 End Sub
 
-'CtrlP_
-Private Sub ctrProc()
+'CtrlP_N個の標準正規乱数を生成
+Private Sub ctrProcStandardNormalRandomNumber()
     Call initializeOutputVariables
     Call initializeModuleVariables
-    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
-'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
     
-'//C:分岐
-    If myXlonRptN = 1 Then
-    '//P:1個の乱数を生成
-        Call prsProc1
-        
-    Else
-    '//P:N個の乱数を生成
-        Call prsProc2
-    End If
+  Dim k As Long, n As Long
+    For k = 1 To myXvarN
+        n = n + 1
+        ReDim Preserve myZvarRndData(n) As Variant
+        myZvarRndData(n) = PfncvarStandardNormalRandomNumber()
+    Next k
+    If n <> myXvarN Then Exit Sub
+    myXvarRndDataCnt = n
     
-    Call checkOutputVariables: If myXbisExitFlag = True Then GoTo ExitPath
-    myXbisCmpltFlag = True
-ExitPath:
     Call initializeModuleVariables
-End Sub
-
-'PrcsP_1個の乱数を生成
-Private Sub prsProc1()
-    myXbisExitFlag = False
-    
-    If myXlonRndType = 1 Then
-    '//一様乱数を生成
-        myXdouRndNum = PfncvarUniformRandomNumber(myXdouMean, myXdouDev)
-    
-    ElseIf myXlonRndType = 2 Then
-    '//標準正規乱数を生成
-        myXdouRndNum = PfncvarStandardNormalRandomNumber
-    
-    ElseIf myXlonRndType = 3 Then
-    '//正規乱数を生成
-        myXdouRndNum = PfncvarNormalRandomNumber(myXdouMean, myXdouStDev)
-    
-    ElseIf myXlonRndType = 4 Then
-    '//指定範囲内の正規乱数を生成
-        myXdouRndNum = PfncvarRangeNormalRandomNumber( _
-                        myXdouMean, myXdouStDev, myXdouLSL, myXdouUSL)
-    
-    Else
-        GoTo ExitPath
-    End If
-    
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
-End Sub
-
-'PrcsP_N個の乱数を生成
-Private Sub prsProc2()
-    myXbisExitFlag = False
-    
-    myXlonRndDataCnt = myXlonRptN
-    ReDim myZdouRndData(myXlonRndDataCnt) As Double
-    
-  Dim k As Long
-    If myXlonRndType = 1 Then
-    '//一様乱数を生成
-        For k = 1 To myXlonRptN
-            myZdouRndData(k) = PfncvarUniformRandomNumber(myXdouMean, myXdouDev)
-        Next k
-    
-    ElseIf myXlonRndType = 2 Then
-    '//標準正規乱数を生成
-        For k = 1 To myXlonRptN
-            myZdouRndData(k) = PfncvarStandardNormalRandomNumber
-        Next k
-    
-    ElseIf myXlonRndType = 3 Then
-    '//正規乱数を生成
-        For k = 1 To myXlonRptN
-            myZdouRndData(k) = PfncvarNormalRandomNumber(myXdouMean, myXdouStDev)
-        Next k
-    
-    ElseIf myXlonRndType = 4 Then
-    '//指定範囲内の正規乱数を生成
-        For k = 1 To myXlonRptN
-            myZdouRndData(k) = PfncvarRangeNormalRandomNumber( _
-                                myXdouMean, myXdouStDev, myXdouLSL, myXdouUSL)
-        Next k
-    
-    Else
-        GoTo ExitPath
-    End If
-    
-    Exit Sub
-ExitPath:
-    myXbisExitFlag = True
 End Sub
 
 '-----------------------------------------------------------------------------------------------
+
+'PublicF_N個の正規乱数
+Public Sub exeProcNormalRandomNumber()
+    Call ctrProcNormalRandomNumber
+End Sub
+
+'CtrlP_N個の正規乱数を生成
+Private Sub ctrProcNormalRandomNumber()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    
+  Dim k As Long, n As Long
+    For k = 1 To myXvarN
+        n = n + 1
+        ReDim Preserve myZvarRndData(n) As Variant
+        myZvarRndData(n) = PfncvarNormalRandomNumber(myXdouMean, myXdouStDev)
+    Next k
+    If n <> myXvarN Then Exit Sub
+    myXvarRndDataCnt = n
+    
+    Call initializeModuleVariables
+End Sub
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicF_N個の指定範囲内の正規乱数
+Public Sub exeProcRangeNormalRandomNumber()
+    Call ctrProcRangeNormalRandomNumber
+End Sub
+
+'CtrlP_N個の指定範囲内の正規乱数を生成
+Private Sub ctrProcRangeNormalRandomNumber()
+    Call initializeOutputVariables
+    Call initializeModuleVariables
+    
+  Dim k As Long, n As Long
+    For k = 1 To myXvarN
+        n = n + 1
+        ReDim Preserve myZvarRndData(n) As Variant
+        myZvarRndData(n) = PfncvarRangeNormalRandomNumber( _
+                            myXdouMean, myXdouStDev, myXdouLSL, myXdouUSL)
+    Next k
+    If n <> myXvarN Then Exit Sub
+    myXvarRndDataCnt = n
+    
+    Call initializeModuleVariables
+End Sub
+
+'===============================================================================================
 
  '定型Ｆ_一様乱数を生成する
 Private Function PfncvarUniformRandomNumber( _
@@ -338,22 +291,6 @@ Private Function PfncvarRangeNormalRandomNumber( _
 ExitPath:
 End Function
 
- '定型Ｆ_配列変数の次元数が指定次元と一致するかをチェックする
-Private Function PfncbisCheckArrayDimension( _
-            ByRef myZvarDataAry As Variant, ByVal myXlonDmnsn As Long) As Boolean
-    PfncbisCheckArrayDimension = False
-    If IsArray(myZvarDataAry) = False Then Exit Function
-    If myXlonDmnsn <= 0 Then Exit Function
-  Dim myXlonTmp As Long, k As Long: k = 0
-    On Error Resume Next
-    Do
-        k = k + 1: myXlonTmp = UBound(myZvarDataAry, k)
-    Loop While Err.Number = 0
-    On Error GoTo 0
-    If k - 1 <> myXlonDmnsn Then Exit Function
-    PfncbisCheckArrayDimension = True
-End Function
-
 'DummyＰ_
 Private Sub CsubDummy()
 End Sub
@@ -362,17 +299,11 @@ End Sub
 
 ''◆ClassProc名_乱数を生成する
 'Private Sub instCRndmNmbr()
-'  Dim myXbisCmpltFlag As Boolean
-'  Dim myXdouRndNum As Double
-'  Dim myXlonRndDataCnt As Long, myZdouRndData() As Double
-'    'myZdouRndData(i) : 乱数データ
+'  Dim Lc As Long
+'  Dim myXvarRndNum As Variant
+'  Dim myXvarRndDataCnt As Variant, myZvarRndData() As Variant
+'    'myZvarRndData(i) : 乱数データ
 ''//クラス内変数への入力
-'  Dim myXlonRndType As Long
-'    myXlonRndType = 1
-'    'myXlonRndType = 1 : 一様乱数を生成
-'    'myXlonRndType = 2 : 標準正規乱数を生成
-'    'myXlonRndType = 3 : 正規乱数を生成
-'    'myXlonRndType = 4 : 指定範囲内の正規乱数を生成
 '  Dim myXdouMean As Double, myXdouDev As Double, myXdouStDev As Double, _
 '        myXdouLSL As Double, myXdouUSL As Double
 '    myXdouMean = 1
@@ -380,36 +311,43 @@ End Sub
 '    myXdouStDev = 1
 '    myXdouLSL = 1
 '    myXdouUSL = 10
-'  Dim myXlonRptN As Long
-'    myXlonRptN = 1
+'  Dim myXvarN As Variant
+'    'myXvarN : 必要な乱数データ数
+'    myXvarN = 10
 ''//CRndmNmbrクラスモジュールのインスタンス生成
 '  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
 '  Dim i As Long
 '  Dim myXinsRndmNmbr As CRndmNmbr: Set myXinsRndmNmbr = New CRndmNmbr
 '    With myXinsRndmNmbr
 '    '//クラス内変数への入力
-'        .letRndType = myXlonRndType
 '        .letMean = myXdouMean
 '        .letDev = myXdouDev
 '        .letStDev = myXdouStDev
 '        .letLSL = myXdouLSL
 '        .letUSL = myXdouUSL
-'        .letRptN = myXlonRptN
+'        .letN = myXvarN
 '    '//クラス内プロシージャの実行とクラス内変数からの出力
-'        myXdouRndNum = .fncdouRndNum
-'        .exeProc
-'        myXbisCmpltFlag = .getCmpltFlag
-'        myXlonRndDataCnt = .getRndDataCnt
-'        If myXlonRndDataCnt <= 0 Then GoTo JumpPath
-'        i = myXlonRndDataCnt - (1 - L): ReDim myZdouRndData(i) As Double
-'        For i = 1 To myXlonRndDataCnt
-'            myZdouRndData(i - (1 - L)) = .getRndDataAry(i)
+''        myXvarRndNum = .fncvarUniformRandomNumber           '一様乱数
+''        myXvarRndNum = .fncvarStandardNormalRandomNumber    '標準正規乱数
+''        myXvarRndNum = .fncvarNormalRandomNumber            '正規乱数
+''        myXvarRndNum = .fncvarRangeNormalRandomNumber       '指定範囲内の正規乱数
+'        .exeProcUniformRandomNumber         'N個の一様乱数
+''        .exeProcStandardNormalRandomNumber  'N個の標準正規乱数
+''        .exeProcNormalRandomNumber          'N個の正規乱数
+''        .exeProcRangeNormalRandomNumber     'N個の指定範囲内の正規乱数
+'        myXvarRndDataCnt = .getRndDataCnt
+'        If myXvarRndDataCnt <= 0 Then GoTo JumpPath
+'        i = myXvarRndDataCnt + L - 1
+'        ReDim myZvarRndData(i) As Variant
+'        Lc = .getOptnBase
+'        For i = 1 To myXvarRndDataCnt
+'            myZvarRndData(i + L - 1) = .getRndDataAry(i + Lc - 1)
 '        Next i
 '    End With
 'JumpPath:
 '    Set myXinsRndmNmbr = Nothing
-'    Debug.Print "データ: " & myXdouRndNum
-''    Call variablesOfCRndmNmbr(myXlonRndDataCnt, myZdouRndData)   'Debug.Print
+''    Debug.Print "データ: " & myXvarRndNum
+'    Call variablesOfCRndmNmbr(myXvarRndDataCnt, myZvarRndData)   'Debug.Print
 'End Sub
 'Private Sub variablesOfCRndmNmbr( _
 '            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
