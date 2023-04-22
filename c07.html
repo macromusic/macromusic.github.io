@@ -243,9 +243,12 @@ End Function
  '定型Ｆ_指定変数が1次元の数値配列かどうかをチェックする
 Private Function PfncbisIsNumeric1DArray(ByRef myZvarAry As Variant) As Boolean
     PfncbisIsNumeric1DArray = False
-  Dim myXdouTmp As Double, Li As Long
+  Dim myXvarTmp As Variant, myXdouTmp As Double, Li As Long
     On Error GoTo ExitPath
     Li = LBound(myZvarAry): myXdouTmp = myZvarAry(Li)
+    For Each myXvarTmp In myZvarAry
+        If IsNumeric(myXvarTmp) = False Then GoTo ExitPath
+    Next myXvarTmp
     On Error GoTo 0
     PfncbisIsNumeric1DArray = True
 ExitPath:
@@ -254,9 +257,13 @@ End Function
  '定型Ｆ_指定変数が2次元の数値配列かどうかをチェックする
 Private Function PfncbisIsNumeric2DArray(ByRef myZvarAry As Variant) As Boolean
     PfncbisIsNumeric2DArray = False
-  Dim myXdouTmp As Double, Li As Long
+  Dim myXvarTmp As Variant, myXdouTmp As Double, L1 As Long, L2 As Long
     On Error GoTo ExitPath
-    Li = LBound(myZvarAry, 1): myXdouTmp = myZvarAry(Li, Li)
+    L1 = LBound(myZvarAry, 1): L2 = LBound(myZvarAry, 2)
+    myXdouTmp = myZvarAry(L1, L2)
+    For Each myXvarTmp In myZvarAry
+        If IsNumeric(myXvarTmp) = False Then GoTo ExitPath
+    Next myXvarTmp
     On Error GoTo 0
     PfncbisIsNumeric2DArray = True
 ExitPath:
@@ -264,42 +271,46 @@ End Function
 
  '定型Ｐ_配列変数の次元数を確認して2次元配列に調整する
 Private Sub PfixRedim2DArray( _
-            myXlonRowCnt As Long, myXlonColCnt As Long, myZvarNewAry() As Variant, _
-            ByRef myZvarOrgAry As Variant)
-    myXlonRowCnt = Empty: myXlonColCnt = Empty: Erase myZvarNewAry
+            myXlonNewRowCnt As Long, myXlonNewColCnt As Long, myZvarNewData() As Variant, _
+            ByRef myZvarOrgData As Variant)
+'myZvarNewData(i, j) : 配列データ
+    myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZvarNewData
 '//配列変数の次元数を取得
-  Dim myXlonTmp As Long, m As Long: m = 0
+  Dim myXvarTmp As Variant, k As Long: k = 0
     On Error Resume Next
     Do
-        m = m + 1: myXlonTmp = UBound(myZvarOrgAry, m)
+        k = k + 1: myXvarTmp = UBound(myZvarOrgData, k)
     Loop While Err.Number = 0
     On Error GoTo 0
-  Dim myXlonAryDmnsn As Long: myXlonAryDmnsn = m - 1
+  Dim myXlonAryDmnsn As Long: myXlonAryDmnsn = k - 1
 '//配列変数の次元数に応じて処理を実施
   Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
-  Dim Li As Long, Ui1 As Long, Ui2 As Long, i As Long, j As Long
+  Dim Li As Long, i As Long, j As Long
     If myXlonAryDmnsn = 0 Then
-        ReDim myZvarNewAry(Lo, Lo) As Variant
-        myZvarNewAry(Lo, Lo) = myZvarOrgAry
+        myXlonNewRowCnt = 1
+        myXlonNewColCnt = 1
+        i = myXlonNewRowCnt + Lo - 1
+        j = myXlonNewColCnt + Lo - 1
+        ReDim myZvarNewData(i, j) As Variant
+        myZvarNewData(i, j) = myZvarOrgData
     ElseIf myXlonAryDmnsn = 1 Then
-        Li = LBound(myZvarOrgAry): Ui1 = UBound(myZvarOrgAry)
-        myXlonRowCnt = Ui1 - Li + 1: myXlonColCnt = 1
-        If myXlonRowCnt <= 0 Then Exit Sub
-        i = myXlonRowCnt + Lo - 1: j = myXlonColCnt + Lo - 1
-        ReDim myZvarNewAry(i, j) As Variant
-        For i = LBound(myZvarOrgAry) To UBound(myZvarOrgAry)
-            myZvarNewAry(i + Lo - Li, Lo) = myZvarOrgAry(i)
+        myXlonNewRowCnt = UBound(myZvarOrgData) - LBound(myZvarOrgData) + 1
+        myXlonNewColCnt = 1
+        i = myXlonNewRowCnt + Lo - 1
+        j = myXlonNewColCnt + Lo - 1
+        ReDim myZvarNewData(i, j) As Variant
+        For i = LBound(myZvarOrgData) To UBound(myZvarOrgData)
+            myZvarNewData(i + Lo - Li, j) = myZvarOrgData(i)
         Next i
     ElseIf myXlonAryDmnsn = 2 Then
-        Li = LBound(myZvarOrgAry, 1): Ui1 = UBound(myZvarOrgAry, 1)
-        Ui2 = UBound(myZvarOrgAry, 2)
-        myXlonRowCnt = Ui1 - Li + 1: myXlonColCnt = Ui2 - Li + 1
-        If myXlonRowCnt <= 0 Or myXlonColCnt <= 0 Then Exit Sub
-        i = myXlonRowCnt + Lo - 1: j = myXlonColCnt + Lo - 1
-        ReDim myZvarNewAry(i, j) As Variant
-        For i = Li To Ui1
-            For j = Li To Ui2
-                myZvarNewAry(i + Lo - Li, j + Lo - Li) = myZvarOrgAry(i, j)
+        myXlonNewRowCnt = UBound(myZvarOrgData, 1) - LBound(myZvarOrgData, 1) + 1
+        myXlonNewColCnt = UBound(myZvarOrgData, 2) - LBound(myZvarOrgData, 2) + 1
+        i = myXlonNewRowCnt + Lo - 1
+        j = myXlonNewColCnt + Lo - 1
+        ReDim myZvarNewData(i, j) As Variant
+        For i = LBound(myZvarOrgData, 1) To UBound(myZvarOrgData, 1)
+            For j = LBound(myZvarOrgData, 2) To UBound(myZvarOrgData, 2)
+                myZvarNewData(i + Lo - Li, j + Lo - Li) = myZvarOrgData(i, j)
             Next j
         Next i
     Else
@@ -744,64 +755,64 @@ End Sub
 
  '定型Ｐ_2次元配列の指定列で文字列を検索して最初の行全体を取得する
 Private Sub PincVFilterString( _
-            myXlonValCnt As Long, myXlonColCnt As Long, myZstrVal() As String, _
+            myXlonValRowCnt As Long, myXlonValColCnt As Long, myZstrVal() As String, _
             ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
             Optional ByVal coXlonSrchCol As Long = 1, _
             Optional ByVal coXbisInStrOptn As Boolean = False)
 'Includes PfnclonVMatchString
-'myZstrVal(1, i) : 取得値
+'myZstrVal(1, i) : 取得値配列
 'myZstrOrgData(i, j) : 元データ配列
 'coXlonSrchCol : 検索する列番号を指定
 'coXbisInStrOptn = False : 指定文字列と一致する条件
 'coXbisInStrOptn = True  : 指定文字列を含む条件
-    myXlonValCnt = Empty: myXlonColCnt = Empty: Erase myZstrVal
+    myXlonValRowCnt = Empty: myXlonValColCnt = Empty: Erase myZstrVal
     On Error GoTo ExitPath
   Dim Li As Long: Li = LBound(myZstrOrgData, 1)
+  Dim Ui As Long: Ui = UBound(myZstrOrgData, 1)
     On Error GoTo 0
   Dim myXlonFltrRow As Long
-    myXlonFltrRow = PfnclonVMatchString( _
-                        myXstrIfCndtn, myZstrOrgData, coXlonSrchCol, coXbisInStrOptn)
-    If myXlonFltrRow < Li Then Exit Sub
+    myXlonFltrRow = PfnclonVMatchString(myXstrIfCndtn, myZstrOrgData, coXlonSrchCol, coXbisInStrOptn)
+    If myXlonFltrRow < Li Or Ui < myXlonFltrRow Then Exit Sub
   Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
   Dim i As Long, j As Long
-    j = UBound(myZstrOrgData, 2)
-    ReDim myZstrVal(Lo, j) As String
-    myXlonValCnt = UBound(myZstrVal, 1) - LBound(myZstrVal, 1) + 1
-    myXlonColCnt = UBound(myZstrVal, 2) - LBound(myZstrVal, 2) + 1
+    myXlonValRowCnt = 1
+    myXlonValColCnt = UBound(myZstrVal, 2) - LBound(myZstrVal, 2) + 1
+    i = myXlonValRowCnt + Lo - 1: j = myXlonValColCnt + Lo - 1
+    ReDim myZstrVal(i, j) As String
     For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
-        myZstrVal(Lo, j) = myZstrOrgData(myXlonFltrRow, j)
+        myZstrVal(i, j) = myZstrOrgData(myXlonFltrRow, j)
     Next j
 ExitPath:
 End Sub
 
  '定型Ｐ_2次元配列の指定行で文字列を検索して最初の列全体を取得する
 Private Sub PincHFilterString( _
-            myXlonRowCnt As Long, myXlonValCnt As Long, myZstrVal() As String, _
+            myXlonValRowCnt As Long, myXlonValColCnt As Long, myZstrVal() As String, _
             ByVal myXstrIfCndtn As String, ByRef myZstrOrgData() As String, _
             Optional ByVal coXlonSrchRow As Long = 1, _
             Optional ByVal coXbisInStrOptn As Boolean = False)
 'Includes PfnclonHMatchString
-'myZstrVal(i, 1) : 取得値
-'myZstrOrgData(i) : 元データ
+'myZstrVal(i, 1) : 取得値配列
+'myZstrOrgData(i, j) : 元データ配列
 'coXlonSrchRow : 検索する行番号を指定
 'coXbisInStrOptn = False : 指定文字列と一致する条件
 'coXbisInStrOptn = True  : 指定文字列を含む条件
-    myXlonRowCnt = Empty: myXlonValCnt = Empty: Erase myZstrVal
+    myXlonValRowCnt = Empty: myXlonValColCnt = Empty: Erase myZstrVal
     On Error GoTo ExitPath
   Dim Li As Long: Li = LBound(myZstrOrgData, 2)
+  Dim Ui As Long: Ui = UBound(myZstrOrgData, 2)
     On Error GoTo 0
   Dim myXlonFltrCol As Long
-    myXlonFltrCol = PfnclonHMatchString( _
-                        myXstrIfCndtn, myZstrOrgData, coXlonSrchRow, coXbisInStrOptn)
-    If myXlonFltrCol < Li Then Exit Sub
+    myXlonFltrCol = PfnclonHMatchString(myXstrIfCndtn, myZstrOrgData, coXlonSrchRow, coXbisInStrOptn)
+    If myXlonFltrRow < Li Or Ui < myXlonFltrRow Then Exit Sub
   Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
   Dim i As Long, j As Long
-    i = UBound(myZstrOrgData, 1)
-    ReDim myZstrVal(i, Lo) As String
-    myXlonRowCnt = UBound(myZstrOrgData, 1) - LBound(myZstrOrgData, 1) + 1
-    myXlonValCnt = UBound(myZstrOrgData, 2) - LBound(myZstrOrgData, 2) + 1
+    myXlonValRowCnt = UBound(myZstrOrgData, 1) - LBound(myZstrOrgData, 1) + 1
+    myXlonValColCnt = 1
+    i = myXlonValRowCnt + Lo - 1: j = myXlonValColCnt + Lo - 1
+    ReDim myZstrVal(i, j) As String
     For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
-        myZstrVal(i, Lo) = myZstrOrgData(i, myXlonFltrCol)
+        myZstrVal(i, j) = myZstrOrgData(i, myXlonFltrCol)
     Next i
 ExitPath:
 End Sub
@@ -1158,17 +1169,17 @@ Private Sub PincVFilterExtendedString( _
     Call PfixVMatchExtendedString(myXlonPstnCnt, myZlonPstn, _
             myXstrIfCndtn, myZstrOrgData, coXlonSrchCol, coXbisInStrOptn)
     If myXlonPstnCnt <= 0 Then Exit Sub
-  Dim Li As Long, myXlonTmp As Long
-    Li = LBound(myZlonPstn): myXlonTmp = myZlonPstn(Li)
-  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
-  Dim i As Long, j As Long
-    i = UBound(myZstrOrgData, 1) + Lo - Li: j = UBound(myZlonPstn) + Lo - Li
-    ReDim myZstrVal(i, j) As String
     myXlonValRowCnt = myXlonPstnCnt
     myXlonValColCnt = UBound(myZstrOrgData, 2) - LBound(myZstrOrgData, 2) + 1
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    i = myXlonValRowCnt + Lo - 1: j = myXlonValColCnt + Lo - 1
+    ReDim myZstrVal(i, j) As String
+  Dim myXlonTmp As Long
     For i = LBound(myZlonPstn) To UBound(myZlonPstn)
+        myXlonTmp = myZlonPstn(i)
         For j = LBound(myZstrOrgData, 2) To UBound(myZstrOrgData, 2)
-            myZstrVal(i, j) = myZstrOrgData(myZlonPstn(i), j)
+            myZstrVal(i, j) = myZstrOrgData(myXlonTmp, j)
         Next j
     Next i
     Erase myZlonPstn
@@ -1190,14 +1201,17 @@ Private Sub PincHFilterExtendedString( _
     Call PfixHMatchExtendedString(myXlonPstnCnt, myZlonPstn, _
             myXstrIfCndtn, myZstrOrgData, coXlonSrchRow, coXbisInStrOptn)
     If myXlonPstnCnt <= 0 Then Exit Sub
-  Dim i As Long, j As Long
-    i = UBound(myZstrOrgData, 1): j = UBound(myZlonPstn)
-    ReDim myZstrVal(i, j) As String
     myXlonValRowCnt = UBound(myZstrOrgData, 1) - LBound(myZstrOrgData, 1) + 1
     myXlonValColCnt = myXlonPstnCnt
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    i = myXlonValRowCnt + Lo - 1: j = myXlonValColCnt + Lo - 1
+    ReDim myZstrVal(i, j) As String
+  Dim myXlonTmp As Long
     For j = LBound(myZlonPstn) To UBound(myZlonPstn)
+        myXlonTmp = myZlonPstn(j)
         For i = LBound(myZstrOrgData, 1) To UBound(myZstrOrgData, 1)
-            myZstrVal(i, j) = myZstrOrgData(i, myZlonPstn(j))
+            myZstrVal(i, j) = myZstrOrgData(i, myXlonTmp)
         Next i
     Next j
     Erase myZlonPstn
@@ -3947,72 +3961,16 @@ NextPath:
 ExitPath:
 End Sub
 
- '定型Ｐ_配列変数の次元数を確認して2次元配列に調整する
-Private Sub PfixSet2DArray( _
-            myXlonNewRowCnt As Long, myXlonNewColCnt As Long, _
-            myZvarNewData() As Variant, _
-            ByRef myZvarOrgData As Variant)
-'myZvarNewData(i, j) : 配列データ
-    myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZvarNewData
-  Dim myZlonTmp(1) As Long, L As Long: L = LBound(myZlonTmp)
-'//配列変数の次元数を取得
-  Dim myXlonAryIndx As Long
-    If IsArray(myZvarOrgData) = False Then
-        myXlonAryIndx = 0: GoTo JumpPath
-    End If
-  Dim myXvarTmp As Variant, k As Long: k = 0
-    On Error Resume Next
-    Do
-        k = k + 1: myXvarTmp = UBound(myZvarOrgData, k)
-    Loop While Err.Number = 0
-    On Error GoTo 0
-    myXlonAryIndx = k - 1
-JumpPath:
-'//配列変数の次元数に応じて処理を実施
-  Dim i As Long, j As Long
-    If myXlonAryIndx = 0 Then
-        myXlonNewRowCnt = 1
-        myXlonNewColCnt = 1
-        i = myXlonNewRowCnt - (1 - L)
-        j = myXlonNewColCnt - (1 - L)
-        ReDim myZvarNewData(i, j) As Variant
-        myZvarNewData(i, j) = myZvarOrgData
-    ElseIf myXlonAryIndx = 1 Then
-        myXlonNewRowCnt = UBound(myZvarOrgData) - LBound(myZvarOrgData) + 1
-        myXlonNewColCnt = 1
-        i = myXlonNewRowCnt - (1 - L)
-        j = myXlonNewColCnt - (1 - L)
-        ReDim myZvarNewData(i, j) As Variant
-        For i = LBound(myZvarOrgData) To UBound(myZvarOrgData)
-            myZvarNewData(i, j) = myZvarOrgData(i)
-        Next i
-    ElseIf myXlonAryIndx = 2 Then
-        myXlonNewRowCnt = UBound(myZvarOrgData, 1) - LBound(myZvarOrgData, 1) + 1
-        myXlonNewColCnt = UBound(myZvarOrgData, 2) - LBound(myZvarOrgData, 2) + 1
-        i = myXlonNewRowCnt - (1 - L)
-        j = myXlonNewColCnt - (1 - L)
-        ReDim myZvarNewData(i, j) As Variant
-        For i = LBound(myZvarOrgData, 1) To UBound(myZvarOrgData, 1)
-            For j = LBound(myZvarOrgData, 2) To UBound(myZvarOrgData, 2)
-                myZvarNewData(i, j) = myZvarOrgData(i, j)
-            Next j
-        Next i
-    Else
-        Exit Sub
-    End If
-End Sub
-
  '定型Ｐ_一覧形式の配列表の指定列の同一値ごとの行範囲を取得する
 Private Sub PfixGetVarietyRowsFromTable( _
             myXlonVrtyCnt As Long, myZvarVrty() As Variant, _
             ByRef myZvarOrgData As Variant, _
             Optional ByVal coXlonDataSetCol As Long = 1, _
             Optional ByVal coXlonBgnRow As Long = 1)
-'  Dim myXlonVrtyCnt As Long, myZvarVrty() As Variant, myZvarOrgData() As Variant
-    'myZvarVrty(1, i) = 指定列データ
-    'myZvarVrty(2, i) = 開始行
-    'myZvarVrty(3, i) = 最終行
-    'myZvarOrgData(i, j) : 元データ
+'myZvarVrty(1, i) = 指定列データ
+'myZvarVrty(2, i) = 開始行
+'myZvarVrty(3, i) = 最終行
+'myZvarOrgData(i, j) : 元データ
 '    coXlonDataSetCol : 行範囲を取得したい列
 '    coXlonBgnRow : 開始行
     myXlonVrtyCnt = Empty: Erase myZvarVrty
@@ -4061,7 +4019,7 @@ End Sub
 Private Sub PfixSetDateEachMonth( _
             myXlonDateCnt As Long, myZdatDate() As Date, _
             ByVal myXdatBgnDate As Date, ByVal myXdatEndDate As Date)
-    'myZdatDate(i) : 1ヶ月ごとの日付データ
+'myZdatDate(i) : 1ヶ月ごとの日付データ
     myXlonDateCnt = Empty: Erase myZdatDate
     If myXdatBgnDate = CDate(0) Then Exit Sub
     If myXdatEndDate = CDate(0) Then myXdatEndDate = Date
@@ -4087,9 +4045,9 @@ Private Sub PfixGetRowsFrom2DArrayMatchSeriesData( _
             myXlonArngDataCnt As Long, myZvarArngData() As Variant, _
             ByRef myZvarOrgData As Variant, ByRef myZstrSrsData() As String, _
             Optional ByVal coXlonSrchCol As Long = 1)
-    'myZvarArngData(i, j) : 取得データ
-    'myZvarOrgData(i, j) : 元データ
-    'myZstrSrsData(k) : 参照元の連続データ
+'myZvarArngData(i, j) : 取得データ
+'myZvarOrgData(i, j) : 元データ
+'myZstrSrsData(k) : 参照元の連続データ
     myXlonArngDataCnt = Empty: Erase myZvarArngData
   Dim L1 As Long, L2 As Long, myXvarTmp As Variant
     On Error GoTo ExitPath
