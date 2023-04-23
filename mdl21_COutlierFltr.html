@@ -54,8 +54,8 @@ Option Base 1
   
 '//モジュール内変数_データ
   Private myXlonInptRowCnt As Long, myXlonInptColCnt As Long, myZdouInptData() As Double
-  Private myXlonXdataCnt As Long, myZdouXdata() As Double
-  Private myXlonOrgYCnt As Long, myZdouOrgY() As Double
+  Private myXlonXTmpDataCnt As Long, myZdouXTmpData() As Double
+  Private myXlonYTmpDataCnt As Long, myXlonYTmpData() As Double
   Private myXlonStrtNo As Long, myXlonLastNo As Long
   Private myXlonPreOfst As Long, myXlonPstOfst As Long
   Private myXlonCalStrtNo As Long, myXlonCalLastNo As Long
@@ -72,8 +72,8 @@ Private Sub initializeModuleVariables()
     
     myXlonInptRowCnt = Empty: myXlonInptColCnt = Empty: Erase myZdouInptData
     
-    myXlonXdataCnt = Empty: Erase myZdouXdata
-    myXlonOrgYCnt = Empty: Erase myZdouOrgY
+    myXlonXTmpDataCnt = Empty: Erase myZdouXTmpData
+    myXlonYTmpDataCnt = Empty: Erase myXlonYTmpData
     myXlonStrtNo = Empty: myXlonLastNo = Empty
     myXlonPreOfst = Empty: myXlonPstOfst = Empty
     myXlonCalStrtNo = Empty: myXlonCalLastNo = Empty
@@ -359,15 +359,20 @@ Private Sub setDataVariables()
   Dim myXlonBgnNo As Long, myXlonEndNo As Long
     myXlonBgnNo = LBound(myZdouInptData, 1)
     myXlonEndNo = UBound(myZdouInptData, 1)
-    Call PfixArrayPartColumnNumeric(myXlonOrgYCnt, myZdouOrgY, _
-            myZdouInptData, 1, myXlonBgnNo, myXlonEndNo)
-    If myXlonOrgYCnt <= 0 Then GoTo ExitPath
+    
+'//2次元の数値配列の指定列から一部を1次元配列で取得
+  Const coXlonCalCol As Long = 1
+  Const coXlonCalStep As Long = 1
+    Call PfixArrayPartColumnNumeric( _
+            myXlonYTmpDataCnt, myXlonYTmpData, _
+            myZdouInptData, coXlonCalCol, myXlonBgnNo, myXlonEndNo, coXlonCalStep)
+    If myXlonYTmpDataCnt <= 0 Then GoTo ExitPath
     
   Dim i As Long
-    myXlonXdataCnt = myXlonOrgYCnt
-    ReDim myZdouXdata(myXlonOrgYCnt) As Double
-    For i = LBound(myZdouOrgY) To UBound(myZdouOrgY)
-        myZdouXdata(i) = i
+    myXlonXTmpDataCnt = myXlonYTmpDataCnt
+    ReDim myZdouXTmpData(myXlonYTmpDataCnt) As Double
+    For i = LBound(myXlonYTmpData) To UBound(myXlonYTmpData)
+        myZdouXTmpData(i) = i
     Next i
     
     myXlonStrtNo = myXlonBgnNo
@@ -416,14 +421,15 @@ Private Sub prsCalDeviationFromRegressionLine()
     Call setControlVariables(myXlonCalRng, myXlonRgrsnSmplQnt, myXlonRgrsnStep)
     If myXbisExitFlag = True Then GoTo ExitPath
   Dim myXlonCalStrtNo As Long, myXlonCalLastNo As Long
-    myXlonCalStrtNo = LBound(myZdouOrgY) + myXlonPreOfst
-    myXlonCalLastNo = UBound(myZdouOrgY) - myXlonPstOfst
+    myXlonCalStrtNo = LBound(myXlonYTmpData) + myXlonPreOfst
+    myXlonCalLastNo = UBound(myXlonYTmpData) - myXlonPstOfst
     
 '//台形波形を生成
   Dim myXlonAdjstValCnt As Long, myZlonAdjstVal() As Long
-    Call PfixTrapezoidWaveLong(myXlonAdjstValCnt, myZlonAdjstVal, _
-            myXlonOrgYCnt, myXlonCalStrtNo, myXlonCalLastNo, 1, -1, -1, 0)
-    If myXlonAdjstValCnt <> myXlonOrgYCnt Then GoTo ExitPath
+    Call PfixTrapezoidWaveLong( _
+            myXlonAdjstValCnt, myZlonAdjstVal, _
+            myXlonYTmpDataCnt, myXlonCalStrtNo, myXlonCalLastNo, 1, -1, -1, 0)
+    If myXlonAdjstValCnt <> myXlonYTmpDataCnt Then GoTo ExitPath
     
 '//計算処理:Y軸データと回帰直線との差分
   Dim i As Long, myXlonBgnNo As Long, myXlonEndNo As Long
@@ -431,21 +437,23 @@ Private Sub prsCalDeviationFromRegressionLine()
   Dim myXlonYTmpCnt As Long, myZdouYTmp() As Double
   Dim myXdouSlp As Double, myXdouIntrcpt As Double, myXdouRgrsn As Double
     
-    myXlonRgrsnLnDevCnt = myXlonOrgYCnt
+    myXlonRgrsnLnDevCnt = myXlonYTmpDataCnt
     ReDim myZdouRgrsnLnDev(myXlonRgrsnLnDevCnt) As Double
 
-    For i = LBound(myZdouOrgY) To UBound(myZdouOrgY)
+    For i = LBound(myXlonYTmpData) To UBound(myXlonYTmpData)
         myXlonBgnNo = i - myXlonPreOfst + myZlonAdjstVal(i)
         myXlonEndNo = i + myXlonPstOfst + myZlonAdjstVal(i)
-        Call Pfix1DArrayExtractNumeric(myXlonXTmpCnt, myZdouXTmp, _
-                myZdouXdata, myXlonBgnNo, myXlonEndNo, myXlonRgrsnStep)
+        Call Pfix1DArrayExtractNumeric( _
+                myXlonXTmpCnt, myZdouXTmp, _
+                myZdouXTmpData, myXlonBgnNo, myXlonEndNo, myXlonRgrsnStep)
         If myXlonXTmpCnt <= 0 Then GoTo ExitPath
-        Call Pfix1DArrayExtractNumeric(myXlonYTmpCnt, myZdouYTmp, _
-                myZdouOrgY, myXlonBgnNo, myXlonEndNo, myXlonRgrsnStep)
+        Call Pfix1DArrayExtractNumeric( _
+                myXlonYTmpCnt, myZdouYTmp, _
+                myXlonYTmpData, myXlonBgnNo, myXlonEndNo, myXlonRgrsnStep)
         If myXlonYTmpCnt <= 0 Then GoTo ExitPath
         Call PfixSlopeIntercept(myXdouSlp, myXdouIntrcpt, myZdouXTmp, myZdouYTmp)
-        myXdouRgrsn = myXdouSlp * myZdouXdata(i) + myXdouIntrcpt
-        myZdouRgrsnLnDev(i) = myZdouOrgY(i) - myXdouRgrsn
+        myXdouRgrsn = myXdouSlp * myZdouXTmpData(i) + myXdouIntrcpt
+        myZdouRgrsnLnDev(i) = myXlonYTmpData(i) - myXdouRgrsn
     Next i
     
     Erase myZlonAdjstVal: Erase myZdouXTmp: Erase myZdouYTmp
@@ -479,26 +487,28 @@ Private Sub prsCalMean()
     Call setControlVariables(myXlonCalRng, myXlonMeanSmplQnt, myXlonMeanStep)
     If myXbisExitFlag = True Then GoTo ExitPath
   Dim myXlonCalStrt As Long, myXlonCalLast As Long
-    myXlonCalStrt = LBound(myZdouOrgY) + myXlonPreOfst
-    myXlonCalLast = UBound(myZdouOrgY) - myXlonPstOfst
+    myXlonCalStrt = LBound(myXlonYTmpData) + myXlonPreOfst
+    myXlonCalLast = UBound(myXlonYTmpData) - myXlonPstOfst
     
 '//台形波形を生成
   Dim myXlonAdjstValCnt As Long, myZlonAdjstVal() As Long
-    Call PfixTrapezoidWaveLong(myXlonAdjstValCnt, myZlonAdjstVal, _
-            myXlonOrgYCnt, myXlonCalStrt, myXlonCalLast, 1, -1, -1, 0)
-    If myXlonAdjstValCnt <> myXlonOrgYCnt Then GoTo ExitPath
+    Call PfixTrapezoidWaveLong( _
+            myXlonAdjstValCnt, myZlonAdjstVal, _
+            myXlonYTmpDataCnt, myXlonCalStrt, myXlonCalLast, 1, -1, -1, 0)
+    If myXlonAdjstValCnt <> myXlonYTmpDataCnt Then GoTo ExitPath
     
 '//計算処理:平均値
   Dim i As Long, myXlonBgnNo As Long, myXlonEndNo As Long
   Dim myXlonTmpCnt As Long, myZdouTmp() As Double
     
-    myXlonMeanCnt = myXlonOrgYCnt
+    myXlonMeanCnt = myXlonYTmpDataCnt
     ReDim myZdouMean(myXlonMeanCnt) As Double
 
-    For i = LBound(myZdouOrgY) To UBound(myZdouOrgY)
+    For i = LBound(myXlonYTmpData) To UBound(myXlonYTmpData)
         myXlonBgnNo = i - myXlonPreOfst + myZlonAdjstVal(i)
         myXlonEndNo = i + myXlonPstOfst + myZlonAdjstVal(i)
-        Call Pfix1DArrayExtractNumeric(myXlonTmpCnt, myZdouTmp, _
+        Call Pfix1DArrayExtractNumeric( _
+                myXlonTmpCnt, myZdouTmp, _
                 myZdouRgrsnLnDev, myXlonBgnNo, myXlonEndNo, myXlonMeanStep)
         If myXlonTmpCnt <= 0 Then GoTo ExitPath
         myZdouMean(i) = PfncdouArithmeticMean(myZdouTmp)
@@ -518,26 +528,28 @@ Private Sub prsCalMedian()
     Call setControlVariables(myXlonCalRng, myXlonMedianSmplQnt, myXlonMedianStep)
     If myXbisExitFlag = True Then GoTo ExitPath
   Dim myXlonCalStrt As Long, myXlonCalLast As Long
-    myXlonCalStrt = LBound(myZdouOrgY) + myXlonPreOfst
-    myXlonCalLast = UBound(myZdouOrgY) - myXlonPstOfst
+    myXlonCalStrt = LBound(myXlonYTmpData) + myXlonPreOfst
+    myXlonCalLast = UBound(myXlonYTmpData) - myXlonPstOfst
     
 '//台形波形を生成
   Dim myXlonAdjstValCnt As Long, myZlonAdjstVal() As Long
-    Call PfixTrapezoidWaveLong(myXlonAdjstValCnt, myZlonAdjstVal, _
-            myXlonOrgYCnt, myXlonCalStrt, myXlonCalLast, 1, -1, -1, 0)
-    If myXlonAdjstValCnt <> myXlonOrgYCnt Then GoTo ExitPath
+    Call PfixTrapezoidWaveLong( _
+            myXlonAdjstValCnt, myZlonAdjstVal, _
+            myXlonYTmpDataCnt, myXlonCalStrt, myXlonCalLast, 1, -1, -1, 0)
+    If myXlonAdjstValCnt <> myXlonYTmpDataCnt Then GoTo ExitPath
     
 '//計算処理:中央値
   Dim i As Long, myXlonBgnNo As Long, myXlonEndNo As Long
   Dim myXlonTmpCnt As Long, myZdouTmp() As Double
     
-    myXlonMedianCnt = myXlonOrgYCnt
+    myXlonMedianCnt = myXlonYTmpDataCnt
     ReDim myZdouMedian(myXlonMedianCnt) As Double
 
-    For i = LBound(myZdouOrgY) To UBound(myZdouOrgY)
+    For i = LBound(myXlonYTmpData) To UBound(myXlonYTmpData)
         myXlonBgnNo = i - myXlonPreOfst + myZlonAdjstVal(i)
         myXlonEndNo = i + myXlonPstOfst + myZlonAdjstVal(i)
-        Call Pfix1DArrayExtractNumeric(myXlonTmpCnt, myZdouTmp, _
+        Call Pfix1DArrayExtractNumeric( _
+                myXlonTmpCnt, myZdouTmp, _
                 myZdouRgrsnLnDev, myXlonBgnNo, myXlonEndNo, myXlonMedianStep)
         If myXlonTmpCnt <= 0 Then GoTo ExitPath
         myZdouMedian(i) = PincdouMedian(myZdouTmp)
@@ -556,20 +568,21 @@ Private Sub prsProcStandardDeviationOutliersFilterWithMean()
 '//計算する最初のデータ位置と最後のデータ位置を設定
     Call setControlVariables(0, coXlonMdnFltrQnt, 1)
     If myXbisExitFlag = True Then GoTo ExitPath
-    myXlonCalStrtNo = LBound(myZdouOrgY) + myXlonPreOfst
-    myXlonCalLastNo = UBound(myZdouOrgY) - myXlonPstOfst
+    myXlonCalStrtNo = LBound(myXlonYTmpData) + myXlonPreOfst
+    myXlonCalLastNo = UBound(myXlonYTmpData) - myXlonPstOfst
     
 '//台形波形を生成
   Dim myXlonAdjstValCnt As Long, myZlonAdjstVal() As Long
-    Call PfixTrapezoidWaveLong(myXlonAdjstValCnt, myZlonAdjstVal, _
-            myXlonOrgYCnt, myXlonCalStrtNo, myXlonCalLastNo, 1, -1, -1, 0)
-    If myXlonAdjstValCnt <> myXlonOrgYCnt Then GoTo ExitPath
+    Call PfixTrapezoidWaveLong( _
+            myXlonAdjstValCnt, myZlonAdjstVal, _
+            myXlonYTmpDataCnt, myXlonCalStrtNo, myXlonCalLastNo, 1, -1, -1, 0)
+    If myXlonAdjstValCnt <> myXlonYTmpDataCnt Then GoTo ExitPath
     
 '//計算する最初のデータ位置と最後のデータ位置を設定
     Select Case myXlonCalDataRngOptn
         Case 1
-            myXlonCalStrtNo = LBound(myZdouOrgY)
-            myXlonCalLastNo = UBound(myZdouOrgY)
+            myXlonCalStrtNo = LBound(myXlonYTmpData)
+            myXlonCalLastNo = UBound(myXlonYTmpData)
         Case 2
             myXlonCalStrtNo = myXlonBgnRow
             myXlonCalLastNo = myXlonEndRow
@@ -595,14 +608,15 @@ Private Sub prsProcStandardDeviationOutliersFilterWithMean()
     '//計算処理:標準偏差のX倍より大きいか判断
         If myXdouCalVal <= myXdouSigmaLimit Then
         '//元データを取得
-            myZdouFltrData(n) = myZdouOrgY(i)
+            myZdouFltrData(n) = myXlonYTmpData(i)
             
         Else
         '//元データの前後3データ分の中央値を取得
             myXlonBgnNo = i - myXlonPreOfst + myZlonAdjstVal(i)
             myXlonEndNo = i + myXlonPreOfst + myZlonAdjstVal(i)
-            Call Pfix1DArrayExtractNumeric(myXlonTmpCnt, myZdouTmp, _
-                    myZdouOrgY, myXlonBgnNo, myXlonEndNo)
+            Call Pfix1DArrayExtractNumeric( _
+                    myXlonTmpCnt, myZdouTmp, _
+                    myXlonYTmpData, myXlonBgnNo, myXlonEndNo)
             If myXlonTmpCnt <> coXlonMdnFltrQnt Then GoTo ExitPath
             myZdouFltrData(n) = PincdouMedian(myZdouTmp)
             
@@ -623,20 +637,21 @@ Private Sub prsProcStandardDeviationOutliersFilterWithMedian()
 '//計算する最初のデータ位置と最後のデータ位置を設定
     Call setControlVariables(0, coXlonMdnFltrQnt, 1)
     If myXbisExitFlag = True Then GoTo ExitPath
-    myXlonCalStrtNo = LBound(myZdouOrgY) + myXlonPreOfst
-    myXlonCalLastNo = UBound(myZdouOrgY) - myXlonPstOfst
+    myXlonCalStrtNo = LBound(myXlonYTmpData) + myXlonPreOfst
+    myXlonCalLastNo = UBound(myXlonYTmpData) - myXlonPstOfst
     
 '//台形波形を生成
   Dim myXlonAdjstValCnt As Long, myZlonAdjstVal() As Long
-    Call PfixTrapezoidWaveLong(myXlonAdjstValCnt, myZlonAdjstVal, _
-            myXlonOrgYCnt, myXlonCalStrtNo, myXlonCalLastNo, 1, -1, -1, 0)
-    If myXlonAdjstValCnt <> myXlonOrgYCnt Then GoTo ExitPath
+    Call PfixTrapezoidWaveLong( _
+            myXlonAdjstValCnt, myZlonAdjstVal, _
+            myXlonYTmpDataCnt, myXlonCalStrtNo, myXlonCalLastNo, 1, -1, -1, 0)
+    If myXlonAdjstValCnt <> myXlonYTmpDataCnt Then GoTo ExitPath
     
 '//計算する最初のデータ位置と最後のデータ位置を設定
     Select Case myXlonCalDataRngOptn
         Case 1
-            myXlonCalStrtNo = LBound(myZdouOrgY)
-            myXlonCalLastNo = UBound(myZdouOrgY)
+            myXlonCalStrtNo = LBound(myXlonYTmpData)
+            myXlonCalLastNo = UBound(myXlonYTmpData)
         Case 2
             myXlonCalStrtNo = myXlonBgnRow
             myXlonCalLastNo = myXlonEndRow
@@ -662,14 +677,15 @@ Private Sub prsProcStandardDeviationOutliersFilterWithMedian()
     '//計算処理:標準偏差のX倍より大きいか判断
         If myXdouCalVal <= myXdouSigmaLimit Then
         '//元データを取得
-            myZdouFltrData(n) = myZdouOrgY(i)
+            myZdouFltrData(n) = myXlonYTmpData(i)
             
         Else
         '//元データの前後3データ分の中央値を取得
             myXlonBgnNo = i - myXlonPreOfst + myZlonAdjstVal(i)
             myXlonEndNo = i + myXlonPreOfst + myZlonAdjstVal(i)
-            Call Pfix1DArrayExtractNumeric(myXlonTmpCnt, myZdouTmp, _
-                    myZdouOrgY, myXlonBgnNo, myXlonEndNo)
+            Call Pfix1DArrayExtractNumeric( _
+                    myXlonTmpCnt, myZdouTmp, _
+                    myXlonYTmpData, myXlonBgnNo, myXlonEndNo)
             If myXlonTmpCnt <> coXlonMdnFltrQnt Then GoTo ExitPath
             myZdouFltrData(n) = PincdouMedian(myZdouTmp)
             
