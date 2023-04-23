@@ -42,7 +42,7 @@ Option Base 1
   
 '//モジュール内変数_データ
   Private myXlonInptRowCnt As Long, myXlonInptColCnt As Long, myZdouInptData() As Double
-  Private myXlonOrgTmpCnt As Long, myZdouOrgTmp() As Double
+  Private myXlonTmpDataCnt As Long, myZdouTmpData() As Double
   Private myXlonStrtNo As Long, myXlonLastNo As Long
   Private myXlonCalStrtNo As Long, myXlonCalLastNo As Long
   Private myXlonCalTmpCnt As Long, myZdouCalTmp() As Double
@@ -52,7 +52,7 @@ Private Sub initializeModuleVariables()
     myXbisExitFlag = False
     
     myXlonInptRowCnt = Empty: myXlonInptColCnt = Empty: Erase myZdouInptData
-    myXlonOrgTmpCnt = Empty: Erase myZdouOrgTmp
+    myXlonTmpDataCnt = Empty: Erase myZdouTmpData
     myXlonStrtNo = Empty: myXlonLastNo = Empty
     myXlonCalStrtNo = Empty: myXlonCalLastNo = Empty
     myXlonCalTmpCnt = Empty: Erase myZdouCalTmp
@@ -197,9 +197,14 @@ Private Sub setDataVariables()
   Dim myXlonBgnNo As Long, myXlonEndNo As Long
     myXlonBgnNo = LBound(myZdouInptData, 1)
     myXlonEndNo = UBound(myZdouInptData, 1)
-    Call PfixArrayPartColumnNumeric(myXlonOrgTmpCnt, myZdouOrgTmp, _
-            myZdouInptData, 1, myXlonBgnNo, myXlonEndNo)
-    If myXlonOrgTmpCnt <= 0 Then GoTo ExitPath
+    
+'//2次元の数値配列の指定列から一部を1次元配列で取得
+  Const coXlonCalCol As Long = 1
+  Const coXlonCalStep As Long = 1
+    Call PfixArrayPartColumnNumeric( _
+            myXlonTmpDataCnt, myZdouTmpData, _
+            myZdouInptData, coXlonCalCol, myXlonBgnNo, myXlonEndNo, coXlonCalStep)
+    If myXlonTmpDataCnt <= 0 Then GoTo ExitPath
     
     myXlonStrtNo = myXlonBgnNo
     myXlonLastNo = myXlonEndNo
@@ -232,17 +237,17 @@ Private Sub prsCal()
   Dim myXlonRetCnt As Long, myZdouRet() As Double
   Dim myXdouYnm1 As Double, myXdouXn As Double
 
-    myXlonRetCnt = UBound(myZdouOrgTmp) - LBound(myZdouOrgTmp) + 1
+    myXlonRetCnt = UBound(myZdouTmpData) - LBound(myZdouTmpData) + 1
     ReDim myZdouRet(myXlonRetCnt) As Double
     
-    For i = LBound(myZdouOrgTmp) To UBound(myZdouOrgTmp)
+    For i = LBound(myZdouTmpData) To UBound(myZdouTmpData)
         n = n + 1
-        If i = LBound(myZdouOrgTmp) Then
-            myXdouYnm1 = myZdouOrgTmp(i)
+        If i = LBound(myZdouTmpData) Then
+            myXdouYnm1 = myZdouTmpData(i)
         Else
             myXdouYnm1 = myZdouRet(n - 1)
         End If
-        myXdouXn = myZdouOrgTmp(i)
+        myXdouXn = myZdouTmpData(i)
         myZdouRet(n) = PfncdouLowPassFilter(myXdouYnm1, myXdouXn, myXdouTs, myXdouFc)
     Next i
     If n <> myXlonRetCnt Then GoTo ExitPath
@@ -250,8 +255,8 @@ Private Sub prsCal()
 '//計算する最初のデータ位置と最後のデータ位置を設定
     Select Case myXlonCalDataRngOptn
         Case 1
-            myXlonCalStrtNo = LBound(myZdouOrgTmp)
-            myXlonCalLastNo = UBound(myZdouOrgTmp)
+            myXlonCalStrtNo = LBound(myZdouTmpData)
+            myXlonCalLastNo = UBound(myZdouTmpData)
         Case 2
             myXlonCalStrtNo = myXlonBgnRow
             myXlonCalLastNo = myXlonEndRow
