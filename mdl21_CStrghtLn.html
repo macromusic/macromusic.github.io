@@ -31,12 +31,14 @@ Option Base 1
     'myZdouCalData(i, 1) : 計算処理後データ配列
   
 '//PropertySetLet_入力制御信号
-  Private myXlonCalOptn As Long, myXlonCalDataRngOptn As Long
+  Private myXlonCalDataRngOptn As Long
+    'myXlonCalDataRngOptn = 1 : 全データ範囲で取得
+    'myXlonCalDataRngOptn = 2 : 指定データ範囲で取得
   
 '//PropertySetLet_入力データ
-  Private myZdouOrgData() As Double
-    'myZdouOrgData(i, 2) : 元データ配列
-  Private myXlonXCalCol As Long, myXlonYCalCol As Long
+  Private myZdouXOrgData() As Double, myZdouYOrgData() As Double
+    'myZdouXOrgData(i, 1) : X軸の元データ配列
+    'myZdouYOrgData(i, 1) : Y軸の元データ配列
   Private myXlonCalStep As Long
   Private myXlonBgnRow As Long, myXlonEndRow As Long
   Private myXdouSlp As Double, myXdouIntrcpt As Double
@@ -45,9 +47,10 @@ Option Base 1
   Private myXbisExitFlag As Boolean
   
 '//モジュール内変数_データ
-  Private myXlonInptRowCnt As Long, myXlonInptColCnt As Long, myZdouInptData() As Double
-  Private myXlonOrgXCnt As Long, myZdouOrgX() As Double
-  Private myXlonOrgYCnt As Long, myZdouOrgY() As Double
+  Private myXlonXInptRowCnt As Long, myXlonXInptColCnt As Long, myZdouXInptData() As Double
+  Private myXlonYInptRowCnt As Long, myXlonYInptColCnt As Long, myZdouYInptData() As Double
+  Private myXlonXTmpDataCnt As Long, myZdouXTmpData() As Double
+  Private myXlonYTmpDataCnt As Long, myZdouYTmpData() As Double
   Private myXlonStrtNo As Long, myXlonLastNo As Long
   Private myXlonCalStrtNo As Long, myXlonCalLastNo As Long
   Private myXlonCalTmpCnt As Long, myZdouCalTmp() As Double
@@ -56,9 +59,10 @@ Option Base 1
 Private Sub initializeModuleVariables()
     myXbisExitFlag = False
     
-    myXlonInptRowCnt = Empty: myXlonInptColCnt = Empty: Erase myZdouInptData
-    myXlonOrgXCnt = Empty: Erase myZdouOrgX
-    myXlonOrgYCnt = Empty: Erase myZdouOrgY
+    myXlonXInptRowCnt = Empty: myXlonXInptColCnt = Empty: Erase myZdouXInptData
+    myXlonYInptRowCnt = Empty: myXlonYInptColCnt = Empty: Erase myZdouYInptData
+    myXlonXTmpDataCnt = Empty: Erase myZdouXTmpData
+    myXlonYTmpDataCnt = Empty: Erase myZdouYTmpData
     myXlonStrtNo = Empty: myXlonLastNo = Empty
     myXlonCalStrtNo = Empty: myXlonCalLastNo = Empty
     myXlonCalTmpCnt = Empty: Erase myZdouCalTmp
@@ -106,17 +110,14 @@ Public Property Let letCalDataRngOptn(ByVal RHS As Long)
 'myXlonCalDataRngOptn = 2 : 指定データ範囲で取得
 End Property
 
-Public Property Let letOrgData(ByRef RHS() As Double)
-    myZdouOrgData() = RHS()
-'myZdouOrgData(i, 2) : 元データ配列
+Public Property Let letXOrgData(ByRef RHS() As Double)
+    myZdouXOrgData() = RHS()
+'myZdouXOrgData(i, 1) : X軸の元データ配列
 End Property
 
-Public Property Let letXCalCol(ByVal RHS As Long)
-    myXlonXCalCol = RHS
-End Property
-
-Public Property Let letYCalCol(ByVal RHS As Long)
-    myXlonYCalCol = RHS
+Public Property Let letYOrgData(ByRef RHS() As Double)
+    myZdouYOrgData() = RHS()
+'myZdouYOrgData(i, 1) : Y軸の元データ配列
 End Property
 
 Public Property Let letCalStep(ByVal RHS As Long)
@@ -140,28 +141,101 @@ Public Property Let letIntrcpt(ByVal RHS As Double)
 End Property
 
 'checkP_入力変数内容を確認する
-Private Sub checkInputVariables()
+Private Sub checkInputVariablesX()
     myXbisExitFlag = False
     
-    If myXlonCalDataRngOptn < 1 Or myXlonCalDataRngOptn > 2 Then myXlonCalDataRngOptn = 1
+    If myXlonCalDataRngOptn < 1 Or 2 < myXlonCalDataRngOptn Then GoTo ExitPath
     
-    If PfncbisIsMatrixNumeric(myZdouOrgData) = False Then GoTo ExitPath
+    If PfncbisIsMatrixNumeric(myZdouXOrgData) = False Then GoTo ExitPath
     
   Dim L As Long, i As Long, j As Long
-    L = LBound(myZdouOrgData, 1)
-    myXlonInptRowCnt = UBound(myZdouOrgData, 1) - L + 1
-    myXlonInptColCnt = UBound(myZdouOrgData, 2) - L + 1
-    ReDim myZdouInptData(myXlonInptRowCnt, myXlonInptColCnt) As Double
-    For j = LBound(myZdouOrgData, 2) To UBound(myZdouOrgData, 2)
-        For i = LBound(myZdouOrgData, 1) To UBound(myZdouOrgData, 1)
-            myZdouInptData(i - L + 1, j - L + 1) = myZdouOrgData(i, j)
+    L = LBound(myZdouXOrgData, 1)
+    myXlonXInptRowCnt = UBound(myZdouXOrgData, 1) - L + 1
+    myXlonXInptColCnt = UBound(myZdouXOrgData, 2) - L + 1
+    ReDim myZdouXInptData(myXlonXInptRowCnt, myXlonXInptColCnt) As Double
+    For j = LBound(myZdouXOrgData, 2) To UBound(myZdouXOrgData, 2)
+        For i = LBound(myZdouXOrgData, 1) To UBound(myZdouXOrgData, 1)
+            myZdouXInptData(i - L + 1, j - L + 1) = myZdouXOrgData(i, j)
         Next i
     Next j
     
-    If myXlonBgnRow < LBound(myZdouInptData, 1) Then myXlonBgnRow = LBound(myZdouInptData, 1)
-    If myXlonEndRow < myXlonBgnRow Or myXlonEndRow > UBound(myZdouInptData, 1) Then _
-        myXlonEndRow = UBound(myZdouInptData, 1)
-    If myXlonCalStep <= 0 Or myXlonCalStep > UBound(myZdouInptData, 1) Then myXlonCalStep = 1
+    If myXlonBgnRow < LBound(myZdouXInptData, 1) Then myXlonBgnRow = LBound(myZdouXInptData, 1)
+    If myXlonEndRow < myXlonBgnRow Or myXlonEndRow > UBound(myZdouXInptData, 1) Then _
+        myXlonEndRow = UBound(myZdouXInptData, 1)
+    If myXlonCalStep <= 0 Or myXlonCalStep > UBound(myZdouXInptData, 1) Then myXlonCalStep = 1
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariablesY()
+    myXbisExitFlag = False
+    
+    If myXlonCalDataRngOptn < 1 Or 2 < myXlonCalDataRngOptn Then GoTo ExitPath
+    
+    If PfncbisIsMatrixNumeric(myZdouYOrgData) = False Then GoTo ExitPath
+    
+  Dim L As Long, i As Long, j As Long
+    L = LBound(myZdouYOrgData, 1)
+    myXlonYInptRowCnt = UBound(myZdouYOrgData, 1) - L + 1
+    myXlonYInptColCnt = UBound(myZdouYOrgData, 2) - L + 1
+    ReDim myZdouYInptData(myXlonYInptRowCnt, myXlonYInptColCnt) As Double
+    For j = LBound(myZdouYOrgData, 2) To UBound(myZdouYOrgData, 2)
+        For i = LBound(myZdouYOrgData, 1) To UBound(myZdouYOrgData, 1)
+            myZdouYInptData(i - L + 1, j - L + 1) = myZdouYOrgData(i, j)
+        Next i
+    Next j
+    
+    If myXlonBgnRow < LBound(myZdouYInptData, 1) Then myXlonBgnRow = LBound(myZdouYInptData, 1)
+    If myXlonEndRow < myXlonBgnRow Or myXlonEndRow > UBound(myZdouYInptData, 1) Then _
+        myXlonEndRow = UBound(myZdouYInptData, 1)
+    If myXlonCalStep <= 0 Or myXlonCalStep > UBound(myZdouYInptData, 1) Then myXlonCalStep = 1
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'checkP_入力変数内容を確認する
+Private Sub checkInputVariablesXY()
+    myXbisExitFlag = False
+    
+    If myXlonCalDataRngOptn < 1 Or 2 < myXlonCalDataRngOptn Then GoTo ExitPath
+    
+    If PfncbisIsMatrixNumeric(myZdouXOrgData) = False Then GoTo ExitPath
+    If PfncbisIsMatrixNumeric(myZdouYOrgData) = False Then GoTo ExitPath
+    
+    If UBound(myZdouXOrgData, 1) <> UBound(myZdouYOrgData, 1) Then GoTo ExitPath
+    If UBound(myZdouXOrgData, 2) <> UBound(myZdouYOrgData, 2) Then GoTo ExitPath
+    
+  Dim L As Long, i As Long, j As Long
+  
+    L = LBound(myZdouXOrgData, 1)
+    myXlonXInptRowCnt = UBound(myZdouXOrgData, 1) - L + 1
+    myXlonXInptColCnt = UBound(myZdouXOrgData, 2) - L + 1
+    ReDim myZdouXInptData(myXlonXInptRowCnt, myXlonXInptColCnt) As Double
+    For j = LBound(myZdouXOrgData, 2) To UBound(myZdouXOrgData, 2)
+        For i = LBound(myZdouXOrgData, 1) To UBound(myZdouXOrgData, 1)
+            myZdouXInptData(i - L + 1, j - L + 1) = myZdouXOrgData(i, j)
+        Next i
+    Next j
+    
+    L = LBound(myZdouYOrgData, 1)
+    myXlonYInptRowCnt = UBound(myZdouYOrgData, 1) - L + 1
+    myXlonYInptColCnt = UBound(myZdouYOrgData, 2) - L + 1
+    ReDim myZdouYInptData(myXlonYInptRowCnt, myXlonYInptColCnt) As Double
+    For j = LBound(myZdouYOrgData, 2) To UBound(myZdouYOrgData, 2)
+        For i = LBound(myZdouYOrgData, 1) To UBound(myZdouYOrgData, 1)
+            myZdouYInptData(i - L + 1, j - L + 1) = myZdouYOrgData(i, j)
+        Next i
+    Next j
+    
+    If myXlonBgnRow < LBound(myZdouXInptData, 1) Then myXlonBgnRow = LBound(myZdouXInptData, 1)
+    If myXlonEndRow < myXlonBgnRow Or myXlonEndRow > UBound(myZdouXInptData, 1) Then _
+        myXlonEndRow = UBound(myZdouXInptData, 1)
+    If myXlonCalStep <= 0 Or myXlonCalStep > UBound(myZdouXInptData, 1) Then myXlonCalStep = 1
     
     Exit Sub
 ExitPath:
@@ -194,11 +268,11 @@ End Sub
 Private Sub ctrProcCalStraightLineYArray()
     Call initializeOutputVariables
     Call initializeModuleVariables
-    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+    Call checkInputVariablesX: If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
     
 '//C:データ用変数を設定
-    Call setDataVariables
+    Call setDataVariablesX
     If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
     
@@ -218,11 +292,11 @@ End Sub
 Private Sub ctrProcCalStraightLineXArray()
     Call initializeOutputVariables
     Call initializeModuleVariables
-    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+    Call checkInputVariablesY: If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
     
 '//C:データ用変数を設定
-    Call setDataVariables
+    Call setDataVariablesY
     If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
     
@@ -242,11 +316,11 @@ End Sub
 Private Sub ctrProcCalDeviationYArrayFromStraightLine()
     Call initializeOutputVariables
     Call initializeModuleVariables
-    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+    Call checkInputVariablesXY: If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
     
 '//C:データ用変数を設定
-    Call setDataVariables
+    Call setDataVariablesXY
     If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
     
@@ -266,11 +340,11 @@ End Sub
 Private Sub ctrProcCalDeviationXArrayFromStraightLine()
     Call initializeOutputVariables
     Call initializeModuleVariables
-    Call checkInputVariables: If myXbisExitFlag = True Then GoTo ExitPath
+    Call checkInputVariablesXY: If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
     
 '//C:データ用変数を設定
-    Call setDataVariables
+    Call setDataVariablesXY
     If myXbisExitFlag = True Then GoTo ExitPath
 '    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
     
@@ -287,18 +361,69 @@ ExitPath:
 End Sub
 
 'SetP_データ用変数を設定する
-Private Sub setDataVariables()
+Private Sub setDataVariablesX()
     myXbisExitFlag = False
     
   Dim myXlonBgnNo As Long, myXlonEndNo As Long
-    myXlonBgnNo = LBound(myZdouInptData, 1)
-    myXlonEndNo = UBound(myZdouInptData, 1)
-    Call PfixArrayPartColumnNumeric(myXlonOrgXCnt, myZdouOrgX, _
-            myZdouInptData, myXlonXCalCol, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
-    Call PfixArrayPartColumnNumeric(myXlonOrgYCnt, myZdouOrgY, _
-            myZdouInptData, myXlonYCalCol, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
-    If myXlonOrgXCnt <= 0 Or myXlonOrgYCnt <= 0 Then GoTo ExitPath
-    If myXlonOrgXCnt <> myXlonOrgYCnt Then GoTo ExitPath
+    myXlonBgnNo = LBound(myZdouXInptData, 1)
+    myXlonEndNo = UBound(myZdouXInptData, 1)
+    
+'//2次元の数値配列の指定列から一部を1次元配列で取得
+  Const coXlonCalCol As Long = 1
+    Call PfixArrayPartColumnNumeric( _
+            myXlonXTmpDataCnt, myZdouXTmpData, _
+            myZdouXInptData, coXlonCalCol, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
+    If myXlonXTmpDataCnt <= 0 Then GoTo ExitPath
+    
+    myXlonStrtNo = myXlonBgnNo
+    myXlonLastNo = myXlonEndNo
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'SetP_データ用変数を設定する
+Private Sub setDataVariablesY()
+    myXbisExitFlag = False
+    
+  Dim myXlonBgnNo As Long, myXlonEndNo As Long
+    myXlonBgnNo = LBound(myZdouYInptData, 1)
+    myXlonEndNo = UBound(myZdouYInptData, 1)
+    
+'//2次元の数値配列の指定列から一部を1次元配列で取得
+  Const coXlonCalCol As Long = 1
+    Call PfixArrayPartColumnNumeric( _
+            myXlonYTmpDataCnt, myZdouYTmpData, _
+            myZdouYInptData, coXlonCalCol, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
+    If myXlonYTmpDataCnt <= 0 Then GoTo ExitPath
+    
+    myXlonStrtNo = myXlonBgnNo
+    myXlonLastNo = myXlonEndNo
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'SetP_データ用変数を設定する
+Private Sub setDataVariablesXY()
+    myXbisExitFlag = False
+    
+  Dim myXlonBgnNo As Long, myXlonEndNo As Long
+    myXlonBgnNo = LBound(myZdouXInptData, 1)
+    myXlonEndNo = UBound(myZdouXInptData, 1)
+    
+'//2次元の数値配列の指定列から一部を1次元配列で取得
+  Const coXlonCalCol As Long = 1
+    Call PfixArrayPartColumnNumeric( _
+            myXlonXTmpDataCnt, myZdouXTmpData, _
+            myZdouXInptData, coXlonCalCol, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
+    Call PfixArrayPartColumnNumeric( _
+            myXlonYTmpDataCnt, myZdouYTmpData, _
+            myZdouYInptData, coXlonCalCol, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
+    If myXlonXTmpDataCnt <= 0 Or myXlonYTmpDataCnt <= 0 Then GoTo ExitPath
+    If myXlonXTmpDataCnt <> myXlonYTmpDataCnt Then GoTo ExitPath
     
     myXlonStrtNo = myXlonBgnNo
     myXlonLastNo = myXlonEndNo
@@ -314,7 +439,7 @@ Private Sub prsCalStraightLineYArray()
     
 '//傾きと切片とX軸データ配列を指定して直線のY軸データ配列取得
   Dim myXlonLnCnt As Long, myZdouLnData() As Double
-    Call PfixStraightLineYArray(myXlonLnCnt, myZdouLnData, myXdouSlp, myXdouIntrcpt, myZdouOrgX)
+    Call PfixStraightLineYArray(myXlonLnCnt, myZdouLnData, myXdouSlp, myXdouIntrcpt, myZdouXTmpData)
     If myXlonLnCnt <= 0 Then GoTo ExitPath
     
 '//計算する最初のデータ位置と最後のデータ位置を設定
@@ -350,7 +475,7 @@ Private Sub prsCalStraightLineXArray()
     
 '//傾きと切片とY軸データ配列を指定して直線のX軸データ配列取得
   Dim myXlonLnCnt As Long, myZdouLnData() As Double
-    Call PfixStraightLineXArray(myXlonLnCnt, myZdouLnData, myXdouSlp, myXdouIntrcpt, myZdouOrgY)
+    Call PfixStraightLineXArray(myXlonLnCnt, myZdouLnData, myXdouSlp, myXdouIntrcpt, myZdouYTmpData)
     If myXlonLnCnt <= 0 Then GoTo ExitPath
     
 '//計算する最初のデータ位置と最後のデータ位置を設定
@@ -386,7 +511,7 @@ Private Sub prsCalDeviationYArrayFromStraightLine()
     
 '//傾きと切片とX軸データ配列を指定して直線のY軸データ配列取得
   Dim myXlonLnCnt As Long, myZdouLnData() As Double
-    Call PfixStraightLineYArray(myXlonLnCnt, myZdouLnData, myXdouSlp, myXdouIntrcpt, myZdouOrgX)
+    Call PfixStraightLineYArray(myXlonLnCnt, myZdouLnData, myXdouSlp, myXdouIntrcpt, myZdouXTmpData)
     If myXlonLnCnt <= 0 Then GoTo ExitPath
     
 '//計算する最初のデータ位置と最後のデータ位置を設定
@@ -407,7 +532,7 @@ Private Sub prsCalDeviationYArrayFromStraightLine()
     
     For i = myXlonCalStrtNo To myXlonCalLastNo
         n = n + 1
-        myZdouCalTmp(n) = myZdouOrgY(i) - myZdouLnData(i)
+        myZdouCalTmp(n) = myZdouYTmpData(i) - myZdouLnData(i)
     Next i
     
     Erase myZdouLnData
@@ -422,7 +547,7 @@ Private Sub prsCalDeviationXArrayFromStraightLine()
     
 '//傾きと切片とY軸データ配列を指定して直線のX軸データ配列取得
   Dim myXlonLnCnt As Long, myZdouLnData() As Double
-    Call PfixStraightLineXArray(myXlonLnCnt, myZdouLnData, myXdouSlp, myXdouIntrcpt, myZdouOrgY)
+    Call PfixStraightLineXArray(myXlonLnCnt, myZdouLnData, myXdouSlp, myXdouIntrcpt, myZdouYTmpData)
     If myXlonLnCnt <= 0 Then GoTo ExitPath
     
 '//計算する最初のデータ位置と最後のデータ位置を設定
@@ -443,7 +568,7 @@ Private Sub prsCalDeviationXArrayFromStraightLine()
     
     For i = myXlonCalStrtNo To myXlonCalLastNo
         n = n + 1
-        myZdouCalTmp(i) = myZdouOrgX(i) - myZdouLnData(i)
+        myZdouCalTmp(i) = myZdouXTmpData(i) - myZdouLnData(i)
     Next i
     
     Erase myZdouLnData
@@ -586,17 +711,15 @@ End Sub
 '  Const coXlonCalDataRngOptn As Long = 1
 '    'coXlonCalDataRngOptn = 1 : 全データ範囲で取得
 '    'coXlonCalDataRngOptn = 2 : 指定データ範囲で取得
-'  Const coXlonXCalCol As Long = 1
-'  Const coXlonYCalCol As Long = 2
 '  Const coXlonCalStep As Long = 1
 '  Const coXlonBgnRow As Long = 1
 '  Const coXlonEndRow As Long = 0
 '  Const coXdouSlp As Double = 0.005000446
 '  Const coXdouIntrcpt As Double = -0.000133239
-''  Dim myXlonOrgRowCnt As Long, myXlonOrgColCnt As Long, myZdouOrgData() As Double
-''    'myZdouOrgData(i, 2) : 元データ配列
-''    myXlonOrgRowCnt = UBound(myZdouOrgData, 1)
-''    myXlonOrgColCnt = UBound(myZdouOrgData, 2)
+''  Dim myXlonOrgRowCnt As Long, myXlonOrgColCnt As Long, _
+''        myZdouXOrgData() As Double, myZdouYOrgData() As Double
+''    'myZdouXOrgData(i, 1) : X軸の元データ配列
+''    'myZdouYOrgData(i, 1) : Y軸の元データ配列
 '  Dim Lc As Long
 ''  Dim myXlonStrtRow As Long, myXlonLastRow As Long
 ''  Dim myXlonCalRowCnt As Long, myXlonCalColCnt As Long, myZdouCalData() As Double
@@ -608,9 +731,8 @@ End Sub
 '    With myXinsStrghtLn
 '    '//クラス内変数への入力
 '        .letCalDataRngOptn = coXlonCalDataRngOptn
-'        .letOrgData = myZdouOrgData
-'        .letXCalCol = coXlonXCalCol
-'        .letYCalCol = coXlonYCalCol
+'        .letXOrgData = myZdouXOrgData
+'        .letYOrgData = myZdouYOrgData
 '        .letCalStep = coXlonCalStep
 '        .letBgnRow = coXlonBgnRow
 '        .letEndRow = coXlonEndRow
