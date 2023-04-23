@@ -45,7 +45,7 @@ Option Base 1
   
 '//モジュール内変数_データ
   Private myXlonInptRowCnt As Long, myXlonInptColCnt As Long, myZdouInptData() As Double
-  Private myXlonOrgTmpCnt As Long, myZdouOrgTmp() As Double
+  Private myXlonTmpDataCnt As Long, myZdouTmpData() As Double
   Private myXlonStrtNo As Long, myXlonLastNo As Long
   Private myXlonPreOfst As Long, myXlonPstOfst As Long
   Private myXlonCalStrtNo As Long, myXlonCalLastNo As Long
@@ -56,7 +56,7 @@ Private Sub initializeModuleVariables()
     myXbisExitFlag = False
     
     myXlonInptRowCnt = Empty: myXlonInptColCnt = Empty: Erase myZdouInptData
-    myXlonOrgTmpCnt = Empty: Erase myZdouOrgTmp
+    myXlonTmpDataCnt = Empty: Erase myZdouTmpData
     myXlonStrtNo = Empty: myXlonLastNo = Empty
     myXlonPreOfst = Empty: myXlonPstOfst = Empty
     myXlonCalStrtNo = Empty: myXlonCalLastNo = Empty
@@ -208,9 +208,14 @@ Private Sub setDataVariables()
   Dim myXlonBgnNo As Long, myXlonEndNo As Long
     myXlonBgnNo = LBound(myZdouInptData, 1)
     myXlonEndNo = UBound(myZdouInptData, 1)
-    Call PfixArrayPartColumnNumeric(myXlonOrgTmpCnt, myZdouOrgTmp, _
-            myZdouInptData, 1, myXlonBgnNo, myXlonEndNo)
-    If myXlonOrgTmpCnt <= 0 Then GoTo ExitPath
+    
+'//2次元の数値配列の指定列から一部を1次元配列で取得
+  Const coXlonCalCol As Long = 1
+  Const coXlonCalStep As Long = 1
+    Call PfixArrayPartColumnNumeric( _
+            myXlonTmpDataCnt, myZdouTmpData, _
+            myZdouInptData, coXlonCalCol, myXlonBgnNo, myXlonEndNo, coXlonCalStep)
+    If myXlonTmpDataCnt <= 0 Then GoTo ExitPath
     
     myXlonStrtNo = myXlonBgnNo
     myXlonLastNo = myXlonEndNo
@@ -254,8 +259,8 @@ Private Sub prsCal()
 '//計算する最初のデータ位置と最後のデータ位置を設定
     Select Case myXlonCalDataRngOptn
         Case 1
-            myXlonCalStrtNo = LBound(myZdouOrgTmp)
-            myXlonCalLastNo = UBound(myZdouOrgTmp)
+            myXlonCalStrtNo = LBound(myZdouTmpData)
+            myXlonCalLastNo = UBound(myZdouTmpData)
         Case 2
             myXlonCalStrtNo = myXlonBgnRow
             myXlonCalLastNo = myXlonEndRow
@@ -266,9 +271,10 @@ Private Sub prsCal()
     
 '//台形波形を生成
   Dim myXlonAdjstValCnt As Long, myZlonAdjstVal() As Long
-    Call PfixTrapezoidWaveLong(myXlonAdjstValCnt, myZlonAdjstVal, _
-            myXlonOrgTmpCnt, myXlonStrtNo, myXlonLastNo, 1, -1, -1, 0)
-    If myXlonAdjstValCnt <> myXlonOrgTmpCnt Then GoTo ExitPath
+    Call PfixTrapezoidWaveLong( _
+            myXlonAdjstValCnt, myZlonAdjstVal, _
+            myXlonTmpDataCnt, myXlonStrtNo, myXlonLastNo, 1, -1, -1, 0)
+    If myXlonAdjstValCnt <> myXlonTmpDataCnt Then GoTo ExitPath
     
 '//計算処理:中央値
   Dim i As Long, n As Long: n = 0
@@ -282,8 +288,9 @@ Private Sub prsCal()
         n = n + 1
         myXlonBgnNo = i - myXlonPreOfst + myZlonAdjstVal(i)
         myXlonEndNo = i + myXlonPstOfst + myZlonAdjstVal(i)
-        Call Pfix1DArrayExtractNumeric(myXlonTmpCnt, myZdouTmp, _
-                myZdouOrgTmp, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
+        Call Pfix1DArrayExtractNumeric( _
+                myXlonTmpCnt, myZdouTmp, _
+                myZdouTmpData, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
         If myXlonTmpCnt <= 0 Then GoTo ExitPath
         myZdouCalTmp(n) = PincdouMedian(myZdouTmp)
     Next i
