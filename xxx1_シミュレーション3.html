@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+  <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+      <title>Document</title>
+    </head>
+    <body>
+      <div>MacroSample</div>
+      <pre>
+'Includes x
+
+Option Explicit
+Option Base 1
+
+'◆ModuleProc名_マクロを使用して信号処理を実行する
+'Rev.002
+  
+'//モジュールメモリ
+  Private Const meMstrMdlName As String = "m2Msub2SgnlPrcs"
+    
+'//出力制御信号
+  Private myXbisCmpltFlag As Boolean
+  
+'//出力データ
+  Private myXlonCalDataCnt2 As Long, myZvarCalData2() As Variant
+  Private myXlonCalDataCnt3 As Long, myZvarCalData3() As Variant
+  Private myXlonCalDataCnt4 As Long, myZvarCalData4() As Variant
+    'myZvarCalData(i, 1) : 演算結果データ
+  Private myXlonHdrCnt2 As Long, myZstrHeader2() As String
+  Private myXlonHdrCnt3 As Long, myZstrHeader3() As String
+  Private myXlonHdrCnt4 As Long, myZstrHeader4() As String
+    'myZstrHeader(i, 1) : ヘッダーデータ
+  
+'//入力データ
+  Private myZdouOrgData1() As Double, myZvarCalData1() As Variant
+  Private myZdouOrgData2() As Double, myZvarCalPara() As Variant
+    'myZdouOrgData(i, 1) : 元データ
+    'myZvarCalPara(i, 1) : 演算用パラメータ
+  
+'//モジュール内変数_制御信号
+  Private myXbisExitFlag As Boolean
+
+'-----------------------------------------------------------------------------------------------
+
+'PublicP_
+Public Sub callProc( _
+            myXbisCmpltFlagOUT As Boolean, _
+            myXlonCalDataCnt2OUT As Long, myZvarCalData2OUT() As Variant, _
+            myXlonHdrCnt2OUT As Long, myZstrHeader2OUT() As String, _
+            myXlonCalDataCnt3OUT As Long, myZvarCalData3OUT() As Variant, _
+            myXlonHdrCnt3OUT As Long, myZstrHeader3OUT() As String, _
+            myXlonCalDataCnt4OUT As Long, myZvarCalData4OUT() As Variant, _
+            myXlonHdrCnt4OUT As Long, myZstrHeader4OUT() As String, _
+            ByRef myZdouOrgData1IN() As Double, ByRef myZdouOrgData2IN() As Double, _
+            ByRef myZvarCalData1IN() As Variant, ByRef myZvarCalParaIN() As Variant)
+    
+'//入力変数を初期化
+    Erase myZdouOrgData1: Erase myZdouOrgData2
+    Erase myZvarCalData1: Erase myZvarCalPara
+
+'//入力変数を取り込み
+    myZdouOrgData1() = myZdouOrgData1IN()
+    myZdouOrgData2() = myZdouOrgData2IN()
+    myZvarCalData1() = myZvarCalData1IN()
+    myZvarCalPara() = myZvarCalParaIN()
+    
+'//出力変数を初期化
+    myXbisCmpltFlagOUT = False
+    
+    myXlonCalDataCnt2OUT = Empty: Erase myZvarCalData2OUT
+    myXlonCalDataCnt3OUT = Empty: Erase myZvarCalData3OUT
+    myXlonCalDataCnt4OUT = Empty: Erase myZvarCalData4OUT
+    myXlonHdrCnt2OUT = Empty: Erase myZstrHeader2OUT
+    myXlonHdrCnt3OUT = Empty: Erase myZstrHeader3OUT
+    myXlonHdrCnt4OUT = Empty: Erase myZstrHeader4OUT
+    
+'//処理実行
+    Call ctrProc
+    If myXbisCmpltFlag = False Then Exit Sub
+    
+'//出力変数に格納
+    myXbisCmpltFlagOUT = myXbisCmpltFlag
+    
+    myXlonCalDataCnt2OUT = myXlonCalDataCnt2
+    myZvarCalData2OUT() = myZvarCalData2()
+    myXlonCalDataCnt3OUT = myXlonCalDataCnt3
+    myZvarCalData3OUT() = myZvarCalData3()
+    myXlonCalDataCnt4OUT = myXlonCalDataCnt4
+    myZvarCalData4OUT() = myZvarCalData4()
+    
+    myXlonHdrCnt2OUT = myXlonHdrCnt2
+    myZstrHeader2OUT() = myZstrHeader2()
+    myXlonHdrCnt3OUT = myXlonHdrCnt3
+    myZstrHeader3OUT() = myZstrHeader3()
+    myXlonHdrCnt4OUT = myXlonHdrCnt4
+    myZstrHeader4OUT() = myZstrHeader4()
+
+End Sub
+
+'CtrlP_
+Private Sub ctrProc()
+    myXbisCmpltFlag = False
+    myXlonCalDataCnt2 = Empty: Erase myZvarCalData2
+    myXlonCalDataCnt3 = Empty: Erase myZvarCalData3
+    myXlonCalDataCnt4 = Empty: Erase myZvarCalData4
+    myXlonHdrCnt2 = Empty: Erase myZstrHeader2
+    myXlonHdrCnt3 = Empty: Erase myZstrHeader3
+    myXlonHdrCnt4 = Empty: Erase myZstrHeader4
+   
+'//P:
+    Call prsProc1
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "1"     'PassFlag
+   
+'//P:
+    Call prsProc2
+    If myXbisExitFlag = True Then GoTo ExitPath
+'    Debug.Print "PassFlag: " & meMstrMdlName & "2"     'PassFlag
+   
+''//P:
+'    Call prsProc3
+'    If myXbisExitFlag = True Then GoTo ExitPath
+''    Debug.Print "PassFlag: " & meMstrMdlName & "3"     'PassFlag
+    
+    myXbisCmpltFlag = True
+ExitPath:
+End Sub
+
+'PrcsP_
+Private Sub prsProc1()
+    myXbisExitFlag = False
+    
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim Li As Long: Li = LBound(myZdouOrgData2, 1)
+  Dim Ui As Long: Ui = UBound(myZdouOrgData2, 1)
+  Dim i As Long, j As Long
+    
+'//Headerの設定
+    myXlonHdrCnt2 = 2
+    i = myXlonHdrCnt2 + Lo - 1
+    ReDim Preserve myZstrHeader2(i, Lo + 2) As String
+    
+    myZstrHeader2(Lo + 0, Lo + 0) = "φout"
+    myZstrHeader2(Lo + 1, Lo + 0) = "[LSB]"
+    
+    myZstrHeader2(Lo + 0, Lo + 1) = "φout"
+    myZstrHeader2(Lo + 1, Lo + 1) = "[%]"
+    
+    myZstrHeader2(Lo + 0, Lo + 2) = "φout - Ideal"
+    myZstrHeader2(Lo + 1, Lo + 2) = "[%]"
+    
+'//データ演算
+    myXlonCalDataCnt2 = Ui - Li + 1
+    i = myXlonCalDataCnt2 + Lo - 1
+    ReDim Preserve myZvarCalData2(i, Lo + 2) As Variant
+
+  Dim myXdouRet As Double
+    For i = Li To Ui
+        myXdouRet = myZdouOrgData2(i, Li)
+        myXdouRet = myXdouRet / 180 * 32768
+        myZvarCalData2(i + Lo - Li, Lo + 0) = myXdouRet
+    Next i
+
+    For i = LBound(myZvarCalData2, 1) To UBound(myZvarCalData2, 1)
+        myXdouRet = myZvarCalData2(i, Lo + 0)
+        myXdouRet = (myXdouRet + 32768) / 65536 * 100
+        myZvarCalData2(i, Lo + 1) = myXdouRet
+    Next i
+
+    For i = LBound(myZvarCalData2, 1) To UBound(myZvarCalData2, 1)
+        myXdouRet = myZvarCalData2(i, Lo + 1)
+        myXdouRet = myXdouRet - myZvarCalData1(i, Lo + 0)
+        myZvarCalData2(i, Lo + 2) = myXdouRet
+    Next i
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_
+Private Sub prsProc2()
+    myXbisExitFlag = False
+    
+  Dim Lo As Long: Lo = LBound(myZvarCalData2, 1)
+  Dim Uo As Long: Uo = UBound(myZvarCalData2, 1)
+  Dim Li As Long: Li = LBound(myZvarCalPara, 1)
+  Dim Ui As Long: Ui = UBound(myZvarCalPara, 1)
+  Dim i As Long, j As Long
+    
+'//Headerの設定
+    myXlonHdrCnt3 = myXlonHdrCnt2
+    i = myXlonHdrCnt3 + Lo - 1
+    ReDim Preserve myZstrHeader3(i, Lo + 11) As String
+    
+    myZstrHeader3(Lo + 0, Lo + 0) = "n"
+    myZstrHeader3(Lo + 1, Lo + 0) = ""
+    
+    myZstrHeader3(Lo + 0, Lo + 1) = "X"
+    myZstrHeader3(Lo + 1, Lo + 1) = "[LSB]"
+    
+    myZstrHeader3(Lo + 0, Lo + 2) = "φout-"
+    myZstrHeader3(Lo + 1, Lo + 2) = "[LSB]"
+    
+    myZstrHeader3(Lo + 0, Lo + 3) = "φout+"
+    myZstrHeader3(Lo + 1, Lo + 3) = "[LSB]"
+    
+    myZstrHeader3(Lo + 0, Lo + 4) = "Ideal-"
+    myZstrHeader3(Lo + 1, Lo + 4) = "[LSB]"
+    
+    myZstrHeader3(Lo + 0, Lo + 5) = "Ideal+"
+    myZstrHeader3(Lo + 1, Lo + 5) = "[LSB]"
+    
+    myZstrHeader3(Lo + 0, Lo + 6) = ""
+    myZstrHeader3(Lo + 1, Lo + 6) = ""
+    
+    myZstrHeader3(Lo + 0, Lo + 7) = "Y"
+    myZstrHeader3(Lo + 1, Lo + 7) = "[LSB]"
+    
+    myZstrHeader3(Lo + 0, Lo + 8) = "Y"
+    myZstrHeader3(Lo + 1, Lo + 8) = "[LSB]"
+    
+    myZstrHeader3(Lo + 0, Lo + 9) = ""
+    myZstrHeader3(Lo + 1, Lo + 9) = ""
+    
+    myZstrHeader3(Lo + 0, Lo + 10) = "θ"
+    myZstrHeader3(Lo + 1, Lo + 10) = "[°]"
+    
+    myZstrHeader3(Lo + 0, Lo + 11) = "Z"
+    myZstrHeader3(Lo + 1, Lo + 11) = "[%]"
+    
+'//データ演算
+    ReDim Preserve myZvarCalData3(33, Lo + 11) As Variant
+    
+  Dim myXdouRet As Double
+  Dim myXdouTrgt As Double, myXdouTmp1 As Double, myXdouTmp2 As Double
+    For i = 1 To 33
+        myXdouRet = i - 1
+        myZvarCalData3(i, Lo + 0) = myXdouRet
+    Next i
+    
+    For i = 1 To 33
+        myXdouRet = 32768 - 65536 + (i - 1) * 2048
+        myZvarCalData3(i, Lo + 1) = myXdouRet
+    Next i
+    
+    For i = 1 To 33
+        myXdouTrgt = myZvarCalData3(i, Lo + 1)
+        For j = LBound(myZvarCalData2, 1) To UBound(myZvarCalData2, 1) - 1
+            myXdouTmp1 = myZvarCalData2(j + 0, Lo + 0)
+            myXdouTmp2 = myZvarCalData2(j + 1, Lo + 0)
+            If myXdouTmp1 <= myXdouTrgt And myXdouTrgt < myXdouTmp2 Then
+                myXdouRet = myXdouTmp1
+                Exit For
+            End If
+        Next j
+        myZvarCalData3(i, Lo + 2) = myXdouRet
+    Next i
+    
+    For i = 1 To 33
+        myXdouRet = 1
+        myZvarCalData3(i, Lo + 3) = myXdouRet
+    Next i
+    
+    For i = 1 To 33
+        myXdouRet = 1
+        myZvarCalData3(i, Lo + 4) = myXdouRet
+    Next i
+    
+    For i = 1 To 33
+        myXdouRet = 1
+        myZvarCalData3(i, Lo + 5) = myXdouRet
+    Next i
+    
+    For i = 1 To 33
+        myZvarCalData3(i, Lo + 6) = ""
+    Next i
+    
+    For i = 1 To 33
+        myXdouRet = 1
+        myZvarCalData3(i, Lo + 7) = myXdouRet
+    Next i
+    
+    For i = 1 To 33
+        myXdouRet = 1
+        myZvarCalData3(i, Lo + 8) = myXdouRet
+    Next i
+    
+    For i = 1 To 33
+        myZvarCalData3(i, Lo + 9) = ""
+    Next i
+    
+    For i = 1 To 33
+        myXdouRet = 1
+        myZvarCalData3(i, Lo + 10) = myXdouRet
+    Next i
+    
+    For i = 1 To 33
+        myXdouRet = 1
+        myZvarCalData3(i, Lo + 11) = myXdouRet
+    Next i
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'PrcsP_
+Private Sub prsProc3()
+    myXbisExitFlag = False
+    
+  Dim Lo As Long: Lo = LBound(myZvarCalData2, 1)
+  Dim Uo As Long: Uo = UBound(myZvarCalData2, 1)
+  Dim Li As Long: Li = LBound(myZvarCalPara, 1)
+  Dim Ui As Long: Ui = UBound(myZvarCalPara, 1)
+  Dim i As Long, j As Long
+    
+'//Headerの設定
+    myXlonHdrCnt4 = myXlonHdrCnt3
+    i = myXlonHdrCnt4 + Lo - 1
+    ReDim Preserve myZstrHeader4(i, Lo + 1) As String
+    
+    myZstrHeader4(Lo + 0, Lo + 1) = ""
+    myZstrHeader4(Lo + 1, Lo + 1) = ""
+    
+'//データ演算
+    ReDim Preserve myZvarCalData4(Uo, Lo + 1) As Variant
+    
+  Dim myXdouRet As Double
+    For i = Lo To Uo
+        myXdouRet = myZvarCalData3(i, Lo)
+        myXdouRet = myXdouRet * myZvarCalPara(Li)
+        myZvarCalData4(i, Lo + 1) = myXdouRet
+    Next i
+    
+    Exit Sub
+ExitPath:
+    myXbisExitFlag = True
+End Sub
+
+'===============================================================================================
+
+'DummyＰ_
+Private Sub MsubDummy()
+End Sub
+
+      <br></pre>
+    </body>
+  </html>
