@@ -13,7 +13,7 @@ Option Explicit
 Option Base 1
 
 '◆ClassProc名_データ演算クラスのInterface構文
-'Rev.001
+'Rev.002
   
 '//モジュールメモリ
   Private Const meMstrMdlName As String = "IntfcSgnlPrcs"
@@ -31,7 +31,7 @@ Public Property Get ifgetCalDataCnt() As Long
 End Property
 
 'Interface_変数(Object型以外)出力用のプロパティ
-Public Property Get ifgetCalDataAry(ByVal i As Long, ByVal j As Long) As Double
+Public Property Get ifgetCalDataAry(ByVal i As Long, ByVal j As Long) As Variant
 End Property
 
 'Interface_変数(Object型以外)入力用のプロパティ
@@ -56,8 +56,8 @@ End Sub
 'Private Sub instIntfcSgnlPrcs()
 '  Dim Lc As Long
 '  Dim myXbisCmpltFlag As Boolean
-'  Dim myXlonCalDataCnt As Long, myZdouCalData() As Double
-'    'myZdouCalData(i, 1) : 演算結果データ
+'  Dim myXlonCalDataCnt As Long, myZvarCalData() As Variant
+'    'myZvarCalData(i, 1) : 演算結果データ
 ''//クラス内変数への入力
 '  Dim myZdouOrgData() As Double, myZvarCalPara() As Variant
 '    'myZdouOrgData(i, 1) : 元データ
@@ -87,15 +87,15 @@ End Sub
 '        myXlonCalDataCnt = .ifgetCalDataCnt
 '        If myXlonCalDataCnt <= 0 Then GoTo JumpPath
 '        i = myXlonCalDataCnt + Lo - 1
-'        ReDim myZdouCalData(i, Lo) As Double
+'        ReDim myZvarCalData(i, Lo) As Variant
 '        Lc = .ifgetOptnBase
 '        For i = 1 To myXlonCalDataCnt
-'            myZdouCalData(i + Lo - 1, Lo) = .ifgetCalDataAry(i + Lc - 1, Lc)
+'            myZvarCalData(i + Lo - 1, Lo) = .ifgetCalDataAry(i + Lc - 1, Lc)
 '        Next i
 '    End With
 'JumpPath:
 '    Set myXinsIntfcSgnlPrcs = Nothing
-'    Call variablesOfIntfcSgnlPrcs(myXlonCalDataCnt, myZdouCalData)  'Debug.Print
+'    Call variablesOfIntfcSgnlPrcs(myXlonCalDataCnt, myZvarCalData)  'Debug.Print
 'End Sub
 'Private Sub variablesOfIntfcSgnlPrcs( _
 '            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
