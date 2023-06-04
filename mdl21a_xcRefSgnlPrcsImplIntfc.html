@@ -18,7 +18,7 @@ Option Base 1
 Implements IntfcSgnlPrcs
 
 '◆ClassProc名_データ演算：X
-'Rev.001
+'Rev.002
   
 '//モジュールメモリ
   Private Const meMstrMdlName As String = "xcRefSgnlPrcsImplIntfc"
@@ -28,8 +28,8 @@ Implements IntfcSgnlPrcs
   
 '//PropertyGet_出力データ
   Private Lc As Long
-  Private myXlonCalDataCnt As Long, myZdouCalData() As Double
-    'myZdouCalData(i, 1) : 演算結果データ
+  Private myXlonCalDataCnt As Long, myZvarCalData() As Variant
+    'myZvarCalData(i, 1) : 演算結果データ
   
 '//PropertySetLet_入力データ
   Private myZdouOrgData() As Double, myZvarCalPara() As Variant
@@ -67,15 +67,15 @@ Private Property Get IntfcSgnlPrcs_ifgetCalDataCnt() As Long
     IntfcSgnlPrcs_ifgetCalDataCnt = myXlonCalDataCnt
 End Property
 
-Private Property Get IntfcSgnlPrcs_ifgetCalDataAry(ByVal i As Long, ByVal j As Long) As Double
-    IntfcSgnlPrcs_ifgetCalDataAry = myZdouCalData(i, j)
-'myZdouCalData(i, 1) : 演算結果データ
+Private Property Get IntfcSgnlPrcs_ifgetCalDataAry(ByVal i As Long, ByVal j As Long) As Variant
+    IntfcSgnlPrcs_ifgetCalDataAry = myZvarCalData(i, j)
+'myZvarCalData(i, 1) : 演算結果データ
 End Property
 
 'iniP_出力変数を初期化する
 Private Sub initializeOutputVariables()
     myXbisCmpltFlag = False
-    myXlonCalDataCnt = Empty: Erase myZdouCalData
+    myXlonCalDataCnt = Empty: Erase myZvarCalData
 End Sub
 
 'checkP_出力変数内容を確認する
@@ -84,7 +84,7 @@ Private Sub checkOutputVariables()
     
     If myXlonCalDataCnt <= 0 Then GoTo ExitPath
     If PfncbisCheckArrayDimensionLength( _
-            myZdouCalData, 2, myXlonCalDataCnt, 1) = False Then GoTo ExitPath
+            myZvarCalData, 2, myXlonCalDataCnt, 1) = False Then GoTo ExitPath
     
     Exit Sub
 ExitPath:
@@ -166,10 +166,14 @@ Private Sub prsProc()
     
 '//データ演算
     myXlonCalDataCnt = Ui - Li + 1
-    ReDim myZdouCalData(Ui, Lo) As Double
+    i = myXlonCalDataCnt + Lo - 1
+    ReDim myZvarCalData(i, Lo) As Variant
     
+  Dim myXdouRet As Double
     For i = Li To Ui
-        myZdouCalData(i, Lo) = myZdouOrgData(i, Li) * myZvarCalPara(Li, Li)
+        myXdouRet = myZdouOrgData(i, Li)
+        myXdouRet = myXdouRet * myZvarCalPara(Li)
+        myZvarCalData(i + Lo - Li, Lo) = myXdouRet
     Next i
     
     Exit Sub
@@ -192,9 +196,9 @@ Private Sub runProc()
         n = n + 1
         myZvarPstData(n, L) = myZstrHeader(i, L)
     Next i
-    For i = LBound(myZdouCalData, 1) To UBound(myZdouCalData, 1)
+    For i = LBound(myZvarCalData, 1) To UBound(myZvarCalData, 1)
         n = n + 1
-        myZvarPstData(n, L) = myZdouCalData(i, L)
+        myZvarPstData(n, L) = myZvarCalData(i, L)
     Next i
     
     Call instCVrblToSht
