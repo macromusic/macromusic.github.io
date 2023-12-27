@@ -17,34 +17,39 @@ Option Explicit
 Option Base 1
 
 '◆ClassProc名_データ配列をHighPassFilter処理する
-'Rev.004
+'Rev.005
   
 '//モジュールメモリ
   Private Const meMstrMdlName As String = "CHghPssFltr"
   
 '//PropertyGet_出力データ
   Private Lc As Long
-  Private myXlonStrtRowCol As Long, myXlonLastRowCol As Long
+  Private myXlonStrtRow As Long, myXlonLastRow As Long
   Private myXlonCalRowCnt As Long, myXlonCalColCnt As Long, myZdouCalData() As Double
     'myZdouCalData(i, 1) : 計算処理後データ配列
   
 '//PropertySetLet_入力制御信号
   Private myXlonCalDataRngOptn As Long
+    'myXlonCalDataRngOptn = 1 : 全データ範囲で取得
+    'myXlonCalDataRngOptn = 2 : 指定データ範囲で取得
+    'myXlonCalDataRngOptn = 3 : 有効データ範囲で取得
   
 '//PropertySetLet_入力データ
   Private myZdouOrgData() As Double
     'myZdouOrgData(i, 1) : 元データ配列
   Private myXlonBgnRow As Long, myXlonEndRow As Long
   Private myXdouTs As Double, myXdouFc As Double
+    'myXdouTs[sec] : 元データ配列のサンプリング時間
+    'myXdouFc[Hz]  : HighPassFilterのカットオフ周波数
   
 '//モジュール内変数_制御信号
   Private myXbisExitFlag As Boolean
   
 '//モジュール内変数_データ
   Private myXlonInptRowCnt As Long, myXlonInptColCnt As Long, myZdouInptData() As Double
+  Private myXlonStrt As Long, myXlonLast As Long
   Private myXlonTmpDataCnt As Long, myZdouTmpData() As Double
-  Private myXlonStrtNo As Long, myXlonLastNo As Long
-  Private myXlonCalStrtNo As Long, myXlonCalLastNo As Long
+  Private myXlonCalStrt As Long, myXlonCalLast As Long
   Private myXlonCalTmpCnt As Long, myZdouCalTmp() As Double
 
 'iniP_モジュール内変数を初期化する
@@ -52,9 +57,9 @@ Private Sub initializeModuleVariables()
     myXbisExitFlag = False
     
     myXlonInptRowCnt = Empty: myXlonInptColCnt = Empty: Erase myZdouInptData
+    myXlonStrt = Empty: myXlonLast = Empty
     myXlonTmpDataCnt = Empty: Erase myZdouTmpData
-    myXlonStrtNo = Empty: myXlonLastNo = Empty
-    myXlonCalStrtNo = Empty: myXlonCalLastNo = Empty
+    myXlonCalStrt = Empty: myXlonCalLast = Empty
     myXlonCalTmpCnt = Empty: Erase myZdouCalTmp
 End Sub
 
@@ -66,11 +71,11 @@ Public Property Get getOptnBase() As Long
 End Property
 
 Public Property Get getStrtRow() As Long
-    getStrtRow = myXlonStrtRowCol
+    getStrtRow = myXlonStrtRow
 End Property
 
 Public Property Get getLastRow() As Long
-    getLastRow = myXlonLastRowCol
+    getLastRow = myXlonLastRow
 End Property
 
 Public Property Get getCalRowCnt() As Long
@@ -88,7 +93,7 @@ End Property
 
 'iniP_出力変数を初期化する
 Private Sub initializeOutputVariables()
-    myXlonStrtRowCol = Empty: myXlonLastRowCol = Empty
+    myXlonStrtRow = Empty: myXlonLastRow = Empty
     myXlonCalRowCnt = Empty: myXlonCalColCnt = Empty: Erase myZdouCalData
 End Sub
 
@@ -147,7 +152,8 @@ Private Sub checkInputVariables()
     If myXlonEndRow < myXlonBgnRow Or myXlonEndRow > UBound(myZdouInptData, 1) Then _
         myXlonEndRow = UBound(myZdouInptData, 1)
     
-    If myXdouFc * myXdouTs <= 0 Then GoTo ExitPath
+    If myXdouTs <= 0 Then GoTo ExitPath
+    If myXdouFc <= 0 Then GoTo ExitPath
     
     Exit Sub
 ExitPath:
@@ -194,20 +200,16 @@ End Sub
 Private Sub setDataVariables()
     myXbisExitFlag = False
     
-  Dim myXlonBgnNo As Long, myXlonEndNo As Long
-    myXlonBgnNo = LBound(myZdouInptData, 1)
-    myXlonEndNo = UBound(myZdouInptData, 1)
+    myXlonStrt = LBound(myZdouInptData, 1)
+    myXlonLast = UBound(myZdouInptData, 1)
     
 '//2次元の数値配列の指定列から一部を1次元配列で取得
   Const coXlonCalCol As Long = 1
   Const coXlonCalStep As Long = 1
     Call PfixArrayPartColumnNumeric( _
             myXlonTmpDataCnt, myZdouTmpData, _
-            myZdouInptData, coXlonCalCol, myXlonBgnNo, myXlonEndNo, coXlonCalStep)
+            myZdouInptData, coXlonCalCol, myXlonStrt, myXlonLast, coXlonCalStep)
     If myXlonTmpDataCnt <= 0 Then GoTo ExitPath
-    
-    myXlonStrtNo = myXlonBgnNo
-    myXlonLastNo = myXlonEndNo
     
     Exit Sub
 ExitPath:
@@ -219,9 +221,9 @@ Private Sub setControlVariables()
     myXbisExitFlag = False
     
 '//計算が有効な最初と最後の位置を設定
-    myXlonStrtNo = myXlonStrtNo + 1
-    myXlonLastNo = myXlonLastNo
-    If myXlonLastNo < myXlonStrtNo Then GoTo ExitPath
+    myXlonStrt = myXlonStrt + 1
+    myXlonLast = myXlonLast
+    If myXlonLast < myXlonStrt Then GoTo ExitPath
     
     Exit Sub
 ExitPath:
@@ -258,22 +260,22 @@ Private Sub prsCal()
 '//計算する最初のデータ位置と最後のデータ位置を設定
     Select Case myXlonCalDataRngOptn
         Case 1
-            myXlonCalStrtNo = LBound(myZdouTmpData)
-            myXlonCalLastNo = UBound(myZdouTmpData)
+            myXlonCalStrt = LBound(myZdouTmpData)
+            myXlonCalLast = UBound(myZdouTmpData)
         Case 2
-            myXlonCalStrtNo = myXlonBgnRow
-            myXlonCalLastNo = myXlonEndRow
+            myXlonCalStrt = myXlonBgnRow
+            myXlonCalLast = myXlonEndRow
         Case Else
-            myXlonCalStrtNo = myXlonStrtNo
-            myXlonCalLastNo = myXlonLastNo
+            myXlonCalStrt = myXlonStrt
+            myXlonCalLast = myXlonLast
     End Select
     
 '//データ抽出
-    myXlonCalTmpCnt = myXlonCalLastNo - myXlonCalStrtNo + 1
+    myXlonCalTmpCnt = myXlonCalLast - myXlonCalStrt + 1
     ReDim myZdouCalTmp(myXlonCalTmpCnt) As Double
     
     n = 0
-    For i = myXlonCalStrtNo To myXlonCalLastNo
+    For i = myXlonCalStrt To myXlonCalLast
         n = n + 1
         myZdouCalTmp(n) = myZdouRet(i)
     Next i
@@ -289,8 +291,8 @@ End Sub
 Private Sub setOutputVariables()
     myXbisExitFlag = False
     
-    myXlonStrtRowCol = myXlonCalStrtNo
-    myXlonLastRowCol = myXlonCalLastNo
+    myXlonStrtRow = myXlonCalStrt
+    myXlonLastRow = myXlonCalLast
     
   Dim i As Long
     myXlonCalRowCnt = myXlonCalTmpCnt
@@ -364,12 +366,13 @@ Private Function PfncdouHighPassFilter( _
 'myXdouXn   : 元データ今回値
 'myXdouTs[sec] : 元データ配列のサンプリング時間
 'myXdouFc[Hz]  : HighPassFilterのカットオフ周波数
-  Const myXdouPI As Double = 3.14159265358979
-'  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
+'  Const myXdouPI As Double = 3.14159265358979
+  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
     PfncdouHighPassFilter = Empty
+    If myXdouTs <= 0 Then Exit Function
+    If myXdouFc <= 0 Then Exit Function
   Dim myXdouTmpFc As Double
     myXdouTmpFc = myXdouFc * myXdouTs
-    If myXdouTmpFc <= 0 Then Exit Function
   Dim myXdouRet As Double, myXdouA As Double
     myXdouA = 2 * myXdouPI * myXdouTmpFc
     myXdouA = 1 / (1 + myXdouA)
