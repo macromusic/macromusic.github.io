@@ -2907,7 +2907,7 @@ Private Sub PfixArrayColumnCombineNumeric( _
     myXlonNewRowCnt = Empty: myXlonNewColCnt = Empty: Erase myZdouNewData
   Dim myXdouTmp As Double, Li As Long
     On Error GoTo ExitPath
-    Li = LBound(myZdouUpOrg, 2)
+    Li = LBound(myZdouLftOrg, 2)
     myXdouTmp = myZdouLftOrg(Li, Li): myXdouTmp = myZdouRghtOrg(Li, Li)
     On Error GoTo 0
   Dim myXlonLftCnt As Long, myXlonRghtCnt As Long
