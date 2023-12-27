@@ -19,7 +19,7 @@ Option Explicit
 Option Base 1
 
 '◆ClassProc名_データ配列の指定区間ごとで回帰直線間の差分データを取得する
-'Rev.004
+'Rev.005
   
 '//モジュールメモリ
   Private Const meMstrMdlName As String = "CIntrvlRgrsnLnDev"
@@ -40,8 +40,8 @@ Option Base 1
   Private myZdouXOrgData() As Double, myZdouYOrgData() As Double
     'myZdouXOrgData(i, 1) : X軸の元データ配列
     'myZdouYOrgData(i, 1) : Y軸の元データ配列
-  Private myXlonCalSmplQnt As Long, myXlonCalStep As Long
   Private myXlonBgnRow As Long, myXlonEndRow As Long
+  Private myXlonCalSmplQnt As Long, myXlonCalStep As Long
   
 '//モジュール内変数_制御信号
   Private myXbisExitFlag As Boolean
@@ -49,12 +49,12 @@ Option Base 1
 '//モジュール内変数_データ
   Private myXlonXInptRowCnt As Long, myXlonXInptColCnt As Long, myZdouXInptData() As Double
   Private myXlonYInptRowCnt As Long, myXlonYInptColCnt As Long, myZdouYInptData() As Double
+  Private myXlonStrt As Long, myXlonLast As Long
   Private myXlonXTmpDataCnt As Long, myZdouXTmpData() As Double
   Private myXlonYTmpDataCnt As Long, myZdouYTmpData() As Double
-  Private myXlonStrtNo As Long, myXlonLastNo As Long
   Private myXlonPreOfstNeg As Long, myXlonPstOfstNeg As Long
   Private myXlonPreOfstPos As Long, myXlonPstOfstPos As Long
-  Private myXlonCalStrtNo As Long, myXlonCalLastNo As Long
+  Private myXlonCalStrt As Long, myXlonCalLast As Long
   Private myXlonCalTmpCnt As Long, myZdouCalTmp() As Double
 
 'iniP_モジュール内変数を初期化する
@@ -63,12 +63,12 @@ Private Sub initializeModuleVariables()
     
     myXlonXInptRowCnt = Empty: myXlonXInptColCnt = Empty: Erase myZdouXInptData
     myXlonYInptRowCnt = Empty: myXlonYInptColCnt = Empty: Erase myZdouYInptData
+    myXlonStrt = Empty: myXlonLast = Empty
     myXlonXTmpDataCnt = Empty: Erase myZdouXTmpData
     myXlonYTmpDataCnt = Empty: Erase myZdouYTmpData
-    myXlonStrtNo = Empty: myXlonLastNo = Empty
     myXlonPreOfstNeg = Empty: myXlonPstOfstNeg = Empty
     myXlonPreOfstPos = Empty: myXlonPstOfstPos = Empty
-    myXlonCalStrtNo = Empty: myXlonCalLastNo = Empty
+    myXlonCalStrt = Empty: myXlonCalLast = Empty
     myXlonCalTmpCnt = Empty: Erase myZdouCalTmp
 End Sub
 
@@ -125,20 +125,20 @@ Public Property Let letYOrgData(ByRef RHS() As Double)
 'myZdouYOrgData(i, 1) : Y軸の元データ配列
 End Property
 
-Public Property Let letCalSmplQnt(ByVal RHS As Long)
-    myXlonCalSmplQnt = RHS
-End Property
-
-Public Property Let letCalStep(ByVal RHS As Long)
-    myXlonCalStep = RHS
-End Property
-
 Public Property Let letBgnRow(ByVal RHS As Long)
     myXlonBgnRow = RHS
 End Property
 
 Public Property Let letEndRow(ByVal RHS As Long)
     myXlonEndRow = RHS
+End Property
+
+Public Property Let letCalSmplQnt(ByVal RHS As Long)
+    myXlonCalSmplQnt = RHS
+End Property
+
+Public Property Let letCalStep(ByVal RHS As Long)
+    myXlonCalStep = RHS
 End Property
 
 'checkP_入力変数内容を確認する
@@ -226,23 +226,19 @@ End Sub
 Private Sub setDataVariables()
     myXbisExitFlag = False
     
-  Dim myXlonBgnNo As Long, myXlonEndNo As Long
-    myXlonBgnNo = LBound(myZdouXInptData, 1)
-    myXlonEndNo = UBound(myZdouXInptData, 1)
+    myXlonStrt = LBound(myZdouXInptData, 1)
+    myXlonLast = UBound(myZdouXInptData, 1)
     
 '//2次元の数値配列の指定列から一部を1次元配列で取得
   Const coXlonCalCol As Long = 1
     Call PfixArrayPartColumnNumeric( _
             myXlonXTmpDataCnt, myZdouXTmpData, _
-            myZdouXInptData, coXlonCalCol, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
+            myZdouXInptData, coXlonCalCol, myXlonStrt, myXlonLast, myXlonCalStep)
     Call PfixArrayPartColumnNumeric( _
             myXlonYTmpDataCnt, myZdouYTmpData, _
-            myZdouYInptData, coXlonCalCol, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
+            myZdouYInptData, coXlonCalCol, myXlonStrt, myXlonLast, myXlonCalStep)
     If myXlonXTmpDataCnt <= 0 Or myXlonYTmpDataCnt <= 0 Then GoTo ExitPath
     If myXlonXTmpDataCnt <> myXlonYTmpDataCnt Then GoTo ExitPath
-    
-    myXlonStrtNo = myXlonBgnNo
-    myXlonLastNo = myXlonEndNo
     
     Exit Sub
 ExitPath:
@@ -261,9 +257,9 @@ Private Sub setControlVariables()
     myXlonPstOfstPos = (myXlonCalSmplQnt - 1) * myXlonCalStep
     
 '//計算が有効な最初と最後の位置を設定
-    myXlonStrtNo = myXlonStrtNo + myXlonPreOfstNeg
-    myXlonLastNo = myXlonLastNo - myXlonPstOfstPos
-    If myXlonLastNo < myXlonStrtNo Then GoTo ExitPath
+    myXlonStrt = myXlonStrt + myXlonPreOfstNeg
+    myXlonLast = myXlonLast - myXlonPstOfstPos
+    If myXlonLast < myXlonStrt Then GoTo ExitPath
     
     Exit Sub
 ExitPath:
@@ -277,60 +273,73 @@ Private Sub prsCal()
 '//計算する最初のデータ位置と最後のデータ位置を設定
     Select Case myXlonCalDataRngOptn
         Case 1
-            myXlonCalStrtNo = LBound(myZdouXTmpData)
-            myXlonCalLastNo = UBound(myZdouXTmpData)
+            myXlonCalStrt = LBound(myZdouXTmpData)
+            myXlonCalLast = UBound(myZdouXTmpData)
         Case 2
-            myXlonCalStrtNo = myXlonBgnRow
-            myXlonCalLastNo = myXlonEndRow
+            myXlonCalStrt = myXlonBgnRow
+            myXlonCalLast = myXlonEndRow
         Case Else
-            myXlonCalStrtNo = myXlonStrtNo
-            myXlonCalLastNo = myXlonLastNo
+            myXlonCalStrt = myXlonStrt
+            myXlonCalLast = myXlonLast
     End Select
     
 '//台形波形を生成
+  Dim L As Long, myXlonStrtStp As Long, myXlonCnstVal As Long, myXlonLastStp As Long
+    
+    L = 1
+    myXlonStrtStp = -1
+    myXlonCnstVal = 0
+    myXlonLastStp = 0
   Dim myXlonAdjstNegCnt As Long, myZlonAdjstNeg() As Long
     Call PfixTrapezoidWaveLong( _
             myXlonAdjstNegCnt, myZlonAdjstNeg, _
-            myXlonXTmpDataCnt, myXlonStrtNo, UBound(myZdouXTmpData), 1, -1, 0, 0)
+            myXlonXTmpDataCnt, myXlonStrt, UBound(myZdouXTmpData), _
+            L, myXlonStrtStp, myXlonCnstVal, myXlonLastStp)
     If myXlonAdjstNegCnt <> myXlonXTmpDataCnt Then GoTo ExitPath
     
+    L = 1
+    myXlonStrtStp = 0
+    myXlonCnstVal = 0
+    myXlonLastStp = -1
   Dim myXlonAdjstPosCnt As Long, myZlonAdjstPos() As Long
     Call PfixTrapezoidWaveLong( _
             myXlonAdjstPosCnt, myZlonAdjstPos, _
-            myXlonXTmpDataCnt, LBound(myZdouXTmpData), myXlonLastNo, 1, 0, -1, 0)
+            myXlonXTmpDataCnt, LBound(myZdouXTmpData), myXlonLast, _
+            L, myXlonStrtStp, myXlonCnstVal, myXlonLastStp)
     If myXlonAdjstPosCnt <> myXlonXTmpDataCnt Then GoTo ExitPath
     
 '//計算処理:回帰直線間の差分
   Dim i As Long, n As Long: n = 0
-  Dim myXlonBgnNo As Long, myXlonEndNo As Long
+  Dim myXlonBgn As Long, myXlonEnd As Long
   Dim myXdouSlpNeg As Double, myXdouIntrcptNeg As Double
   Dim myXdouSlpPos As Double, myXdouIntrcptPos As Double
   Dim myXdouRgrsnNeg As Double, myXdouRgrsnPos As Double
     
-    myXlonCalTmpCnt = myXlonCalLastNo - myXlonCalStrtNo + 1
+    myXlonCalTmpCnt = myXlonCalLast - myXlonCalStrt + 1
     ReDim myZdouCalTmp(myXlonCalTmpCnt) As Double
 
-    For i = myXlonCalStrtNo To myXlonCalLastNo
-        n = n + 1
+    For i = myXlonCalStrt To myXlonCalLast
     '//今回値より前のデータで計算
-        myXlonBgnNo = i - myXlonPreOfstNeg + myZlonAdjstNeg(i)
-        myXlonEndNo = i + myXlonPstOfstNeg
+        myXlonBgn = i - myXlonPreOfstNeg + myZlonAdjstNeg(i)
+        myXlonEnd = i + myXlonPstOfstNeg
         Call CsubCalRegressionLineSlopeIntercept( _
                 myXdouSlpNeg, myXdouIntrcptNeg, _
-                myXlonBgnNo, myXlonEndNo)
+                myXlonBgn, myXlonEnd)
         If myXdouSlpNeg = 0 And myXdouIntrcptNeg = 0 Then GoTo ExitPath
     '//今回値より後のデータで計算
-        myXlonBgnNo = i - myXlonPreOfstPos
-        myXlonEndNo = i + myXlonPstOfstPos + myZlonAdjstPos(i)
+        myXlonBgn = i - myXlonPreOfstPos
+        myXlonEnd = i + myXlonPstOfstPos + myZlonAdjstPos(i)
         Call CsubCalRegressionLineSlopeIntercept( _
                 myXdouSlpPos, myXdouIntrcptPos, _
-                myXlonBgnNo, myXlonEndNo)
+                myXlonBgn, myXlonEnd)
         If myXdouSlpPos = 0 And myXdouIntrcptPos = 0 Then GoTo ExitPath
     '//回帰直線間の差分を計算
         myXdouRgrsnNeg = myXdouSlpNeg * myZdouXTmpData(i) + myXdouIntrcptNeg
         myXdouRgrsnPos = myXdouSlpPos * myZdouXTmpData(i) + myXdouIntrcptPos
+        n = n + 1
         myZdouCalTmp(n) = myXdouRgrsnPos - myXdouRgrsnNeg
     Next i
+    If n <> myXlonCalTmpCnt Then GoTo ExitPath
     
     Erase myZlonAdjstNeg: Erase myZlonAdjstPos
     Exit Sub
@@ -341,27 +350,27 @@ End Sub
 'クラス内Ｐ_2配列の傾き＆切片を計算
 Private Sub CsubCalRegressionLineSlopeIntercept( _
             myXdouSlp As Double, myXdouIntrcpt As Double, _
-            ByVal myXlonBgnNo As Long, ByVal myXlonEndNo As Long)
+            ByVal myXlonBgn As Long, ByVal myXlonEnd As Long)
     myXdouSlp = Empty: myXdouIntrcpt = Empty
     
   Dim myXlonTmpXCnt As Long, myZdouTmpX() As Double
   Dim myXlonTmpYCnt As Long, myZdouTmpY() As Double
 
-    If myXlonBgnNo = myXlonEndNo Then
-        If myXlonBgnNo * myXlonEndNo = 1 Then
-            myXlonBgnNo = myXlonBgnNo
-            myXlonEndNo = myXlonEndNo + 1
+    If myXlonBgn = myXlonEnd Then
+        If myXlonBgn * myXlonEnd = 1 Then
+            myXlonBgn = myXlonBgn
+            myXlonEnd = myXlonEnd + 1
         Else
-            myXlonBgnNo = myXlonBgnNo - 1
-            myXlonEndNo = myXlonEndNo
+            myXlonBgn = myXlonBgn - 1
+            myXlonEnd = myXlonEnd
         End If
     End If
     
     Call Pfix1DArrayExtractNumeric(myXlonTmpXCnt, myZdouTmpX, _
-            myZdouXTmpData, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
+            myZdouXTmpData, myXlonBgn, myXlonEnd, myXlonCalStep)
     If myXlonTmpXCnt <= 0 Then GoTo ExitPath
     Call Pfix1DArrayExtractNumeric(myXlonTmpYCnt, myZdouTmpY, _
-            myZdouYTmpData, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
+            myZdouYTmpData, myXlonBgn, myXlonEnd, myXlonCalStep)
     If myXlonTmpYCnt <= 0 Then GoTo ExitPath
     
     Call PfixSlopeIntercept(myXdouSlp, myXdouIntrcpt, myZdouTmpX, myZdouTmpY)
@@ -374,8 +383,8 @@ End Sub
 Private Sub setOutputVariables()
     myXbisExitFlag = False
     
-    myXlonStrtRow = myXlonCalStrtNo
-    myXlonLastRow = myXlonCalLastNo
+    myXlonStrtRow = myXlonCalStrt
+    myXlonLastRow = myXlonCalLast
     
   Dim i As Long
     myXlonCalRowCnt = myXlonCalTmpCnt
@@ -471,16 +480,16 @@ Private Sub PfixTrapezoidWaveLong( _
             ByVal myXlonInflctPntBgn As Long, ByVal myXlonInflctPntEnd As Long, _
             Optional ByVal L As Long = 1, _
             Optional ByVal coXlonStrtStp As Long = -1, _
-            Optional ByVal coXlonLastStp As Long = 1, _
-            Optional ByVal coXlonCnstVal As Long = 0)
+            Optional ByVal coXlonCnstVal As Long = 0, _
+            Optional ByVal coXlonLastStp As Long = 1)
 'myZlonCalData(i) : 取得データ配列
 'myXlonDataQnt : 必要なデータ数
 'myXlonInflctPntBgn : 開始側の変曲点
 'myXlonInflctPntEnd : 終了側の変曲点
 'L : Option Base
 'coXlonStrtStp : 開始側のデータ変化ステップ
-'coXlonLastStp : 終了側のデータ変化ステップ
 'coXlonCnstVal : 一定状態の値
+'coXlonLastStp : 終了側のデータ変化ステップ
     myXlonCalDataCnt = Empty:  Erase myZlonCalData
     If myXlonDataQnt <= 0 Then Exit Sub
     If myXlonInflctPntBgn < L Then Exit Sub
@@ -491,24 +500,22 @@ Private Sub PfixTrapezoidWaveLong( _
   Dim i As Long, n As Long
     myXlonCalDataCnt = myXlonDataQnt
     i = myXlonCalDataCnt + Lo - 1: ReDim myZlonCalData(i) As Long
-    If myXlonInflctPntBgn = L Then GoTo JumpPath1
+    If myXlonInflctPntBgn = L Then GoTo JumpPath
     n = myXlonInflctPntBgn
     For i = L To myXlonInflctPntBgn - 1
         n = n - 1
         myZlonCalData(i) = coXlonCnstVal - coXlonStrtStp * n
     Next i
-JumpPath1:
+JumpPath:
     For i = myXlonInflctPntBgn To myXlonInflctPntEnd
         myZlonCalData(i) = coXlonCnstVal
     Next i
-JumpPath2:
     If myXlonInflctPntEnd = myXlonDataQnt + L - 1 Then Exit Sub
     n = 0
     For i = myXlonInflctPntEnd + 1 To myXlonDataQnt + L - 1
         n = n + 1
         myZlonCalData(i) = coXlonCnstVal + coXlonLastStp * n
     Next i
-ExitPath:
 End Sub
 
  '定型Ｐ_配列計算-2配列の傾き＆切片
@@ -541,19 +548,17 @@ End Sub
 ''◆ClassProc名_データ配列の指定区間ごとで回帰直線間の差分データを取得する
 'Private Sub instCIntrvlRgrsnLnDev()
 '  Const coXlonCalDataRngOptn As Long = 1
-'    'coXlonCalRng = 1 : 全データ範囲で取得
-'    'coXlonCalRng = 2 : 指定データ範囲で取得
-'    'coXlonCalRng = 3 : 有効データ範囲で取得
-'  Const coXlonXCalCol As Long = 1
-'  Const coXlonYCalCol As Long = 2
+'    'coXlonCalDataRngOptn = 1 : 全データ範囲で取得
+'    'coXlonCalDataRngOptn = 2 : 指定データ範囲で取得
+'    'coXlonCalDataRngOptn = 3 : 有効データ範囲で取得
+'  Const coXlonBgnRow As Long = 1
+'  Const coXlonEndRow As Long = 0
 '  Const coXlonCalSmplQnt As Long = 11
 '  Const coXlonCalStep As Long = 1
-'  Const coXlonBgnRowCol As Long = 1
-'  Const coXlonEndRowCol As Long = 0
-''  Dim myXlonOrgRowCnt As Long, myXlonOrgColCnt As Long, myZdouOrgData() As Double
-''    'myZdouOrgData(i, 2) : 元データ配列
-''    myXlonOrgRowCnt = UBound(myZdouOrgData, 1)
-''    myXlonOrgColCnt = UBound(myZdouOrgData, 2)
+''  Dim myXlonOrgRowCnt As Long, myXlonOrgColCnt As Long, _
+''        myZdouXOrgData() As Double, myZdouYOrgData() As Double
+''    'myZdouXOrgData(i, 1) : X軸の元データ配列
+''    'myZdouYOrgData(i, 1) : Y軸の元データ配列
 '  Dim Lc As Long
 ''  Dim myXlonStrtRow As Long, myXlonLastRow As Long
 ''  Dim myXlonCalRowCnt As Long, myXlonCalColCnt As Long, myZdouCalData() As Double
@@ -566,13 +571,12 @@ End Sub
 '    With myXinsIntrvlRgrsnLnDev
 '    '//クラス内変数への入力
 '        .letCalDataRngOptn = coXlonCalDataRngOptn
-'        .letOrgData = myZdouOrgData
-'        .letXCalCol = coXlonXCalCol
-'        .letYCalCol = coXlonYCalCol
+'        .letXOrgData = myZdouXOrgData
+'        .letYOrgData = myZdouYOrgData
+'        .letBgnRow = coXlonBgnRow
+'        .letEndRow = coXlonEndRow
 '        .letCalSmplQnt = coXlonCalSmplQnt
 '        .letCalStep = coXlonCalStep
-'        .letBgnRow = coXlonBgnRowCol
-'        .letEndRow = coXlonEndRowCol
 '    '//クラス内プロシージャの実行とクラス内変数からの出力
 '        .exeProc
 '        myXlonStrtRow = .getStrtRow
