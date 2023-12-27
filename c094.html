@@ -729,12 +729,13 @@ Private Function PfncdouLowPassFilter( _
 'myXdouXn   : 元データ今回値
 'myXdouTs[sec] : 元データ配列のサンプリング時間
 'myXdouFc[Hz]  : LowPassFilterのカットオフ周波数
-  Const myXdouPI As Double = 3.14159265358979
-'  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
+'  Const myXdouPI As Double = 3.14159265358979
+  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
     PfncdouLowPassFilter = Empty
+    If myXdouTs <= 0 Then Exit Function
+    If myXdouFc <= 0 Then Exit Function
   Dim myXdouTmpFc As Double
     myXdouTmpFc = myXdouFc * myXdouTs
-    If myXdouTmpFc <= 0 Then Exit Function
   Dim myXdouA As Double
     myXdouA = 2 * myXdouPI * myXdouTmpFc
     myXdouA = 1 / (1 + myXdouA)
@@ -757,12 +758,13 @@ Private Function PfncdouHighPassFilter( _
 'myXdouXn   : 元データ今回値
 'myXdouTs[sec] : 元データ配列のサンプリング時間
 'myXdouFc[Hz]  : HighPassFilterのカットオフ周波数
-  Const myXdouPI As Double = 3.14159265358979
-'  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
+'  Const myXdouPI As Double = 3.14159265358979
+  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
     PfncdouHighPassFilter = Empty
+    If myXdouTs <= 0 Then Exit Function
+    If myXdouFc <= 0 Then Exit Function
   Dim myXdouTmpFc As Double
     myXdouTmpFc = myXdouFc * myXdouTs
-    If myXdouTmpFc <= 0 Then Exit Function
   Dim myXdouRet As Double, myXdouA As Double
     myXdouA = 2 * myXdouPI * myXdouTmpFc
     myXdouA = 1 / (1 + myXdouA)
@@ -786,14 +788,16 @@ Private Function PfncdouResonator( _
 'myXdouTs[sec] : 元データ配列のサンプリング時間
 'myXdouFo[Hz]  : 共振器の共振周波数
 'myXdouBo[Hz]  : 共振器の共振の帯域幅
-  Const myXdouPI As Double = 3.14159265358979
-'  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
+'  Const myXdouPI As Double = 3.14159265358979
+  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
     PfncdouResonator = Empty
+    If myXdouTs <= 0 Then Exit Function
+    If myXdouFo <= 0 Then Exit Function
+    If myXdouBo <= 0 Then Exit Function
     If myXdouBo > myXdouFo Then Exit Function
   Dim myXdouTmpBo As Double, myXdouTmpFo As Double
     myXdouTmpBo = myXdouBo * myXdouTs
     myXdouTmpFo = myXdouFo * myXdouTs
-    If myXdouTmpBo * myXdouTmpFo <= 0 Then Exit Function
     If myXdouTmpFo = 0.25 Then Exit Function
   Dim myXdouA1 As Double, myXdouCal1 As Double, myXdouCal2 As Double
     myXdouCal1 = (-1) * myXdouPI * myXdouTmpBo
@@ -833,14 +837,16 @@ Private Function PfncdouNotchFilter( _
 'myXdouTs[sec] : 元データ配列のサンプリング時間
 'myXdouFo[Hz]  : NotchFilterのノッチ周波数
 'myXdouBo[Hz]  : NotchFilterのノッチの帯域幅
-  Const myXdouPI As Double = 3.14159265358979
-'  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
+'  Const myXdouPI As Double = 3.14159265358979
+  Dim myXdouPI As Double: myXdouPI = Application.WorksheetFunction.Pi()
     PfncdouNotchFilter = Empty
+    If myXdouTs <= 0 Then Exit Function
+    If myXdouFo <= 0 Then Exit Function
+    If myXdouBo <= 0 Then Exit Function
     If myXdouBo > myXdouFo Then Exit Function
   Dim myXdouTmpBo As Double, myXdouTmpFo As Double
     myXdouTmpBo = myXdouBo * myXdouTs
     myXdouTmpFo = myXdouFo * myXdouTs
-    If myXdouTmpBo * myXdouTmpFo <= 0 Then Exit Function
     If myXdouTmpFo = 0.25 Then Exit Function
   Dim myXdouA1 As Double, myXdouCal1 As Double, myXdouCal2 As Double
     myXdouCal1 = (-1) * myXdouPI * myXdouTmpBo
@@ -1229,16 +1235,16 @@ Private Sub PfixTrapezoidWaveLong( _
             ByVal myXlonInflctPntBgn As Long, ByVal myXlonInflctPntEnd As Long, _
             Optional ByVal L As Long = 1, _
             Optional ByVal coXlonStrtStp As Long = -1, _
-            Optional ByVal coXlonLastStp As Long = 1, _
-            Optional ByVal coXlonCnstVal As Long = 0)
+            Optional ByVal coXlonCnstVal As Long = 0, _
+            Optional ByVal coXlonLastStp As Long = 1)
 'myZlonCalData(i) : 取得データ配列
 'myXlonDataQnt : 必要なデータ数
 'myXlonInflctPntBgn : 開始側の変曲点
 'myXlonInflctPntEnd : 終了側の変曲点
 'L : Option Base
 'coXlonStrtStp : 開始側のデータ変化ステップ
-'coXlonLastStp : 終了側のデータ変化ステップ
 'coXlonCnstVal : 一定状態の値
+'coXlonLastStp : 終了側のデータ変化ステップ
     myXlonCalDataCnt = Empty:  Erase myZlonCalData
     If myXlonDataQnt <= 0 Then Exit Sub
     If myXlonInflctPntBgn < L Then Exit Sub
@@ -1249,24 +1255,22 @@ Private Sub PfixTrapezoidWaveLong( _
   Dim i As Long, n As Long
     myXlonCalDataCnt = myXlonDataQnt
     i = myXlonCalDataCnt + Lo - 1: ReDim myZlonCalData(i) As Long
-    If myXlonInflctPntBgn = L Then GoTo JumpPath1
+    If myXlonInflctPntBgn = L Then GoTo JumpPath
     n = myXlonInflctPntBgn
     For i = L To myXlonInflctPntBgn - 1
         n = n - 1
         myZlonCalData(i) = coXlonCnstVal - coXlonStrtStp * n
     Next i
-JumpPath1:
+JumpPath:
     For i = myXlonInflctPntBgn To myXlonInflctPntEnd
         myZlonCalData(i) = coXlonCnstVal
     Next i
-JumpPath2:
     If myXlonInflctPntEnd = myXlonDataQnt + L - 1 Then Exit Sub
     n = 0
     For i = myXlonInflctPntEnd + 1 To myXlonDataQnt + L - 1
         n = n + 1
         myZlonCalData(i) = coXlonCnstVal + coXlonLastStp * n
     Next i
-ExitPath:
 End Sub
 
  '定型Ｆ_乱数系列を初期化する
@@ -1331,14 +1335,14 @@ End Function
 
  '定型Ｆ_正規乱数を生成する
 Private Function PfncvarNormalRandomNumber( _
-            ByVal myXdouMean As Double, ByVal myXdouStdev As Double, _
+            ByVal myXdouMean As Double, ByVal myXdouStDev As Double, _
             Optional ByVal coXlonDcml As Long = 22) As Variant
     PfncvarNormalRandomNumber = Empty
     If coXlonDcml > 22 Then Exit Function
   Dim myXdouRnd As Double
     On Error GoTo ExitPath
     myXdouRnd = Application.WorksheetFunction _
-                    .NormInv(Rnd(), myXdouMean, myXdouStdev)
+                    .NormInv(Rnd(), myXdouMean, myXdouStDev)
 '    myXdouRnd = Application.WorksheetFunction.NormSInv(Rnd())
 '    myXdouRnd = myXdouMean + myXdouStDev * myXdouRnd
     myXdouRnd = Round(myXdouRnd, coXlonDcml)
@@ -1348,7 +1352,7 @@ End Function
 
  '定型Ｆ_指定範囲内の正規乱数を生成する
 Private Function PfncvarRangeNormalRandomNumber( _
-            ByVal myXdouMean As Double, ByVal myXdouStdev As Double, _
+            ByVal myXdouMean As Double, ByVal myXdouStDev As Double, _
             ByVal myXdouLSL As Double, ByVal myXdouUSL As Double, _
             Optional ByVal coXlonDcml As Long = 22) As Variant
     PfncvarRangeNormalRandomNumber = Empty
@@ -1359,7 +1363,7 @@ Private Function PfncvarRangeNormalRandomNumber( _
     On Error GoTo ExitPath
     Do While myXbisExitLpFlag = False
         myXdouRnd = Application.WorksheetFunction _
-                        .NormInv(Rnd(), myXdouMean, myXdouStdev)
+                        .NormInv(Rnd(), myXdouMean, myXdouStDev)
 '        myXdouRnd = Application.WorksheetFunction.NormSInv(Rnd())
 '        myXdouRnd = myXdouMean + myXdouStDev * myXdouRnd
         myXdouRnd = Round(myXdouRnd, coXlonDcml)
