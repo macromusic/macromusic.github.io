@@ -37,18 +37,18 @@ Option Base 1
 '//PropertySetLet_入力データ
   Private myZdouOrgData() As Double
     'myZdouOrgData(i, 1) : 元データ配列
-  Private myXlonCalSmplQnt As Long, myXlonCalStep As Long
   Private myXlonBgnRow As Long, myXlonEndRow As Long
+  Private myXlonCalSmplQnt As Long, myXlonCalStep As Long
   
 '//モジュール内変数_制御信号
   Private myXbisExitFlag As Boolean
   
 '//モジュール内変数_データ
   Private myXlonInptRowCnt As Long, myXlonInptColCnt As Long, myZdouInptData() As Double
+  Private myXlonStrt As Long, myXlonLast As Long
   Private myXlonOrgTmpCnt As Long, myZdouOrgTmp() As Double
-  Private myXlonStrtNo As Long, myXlonLastNo As Long
   Private myXlonPreOfst As Long, myXlonPstOfst As Long
-  Private myXlonCalStrtNo As Long, myXlonCalLastNo As Long
+  Private myXlonCalStrt As Long, myXlonCalLast As Long
   Private myXlonCalTmpCnt As Long, myZdouCalTmp() As Double
 
 'iniP_モジュール内変数を初期化する
@@ -56,10 +56,10 @@ Private Sub initializeModuleVariables()
     myXbisExitFlag = False
     
     myXlonInptRowCnt = Empty: myXlonInptColCnt = Empty: Erase myZdouInptData
+    myXlonStrt = Empty: myXlonLast = Empty
     myXlonOrgTmpCnt = Empty: Erase myZdouOrgTmp
-    myXlonStrtNo = Empty: myXlonLastNo = Empty
     myXlonPreOfst = Empty: myXlonPstOfst = Empty
-    myXlonCalStrtNo = Empty: myXlonCalLastNo = Empty
+    myXlonCalStrt = Empty: myXlonCalLast = Empty
     myXlonCalTmpCnt = Empty: Erase myZdouCalTmp
 End Sub
 
@@ -124,20 +124,20 @@ Public Property Let letOrgData(ByRef RHS() As Double)
 'myZdouOrgData(i, 1) : 元データ配列
 End Property
 
-Public Property Let letCalSmplQnt(ByVal RHS As Long)
-    myXlonCalSmplQnt = RHS
-End Property
-
-Public Property Let letCalStep(ByVal RHS As Long)
-    myXlonCalStep = RHS
-End Property
-
 Public Property Let letBgnRow(ByVal RHS As Long)
     myXlonBgnRow = RHS
 End Property
 
 Public Property Let letEndRow(ByVal RHS As Long)
     myXlonEndRow = RHS
+End Property
+
+Public Property Let letCalSmplQnt(ByVal RHS As Long)
+    myXlonCalSmplQnt = RHS
+End Property
+
+Public Property Let letCalStep(ByVal RHS As Long)
+    myXlonCalStep = RHS
 End Property
 
 'checkP_入力変数内容を確認する
@@ -161,12 +161,12 @@ Private Sub checkInputVariables()
         Next i
     Next j
     
-    If myXlonCalSmplQnt <= 0 _
-        Or myXlonCalSmplQnt > UBound(myZdouInptData, 1) Then GoTo ExitPath
-    If myXlonCalStep <= 0 Or myXlonCalStep > UBound(myZdouInptData, 1) Then myXlonCalStep = 1
     If myXlonBgnRow < LBound(myZdouInptData, 1) Then myXlonBgnRow = LBound(myZdouInptData, 1)
     If myXlonEndRow < myXlonBgnRow Or myXlonEndRow > UBound(myZdouInptData, 1) Then _
         myXlonEndRow = UBound(myZdouInptData, 1)
+    If myXlonCalSmplQnt <= 0 _
+        Or myXlonCalSmplQnt > UBound(myZdouInptData, 1) Then GoTo ExitPath
+    If myXlonCalStep <= 0 Or myXlonCalStep > UBound(myZdouInptData, 1) Then myXlonCalStep = 1
     
     Exit Sub
 ExitPath:
@@ -213,15 +213,13 @@ End Sub
 Private Sub setDataVariables()
     myXbisExitFlag = False
     
-  Dim myXlonBgnNo As Long, myXlonEndNo As Long
-    myXlonBgnNo = LBound(myZdouInptData, 1)
-    myXlonEndNo = UBound(myZdouInptData, 1)
-    Call PfixArrayPartColumnNumeric(myXlonOrgTmpCnt, myZdouOrgTmp, _
-            myZdouInptData, 1, myXlonBgnNo, myXlonEndNo)
-    If myXlonOrgTmpCnt <= 0 Then GoTo ExitPath
+  Const coXlonExtrctCol As Long = 1
     
-    myXlonStrtNo = myXlonBgnNo
-    myXlonLastNo = myXlonEndNo
+    myXlonStrt = LBound(myZdouInptData, 1)
+    myXlonLast = UBound(myZdouInptData, 1)
+    Call PfixArrayPartColumnNumeric(myXlonOrgTmpCnt, myZdouOrgTmp, _
+            myZdouInptData, coXlonExtrctCol, myXlonStrt, myXlonLast)
+    If myXlonOrgTmpCnt <= 0 Then GoTo ExitPath
     
     Exit Sub
 ExitPath:
@@ -246,9 +244,9 @@ Private Sub setControlVariables()
     End Select
     
 '//計算が有効な最初と最後の位置を設定
-    myXlonStrtNo = myXlonStrtNo + myXlonPreOfst
-    myXlonLastNo = myXlonLastNo - myXlonPstOfst
-    If myXlonLastNo < myXlonStrtNo Then GoTo ExitPath
+    myXlonStrt = myXlonStrt + myXlonPreOfst
+    myXlonLast = myXlonLast - myXlonPstOfst
+    If myXlonLast < myXlonStrt Then GoTo ExitPath
     
     Exit Sub
 ExitPath:
@@ -262,37 +260,42 @@ Private Sub prsCal()
 '//計算する最初のデータ位置と最後のデータ位置を設定
     Select Case myXlonCalDataRngOptn
         Case 1
-            myXlonCalStrtNo = LBound(myZdouOrgTmp)
-            myXlonCalLastNo = UBound(myZdouOrgTmp)
+            myXlonCalStrt = LBound(myZdouOrgTmp)
+            myXlonCalLast = UBound(myZdouOrgTmp)
         Case 2
-            myXlonCalStrtNo = myXlonBgnRowCol
-            myXlonCalLastNo = myXlonEndRowCol
+            myXlonCalStrt = myXlonBgnRowCol
+            myXlonCalLast = myXlonEndRowCol
         Case Else
-            myXlonCalStrtNo = myXlonStrtNo
-            myXlonCalLastNo = myXlonLastNo
+            myXlonCalStrt = myXlonStrt
+            myXlonCalLast = myXlonLast
     End Select
     
 '//台形波形を生成
+  Const L As Long = 1
+  Const coXlonStrtStp As Long = -1
+  Const coXlonCnstVal As Long = 0
+  Const coXlonLastStp As Long = -1
   Dim myXlonAdjstValCnt As Long, myZlonAdjstVal() As Long
     Call PfixTrapezoidWaveLong(myXlonAdjstValCnt, myZlonAdjstVal, _
-            myXlonOrgTmpCnt, myXlonStrtNo, myXlonLastNo, 1, -1, -1, 0)
+            myXlonOrgTmpCnt, myXlonStrt, myXlonLast, _
+            L, coXlonStrtStp, coXlonCnstVal, coXlonLastStp)
     If myXlonAdjstValCnt <> myXlonOrgTmpCnt Then GoTo ExitPath
     
 '//計算処理:x
   Dim i As Long, n As Long: n = 0
-  Dim myXlonBgnNo As Long, myXlonEndNo As Long
+  Dim myXlonBgn As Long, myXlonEnd As Long
   Dim myXlonTmpCnt As Long, myZdouTmp() As Double
     
-    myXlonCalTmpCnt = myXlonCalLastNo - myXlonCalStrtNo + 1
+    myXlonCalTmpCnt = myXlonCalLast - myXlonCalStrt + 1
     ReDim myZdouCalTmp(myXlonCalTmpCnt) As Double
     
-    For i = myXlonCalStrtNo To myXlonCalLastNo
-        n = n + 1
-        myXlonBgnNo = i - myXlonPreOfst + myZlonAdjstVal(i)
-        myXlonEndNo = i + myXlonPstOfst + myZlonAdjstVal(i)
+    For i = myXlonCalStrt To myXlonCalLast
+        myXlonBgn = i - myXlonPreOfst + myZlonAdjstVal(i)
+        myXlonEnd = i + myXlonPstOfst + myZlonAdjstVal(i)
         Call Pfix1DArrayExtractNumeric(myXlonTmpCnt, myZdouTmp, _
-                myZdouOrgTmp, myXlonBgnNo, myXlonEndNo, myXlonCalStep)
+                myZdouOrgTmp, myXlonBgn, myXlonEnd, myXlonCalStep)
         If myXlonTmpCnt <= 0 Then GoTo ExitPath
+        n = n + 1
         myZdouCalTmp(n) = PfncdouArithmeticMean(myZdouTmp)
     Next i
     If n <> myXlonCalTmpCnt Then GoTo ExitPath
@@ -307,8 +310,8 @@ End Sub
 Private Sub setOutputVariables()
     myXbisExitFlag = False
     
-    myXlonStrtRow = myXlonCalStrtNo
-    myXlonLastRow = myXlonCalLastNo
+    myXlonStrtRow = myXlonCalStrt
+    myXlonLastRow = myXlonCalLast
     
   Dim i As Long
     myXlonCalRowCnt = myXlonCalTmpCnt
@@ -404,16 +407,16 @@ Private Sub PfixTrapezoidWaveLong( _
             ByVal myXlonInflctPntBgn As Long, ByVal myXlonInflctPntEnd As Long, _
             Optional ByVal L As Long = 1, _
             Optional ByVal coXlonStrtStp As Long = -1, _
-            Optional ByVal coXlonLastStp As Long = 1, _
-            Optional ByVal coXlonCnstVal As Long = 0)
+            Optional ByVal coXlonCnstVal As Long = 0, _
+            Optional ByVal coXlonLastStp As Long = 1)
 'myZlonCalData(i) : 取得データ配列
 'myXlonDataQnt : 必要なデータ数
 'myXlonInflctPntBgn : 開始側の変曲点
 'myXlonInflctPntEnd : 終了側の変曲点
 'L : Option Base
 'coXlonStrtStp : 開始側のデータ変化ステップ
-'coXlonLastStp : 終了側のデータ変化ステップ
 'coXlonCnstVal : 一定状態の値
+'coXlonLastStp : 終了側のデータ変化ステップ
     myXlonCalDataCnt = Empty:  Erase myZlonCalData
     If myXlonDataQnt <= 0 Then Exit Sub
     If myXlonInflctPntBgn < L Then Exit Sub
@@ -424,24 +427,22 @@ Private Sub PfixTrapezoidWaveLong( _
   Dim i As Long, n As Long
     myXlonCalDataCnt = myXlonDataQnt
     i = myXlonCalDataCnt + Lo - 1: ReDim myZlonCalData(i) As Long
-    If myXlonInflctPntBgn = L Then GoTo JumpPath1
+    If myXlonInflctPntBgn = L Then GoTo JumpPath
     n = myXlonInflctPntBgn
     For i = L To myXlonInflctPntBgn - 1
         n = n - 1
         myZlonCalData(i) = coXlonCnstVal - coXlonStrtStp * n
     Next i
-JumpPath1:
+JumpPath:
     For i = myXlonInflctPntBgn To myXlonInflctPntEnd
         myZlonCalData(i) = coXlonCnstVal
     Next i
-JumpPath2:
     If myXlonInflctPntEnd = myXlonDataQnt + L - 1 Then Exit Sub
     n = 0
     For i = myXlonInflctPntEnd + 1 To myXlonDataQnt + L - 1
         n = n + 1
         myZlonCalData(i) = coXlonCnstVal + coXlonLastStp * n
     Next i
-ExitPath:
 End Sub
 
  '定型Ｆ_配列計算-相加平均
@@ -462,77 +463,76 @@ End Sub
 
 '===============================================================================================
 
-''◆ClassProc名_データ配列を計算処理する
-'Private Sub instxcRefSgnlPrcsng()
-'  Const coXlonCalOptn As Long = 1
-'    'coXlonCalOptn = 1 : 相加平均値
-'    'coXlonCalOptn = 2 : 相乗平均値
-'  Const coXlonCalRng As Long = 0
-'    'coXlonCalRng = -1 : 今回値より前のデータで平均化
-'    'coXlonCalRng = 0  : 今回値の前後のデータで平均化
-'    'coXlonCalRng = 1  : 今回値より後のデータで平均化
-'  Const coXlonCalDataRngOptn As Long = 3
-'    'coXlonCalDataRngOptn = 1 : 全データ範囲で取得
-'    'coXlonCalDataRngOptn = 2 : 指定データ範囲で取得
-'    'coXlonCalDataRngOptn = 3 : 有効データ範囲で取得
-'  Const coXlonCalSmplQnt As Long = 5
-'  Const coXlonCalStep As Long = 1
-'  Const coXlonBgnRow As Long = 1
-'  Const coXlonEndRow As Long = 0
-''  Dim myXlonOrgRowCnt As Long, myXlonOrgColCnt As Long, myZdouOrgData() As Double
-''    'myZdouOrgData(i, 1) : 元データ配列
-''    myXlonOrgRowCnt = UBound(myZdouOrgData, 1)
-''    myXlonOrgColCnt = 1
-'  Dim Lc As Long
-''  Dim myXlonStrtRow As Long, myXlonLastRow As Long
-''  Dim myXlonCalRowCnt As Long, myXlonCalColCnt As Long, myZdouCalData() As Double
-''    'myZdouCalData(i, 1) : 計算処理後データ配列
-'  Dim myXdouFt As Double
-''//CMvAvrgクラスモジュールのインスタンス生成
-'  Dim myXinsMvAvrg As CMvAvrg: Set myXinsMvAvrg = New CMvAvrg
-'  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
-'  Dim i As Long, j As Long
-'    With myXinsMvAvrg
-'    '//クラス内変数への入力
-'        .letCalOptn = coXlonCalOptn
-'        .letCalRng = coXlonCalRng
-'        .letCalDataRngOptn = coXlonCalDataRngOptn
-'        .letOrgData = myZdouOrgData
-'        .letCalSmplQnt = coXlonCalSmplQnt
-'        .letCalStep = coXlonCalStep
-'        .letTs = coXdouTs
-'        .letBgnRow = coXlonBgnRow
-'        .letEndRow = coXlonEndRow
-'    '//クラス内プロシージャの実行とクラス内変数からの出力
-'        .exeProc
-'        myXlonStrtRow = .getStrtRow
-'        myXlonLastRow = .getLastRow
-'        myXlonCalRowCnt = .getCalRowCnt
-'        myXlonCalColCnt = .getCalColCnt
-'        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo JumpPath
-'        i = myXlonCalRowCnt + Lo - 1: j = myXlonCalColCnt + Lo - 1
-'        ReDim myZdouCalData(i, j) As Double
-'        Lc = .getOptnBase
-'        For i = 1 To myXlonCalRowCnt
-'            myZdouCalData(i + Lo - 1, Lo) = .getCalData(i + Lc - 1, Lc)
-'        Next i
-'    End With
-'JumpPath:
-'    Set myXinsRefSgnlPrcsng = Nothing
-'    Call variablesOfxcRefSgnlPrcsng(myXlonCalRowCnt, myZdouCalData)  'Debug.Print
-'End Sub
-'Private Sub variablesOfxcRefSgnlPrcsng( _
-'            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
-''//xcRefSgnlPrcsngクラス内から出力した変数の内容確認
-'    Debug.Print "データ数: " & myXlonDataCnt
-'    If myXlonDataCnt <= 0 Then Exit Sub
-'  Dim i As Long, j As Long
-'    For i = LBound(myZvarField, 1) To UBound(myZvarField, 1)
-'        For j = LBound(myZvarField, 2) To UBound(myZvarField, 2)
-'            Debug.Print "データ" & i & "," & j & ": " & myZvarField(i, j)
-'        Next j
-'    Next i
-'End Sub
+'◆ClassProc名_データ配列を計算処理する
+Private Sub instxcRefSgnlPrcsng()
+  Const coXlonCalOptn As Long = 1
+    'myXlonCalOptn = 1 : 計算1
+    'myXlonCalOptn = 2 : 計算2
+  Const coXlonCalRng As Long = 0
+    'myXlonCalRng = -1 : 今回値より前のデータで計算
+    'myXlonCalRng = 0  : 今回値の前後のデータで計算
+    'myXlonCalRng = 1  : 今回値より後のデータで計算
+  Const coXlonCalDataRngOptn As Long = 3
+    'coXlonCalDataRngOptn = 1 : 全データ範囲で取得
+    'coXlonCalDataRngOptn = 2 : 指定データ範囲で取得
+    'coXlonCalDataRngOptn = 3 : 有効データ範囲で取得
+  Const coXlonBgnRow As Long = 1
+  Const coXlonEndRow As Long = 0
+  Const coXlonCalSmplQnt As Long = 5
+  Const coXlonCalStep As Long = 1
+'  Dim myXlonOrgRowCnt As Long, myXlonOrgColCnt As Long, myZdouOrgData() As Double
+'    'myZdouOrgData(i, 1) : 元データ配列
+'    myXlonOrgRowCnt = UBound(myZdouOrgData, 1)
+'    myXlonOrgColCnt = 1
+  Dim Lc As Long
+'  Dim myXlonStrtRow As Long, myXlonLastRow As Long
+'  Dim myXlonCalRowCnt As Long, myXlonCalColCnt As Long, myZdouCalData() As Double
+'    'myZdouCalData(i, 1) : 計算処理後データ配列
+  Dim myXdouFt As Double
+'//CMvAvrgクラスモジュールのインスタンス生成
+  Dim myXinsSgnlPrcsng As xcRefSgnlPrcsng: Set myXinsSgnlPrcsng = New xcRefSgnlPrcsng
+  Dim myZlonTmp(1) As Long, Lo As Long: Lo = LBound(myZlonTmp)
+  Dim i As Long, j As Long
+    With myXinsMvAvrg
+    '//クラス内変数への入力
+        .letCalOptn = coXlonCalOptn
+        .letCalRng = coXlonCalRng
+        .letCalDataRngOptn = coXlonCalDataRngOptn
+        .letOrgData = myZdouOrgData
+        .letBgnRow = coXlonBgnRow
+        .letEndRow = coXlonEndRow
+        .letCalSmplQnt = coXlonCalSmplQnt
+        .letCalStep = coXlonCalStep
+    '//クラス内プロシージャの実行とクラス内変数からの出力
+        .exeProc
+        myXlonStrtRow = .getStrtRow
+        myXlonLastRow = .getLastRow
+        myXlonCalRowCnt = .getCalRowCnt
+        myXlonCalColCnt = .getCalColCnt
+        If myXlonCalRowCnt <= 0 Or myXlonCalColCnt <= 0 Then GoTo JumpPath
+        i = myXlonCalRowCnt + Lo - 1: j = myXlonCalColCnt + Lo - 1
+        ReDim myZdouCalData(i, j) As Double
+        Lc = .getOptnBase
+        For i = 1 To myXlonCalRowCnt
+            myZdouCalData(i + Lo - 1, Lo) = .getCalData(i + Lc - 1, Lc)
+        Next i
+    End With
+JumpPath:
+    Set myXinsSgnlPrcsng = Nothing
+    Call variablesOfxcRefSgnlPrcsng(myXlonCalRowCnt, myZdouCalData)  'Debug.Print
+End Sub
+Private Sub variablesOfxcRefSgnlPrcsng( _
+            ByVal myXlonDataCnt As Long, ByRef myZvarField As Variant)
+'//xcRefSgnlPrcsngクラス内から出力した変数の内容確認
+    Debug.Print "データ数: " & myXlonDataCnt
+    If myXlonDataCnt <= 0 Then Exit Sub
+  Dim i As Long, j As Long
+    For i = LBound(myZvarField, 1) To UBound(myZvarField, 1)
+        For j = LBound(myZvarField, 2) To UBound(myZvarField, 2)
+            Debug.Print "データ" & i & "," & j & ": " & myZvarField(i, j)
+        Next j
+    Next i
+End Sub
 
       <br></pre>
     </body>
