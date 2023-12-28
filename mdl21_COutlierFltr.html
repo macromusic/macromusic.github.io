@@ -1092,7 +1092,7 @@ End Sub
 '        ReDim myZdouCalData(myXlonCalRowCnt, myXlonCalColCnt) As Double
 '        Lc = .getOptnBase
 '        For i = 1 To myXlonCalRowCnt
-'            myZdouCalData(i + Lo - 1, Lo) = .getCalData(i, Lc)
+'            myZdouCalData(i + Lo - 1, Lo) = .getCalData(i + Lc - 1, Lc)
 '        Next i
 '    End With
 'JumpPath:
