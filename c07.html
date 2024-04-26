@@ -3723,30 +3723,33 @@ Private Sub PsubVNumericDecimation( _
   Dim myXdouAveStep As Double, myXdouAveIntvl As Double, myXlonJump As Long
     If myXlonEndRow - myXlonBgnRow = 0 Then Exit Sub
     myXdouAveStep = (myXlonEndVal - myXlonBgnVal) / (myXlonEndRow - myXlonBgnRow)
-    myXdouAveIntvl = myXlonStep / myXdouAveStep
+    myXdouAveIntvl = Abs(myXlonStep / myXdouAveStep)
     If myXdouAveIntvl < 1 Then Exit Sub
     myXlonJump = Int(myXdouAveIntvl) - 2
-  Dim myXdouQuot As Double, myXdouRemain As Double, myXdouNumer As Double
+  Dim myXdouPrsntN As Double, myXdouPrsntQ As Double, myXdouPrsntR As Double, _
+        myXdouPrvsN As Double, myXdouPrvsQ As Double, myXdouPrvsR As Double, i As Long
   Dim n As Long: n = 0
-    myXdouNumer = myZdouCal(myXlonBgnRow, myXlonDcmtCol)
-    Call PfixQuotationRemainder(myXdouQuot, myXdouRemain, myXdouNumer, myXlonStep)
-    If myXdouRemain = 0 Then
+    myXdouPrvsN = myZdouCal(myXlonBgnRow, myXlonDcmtCol)
+    Call PfixQuotationRemainder(myXdouPrvsQ, myXdouPrvsR, myXdouPrvsN, myXlonStep)
+    If myXdouPrvsR = 0 Then
         n = n + 1: myZdouCal(myXlonBgnRow, myXlonTrgtCol) = myXlonTrgtVal
     End If
-  Dim myXdouPrsntQ As Double, myXdouPrsntR As Double, _
-        myXdouPrvsQ As Double, myXdouPrvsR As Double, i As Long
     For i = myXlonBgnRow + 1 To myXlonEndRow
-        myXdouNumer = myZdouCal(i, myXlonDcmtCol)
-        Call PfixQuotationRemainder(myXdouPrsntQ, myXdouPrsntR, myXdouNumer, myXlonStep)
-        If myXdouPrsntQ = myXdouQuot Then GoTo NextPath
-        myXdouQuot = myXdouPrsntQ
+        myXdouPrsntN = myZdouCal(i, myXlonDcmtCol)
+        Call PfixQuotationRemainder(myXdouPrsntQ, myXdouPrsntR, myXdouPrsntN, myXlonStep)
+        myXdouPrvsN = myZdouCal(i - 1, myXlonDcmtCol)
+        Call PfixQuotationRemainder(myXdouPrvsQ, myXdouPrvsR, myXdouPrvsN, myXlonStep)
+        If myXdouPrsntQ = myXdouPrvsQ Then GoTo NextPath
         If myXdouPrsntR = 0 Then
             myZdouCal(i, myXlonTrgtCol) = myXlonTrgtVal
             n = n + 1: i = i + myXlonJump: GoTo NextPath
         End If
-        myXdouNumer = myZdouCal(i - 1, myXlonDcmtCol)
-        Call PfixQuotationRemainder(myXdouPrvsQ, myXdouPrvsR, myXdouNumer, myXlonStep)
-        If myXdouPrsntR <= myXlonStep - myXdouPrvsR Then
+        If myXdouPrsntQ > myXdouPrvsQ Then
+            myXdouPrvsR = myXlonStep - myXdouPrvsR
+        ElseIf myXdouPrsntQ < myXdouPrvsQ Then
+            myXdouPrsntR = myXlonStep - myXdouPrsntR
+        End If
+        If myXdouPrsntR <= myXdouPrvsR Then
             myZdouCal(i, myXlonTrgtCol) = myXlonTrgtVal
         Else
             myZdouCal(i - 1, myXlonTrgtCol) = myXlonTrgtVal
@@ -3833,30 +3836,33 @@ Private Sub PsubHNumericDecimation( _
   Dim myXdouAveStep As Double, myXdouAveIntvl As Double, myXlonJump As Long
     If myXlonEndCol - myXlonBgnCol = 0 Then Exit Sub
     myXdouAveStep = (myXlonEndVal - myXlonBgnVal) / (myXlonEndCol - myXlonBgnCol)
-    myXdouAveIntvl = myXlonStep / myXdouAveStep
+    myXdouAveIntvl = Abs(myXlonStep / myXdouAveStep)
     If myXdouAveIntvl < 1 Then Exit Sub
     myXlonJump = Int(myXdouAveIntvl) - 2
-  Dim myXdouQuot As Double, myXdouRemain As Double, myXdouNumer As Double
+  Dim myXdouPrsntN As Double, myXdouPrsntQ As Double, myXdouPrsntR As Double, _
+        myXdouPrvsN As Double, myXdouPrvsQ As Double, myXdouPrvsR As Double, i As Long
   Dim n As Long: n = 0
-    myXdouNumer = myZdouCal(myXlonDcmtRow, myXlonBgnCol)
-    Call PfixQuotationRemainder(myXdouQuot, myXdouRemain, myXdouNumer, myXlonStep)
-    If myXdouRemain = 0 Then
-        myZdouCal(myXlonTrgtRow, myXlonBgnCol) = myXlonTrgtVal: n = n + 1
+    myXdouPrvsN = myZdouCal(myXlonDcmtRow, myXlonBgnCol)
+    Call PfixQuotationRemainder(myXdouPrvsQ, myXdouPrvsR, myXdouPrvsN, myXlonStep)
+    If myXdouPrvsR = 0 Then
+        n = n + 1: myZdouCal(myXlonTrgtRow, myXlonBgnCol) = myXlonTrgtVal
     End If
-  Dim myXdouPrsntQ As Double, myXdouPrsntR As Double, _
-        myXdouPrvsQ As Double, myXdouPrvsR As Double, j As Long
     For j = myXlonBgnCol + 1 To myXlonEndCol
-        myXdouNumer = myZdouCal(myXlonDcmtRow, j)
-        Call PfixQuotationRemainder(myXdouPrsntQ, myXdouPrsntR, myXdouNumer, myXlonStep)
-        If myXdouPrsntQ = myXdouQuot Then GoTo NextPath
-        myXdouQuot = myXdouPrsntQ
+        myXdouPrsntN = myZdouCal(myXlonDcmtRow, j)
+        Call PfixQuotationRemainder(myXdouPrsntQ, myXdouPrsntR, myXdouPrsntN, myXlonStep)
+        myXdouPrvsN = myZdouCal(myXlonDcmtRow, j - 1)
+        Call PfixQuotationRemainder(myXdouPrvsQ, myXdouPrvsR, myXdouPrvsN, myXlonStep)
+        If myXdouPrsntQ = myXdouPrvsQ Then GoTo NextPath
         If myXdouPrsntR = 0 Then
             myZdouCal(myXlonTrgtRow, j) = myXlonTrgtVal
             n = n + 1: j = j + myXlonJump: GoTo NextPath
         End If
-        myXdouNumer = myZdouCal(myXlonDcmtRow, j - 1)
-        Call PfixQuotationRemainder(myXdouPrvsQ, myXdouPrvsR, myXdouNumer, myXlonStep)
-        If myXdouPrsntR <= myXlonStep - myXdouPrvsR Then
+        If myXdouPrsntQ > myXdouPrvsQ Then
+            myXdouPrvsR = myXlonStep - myXdouPrvsR
+        ElseIf myXdouPrsntQ < myXdouPrvsQ Then
+            myXdouPrsntR = myXlonStep - myXdouPrsntR
+        End If
+        If myXdouPrsntR <= myXdouPrvsR Then
             myZdouCal(myXlonTrgtRow, j) = myXlonTrgtVal
         Else
             myZdouCal(myXlonTrgtRow, j - 1) = myXlonTrgtVal
